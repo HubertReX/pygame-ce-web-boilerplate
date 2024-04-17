@@ -1,6 +1,7 @@
 import os
 import pygame
-from settings import HEIGHT, INPUTS, ANIMATION_SPEED, DEBUG, vec
+from pygame.math import Vector2 as vec
+from settings import HEIGHT, INPUTS, ANIMATION_SPEED, DEBUG, COLORS
 # from state import Scene, State
 
 class NPC_State():
@@ -47,9 +48,12 @@ class NPC(pygame.sprite.Sprite):
         self.animation_speed = ANIMATION_SPEED
         self.import_image(f"assets/{self.name}/")
         self.frame_index: float = 0.0
-        self.image = self.animations["idle"][int(self.frame_index)].convert_alpha()
+        # self.image = self.animations["idle"][int(self.frame_index)].convert_alpha()
+        self.image = self.animations["idle"][int(self.frame_index)]
+        self.image.set_colorkey(COLORS["black"])
         self.rect = self.image.get_frect(topleft = pos)
         self.old_rect = pygame.Rect(self.rect)
+        self.feet = pygame.Rect(0, 0, self.rect.width * 0.5, 8)
         self.speed: int = 160
         self.force: int = 2000
         self.acc = vec()
@@ -65,10 +69,14 @@ class NPC(pygame.sprite.Sprite):
             full_path = os.path.join(path, animation)
             self.animations[animation] = self.game.get_images(full_path)
             if animation in ["idle", "run"]:
-                self.animations[f"{animation}_right"] = self.animations[animation]
+                self.animations[f"{animation}_right"] = [] # self.animations[animation]
                 self.animations[f"{animation}_left"] = []
                 for frame in self.animations[animation]:
-                    self.animations[f"{animation}_left"].append(pygame.transform.flip(frame, True, False))
+                    converted = frame
+                    # converted = frame.convert_alpha()
+                    # converted.set_colorkey(COLORS["yellow"])
+                    self.animations[f"{animation}_right"].append(converted)
+                    self.animations[f"{animation}_left"].append(pygame.transform.flip(converted, True, False))
         
             
     def animate(self, state, fps: float, loop=True):
@@ -80,7 +88,8 @@ class NPC(pygame.sprite.Sprite):
             else:
                 self.frame_index = len(self.animations[state]) - 1.0
                 
-        self.image = self.animations[state][int(self.frame_index)].convert_alpha()
+        # self.image = self.animations[state][int(self.frame_index)].convert_alpha()
+        self.image = self.animations[state][int(self.frame_index)]
         
     def get_direction_360(self) -> str:
         angle = self.vel.angle_to(vec(0,1))
@@ -113,6 +122,8 @@ class NPC(pygame.sprite.Sprite):
             self.vel.y = 0.0
         self.rect.centery += self.vel.y * dt #+ (self.vel.y / 2) * dt
         
+        self.feet.midbottom = self.rect.midbottom
+        
         if self.vel.magnitude() >= self.speed:
             self.vel = self.vel.normalize() * self.speed
 
@@ -132,6 +143,7 @@ class NPC(pygame.sprite.Sprite):
         """
         # self.debug([f"{self.rect.topleft=}", f"{self.old_rect.topleft=}"])
         self.rect.topleft = self.old_rect.topleft
+        self.feet.midbottom = self.rect.midbottom
         
     def debug(self, msgs: list[str]):
         if DEBUG:
@@ -157,3 +169,14 @@ class Player(NPC):
         else:
             self.acc.y = 0
                     
+    def exit_scene(self):
+        for exit in self.scene.exit_sprites:
+            if self.feet.colliderect(exit.rect):
+                self.scene.new_scene = exit.to_map
+                self.scene.entry_point = exit.entry_point
+                self.scene.transition.exiting = True
+                # self.scene.go_to_scene()
+                
+    def update(self, dt: float):
+        self.exit_scene()
+        super().update(dt)

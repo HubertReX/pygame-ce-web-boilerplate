@@ -1,0 +1,6 @@
+pygame-ce==2.4.1
+pygame-menu-ce==4.4.3
+pygbag==0.9.1
+pyperclip==1.8.2
+pyscroll==2.31
+PyTMX==3.32

@@ -1,5 +1,23 @@
 {
     "cSpell.words": [
-        "pygame"
+        "blit",
+        "centerx",
+        "centery",
+        "collidelist",
+        "colordict",
+        "emscripten",
+        "frect",
+        "hitbox",
+        "KEYDOWN",
+        "KEYUP",
+        "midbottom",
+        "MOUSEBUTTONDOWN",
+        "MOUSEBUTTONUP",
+        "pygame",
+        "pyscroll",
+        "pytmx",
+        "THECOLORS",
+        "tileset",
+        "topleft"
     ]
 }
