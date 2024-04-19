@@ -30,14 +30,24 @@ class State:
             self.game.states.pop()
             
     def update(self, dt: float, events: list[pygame.event.EventType]):
-        if INPUTS['quit']:
+        if INPUTS['quit'] and not IS_WEB:
             self.game.running = False
+            
+        global SHOW_DEBUG_INFO
+        if INPUTS['debug']:
+            SHOW_DEBUG_INFO = not SHOW_DEBUG_INFO
+            self.game.reset_inputs()
+            
+        global SHOW_HELP_INFO
+        if INPUTS['help']:
+            SHOW_HELP_INFO = not SHOW_HELP_INFO
+            self.game.reset_inputs()
             
     def draw(self, screen: pygame.Surface):
         raise NotImplementedError("Subclasses should implement this!")
         
     def debug(self, msgs: list[str]):
-        if DEBUG:
+        if SHOW_DEBUG_INFO:
             for i, msg in enumerate(msgs):
                 self.game.render_text(msg, (10, 25 * i))
     
@@ -73,6 +83,11 @@ class MenuScreen(State):
             is_updated = self.menu.update(events)
             if is_updated:
                 self.game.reset_inputs()
+
+        global SHOW_DEBUG_INFO
+        if INPUTS['debug']:
+            SHOW_DEBUG_INFO = not SHOW_DEBUG_INFO
+            self.game.reset_inputs()
 
         # if INPUTS['select']:
         #     self.deactivate()
@@ -118,7 +133,8 @@ class MainMenuScreen(MenuScreen):
         main_menu.add.button('Settings', SplashScreen(self.game, "Settings").enter_state)
         main_menu.add.button('About', AboutMenuScreen(self.game, "AboutMenu").enter_state)
         # main_menu.add.button('Close menu', self.deactivate)
-        main_menu.add.button('Quit', pygame_menu.events.EXIT)
+        if not IS_WEB:
+            main_menu.add.button('Quit', pygame_menu.events.EXIT)
     
         return main_menu
 
@@ -135,7 +151,7 @@ class MainMenuScreen(MenuScreen):
         # menu = self.menu.get_current()
         # print(f"Menu : {self.name}")
                         
-        if INPUTS['quit']:
+        if INPUTS['quit'] and not IS_WEB:
             self.game.running = False    
             self.deactivate()
 
@@ -282,8 +298,8 @@ class Scene(State):
         #     self.walls.append(pygame.Rect(obj.x, obj.y, obj.width, obj.height))
         
         # under1 layer contains 'walls' - tiles that collide with characters
-        if "under1" in self.layers:
-            for x, y, surf in tileset_map.get_layer_by_name("under1").tiles():
+        if "walls" in self.layers:
+            for x, y, surf in tileset_map.get_layer_by_name("walls").tiles():
                 rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, surf.get_width(), surf.get_height())
                 self.walls.append(rect)
                 # can be created as sprites if needed
@@ -352,13 +368,23 @@ class Scene(State):
             # MainMenuScreen(self.game, next_scene).enter_state()
             self.exit_state()
             self.game.reset_inputs()
+
+        global SHOW_DEBUG_INFO
+        if INPUTS['debug']:
+            SHOW_DEBUG_INFO = not SHOW_DEBUG_INFO
+            self.game.reset_inputs()
+
+        global SHOW_HELP_INFO
+        if INPUTS['help']:
+            SHOW_HELP_INFO = not SHOW_HELP_INFO
+            self.game.reset_inputs()
         
         if INPUTS['right_click']:
             self.exit_state()
             self.game.reset_inputs()
         
         if INPUTS['help']:
-            print("need help")
+            # print("need help")
             # next_scene = None #  self # Scene(self.game, 'grasslands', 'start')
             # AboutMenuScreen(self.game, next_scene).enter_state()
             MainMenuScreen(self.game, "MainMenu").enter_state()
@@ -374,22 +400,36 @@ class Scene(State):
         # camera zoom in/out
         if INPUTS['zoom_in']: # or INPUTS["scroll_up"]:
             self.map_layer.zoom += 0.25
+            self.game.reset_inputs()
+            
         if INPUTS['zoom_out']: # or INPUTS["scroll_down"]:
             value = self.map_layer.zoom - 0.25
             if value > 0:
                 self.map_layer.zoom = value
-        
+            self.game.reset_inputs()
+            
+    def show_help(self):
+        i = 0
+        for definition in ACTIONS.values():
+            if definition["show"]:
+                self.game.render_text(f"{', '.join(definition['show'])} - {definition['msg']}", (WIDTH - 210, i * 30), shadow=True)
+                i += 1
+    
     def draw(self, screen: pygame.Surface):
         # screen.fill(COLORS["red"])
         self.group.center(self.player.rect.center)
         # self.draw_sprites.draw(screen)
         self.group.draw(screen)
         self.transition.draw(screen)
-        self.game.render_text(f"press Esc to exit", (WIDTH / 2, HEIGHT - 25), centred=True)
+        if not SHOW_HELP_INFO:
+            self.game.render_text(f"press [h] for help", (WIDTH / 2, HEIGHT - 25), shadow=True, centred=True)
         msgs = [
             f"FPS: {self.game.clock.get_fps():06.02f}",
             f"vel: {self.player.vel.x:06.02f} {self.player.vel.y:06.02f}",
             f"col: {self.player.rect.collidelist(self.walls):06.02f}",
         ]
         self.debug(msgs)
+        
+        if SHOW_HELP_INFO:
+            self.show_help()
     

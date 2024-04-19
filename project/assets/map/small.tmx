@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="32" tileheight="32" infinite="0" nextlayerid="9" nextobjectid="54">
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="32" tileheight="32" infinite="0" nextlayerid="10" nextobjectid="54">
  <tileset firstgid="1" name="Revolution_Grasslands" tilewidth="32" tileheight="32" tilecount="190" columns="10">
   <image source="revolution_grasslands.png" trans="a349a4" width="320" height="608"/>
   <tile id="5">
@@ -23,9 +23,14 @@
    H4sIAAAAAAAAE8WVUQ7DIAxDe/9LQTsY3IjfUYlIFnIgjE77sKoRx49UHZTjOIpRrsm3p7WP6Q1ZZ9VV9drk3pmpKg98GjdURZKBXGsP8zmiGdcZuDMf44oYa6WuacbdlbavX3P/Na+Vmxb7V/3fzPvUN5Y6bob1J+dlHuu8cWM+xhhxtdx+Xc4K5hn9j/BsicQfm1g+845qAdTn+O43O2u1dzSq4awaF8/Sm1sal90Ps3sB9yKeYMw4W4bUpWfGzCQXvyupaWzholfYF2ThXeRJT38fyUxsb7KmcbFHW0O/5R0z7uib6vfD6sL9AB24r9dgCQAA
   </data>
  </layer>
- <layer id="2" name="under1" width="30" height="20">
+ <layer id="9" name="under1" width="30" height="20">
   <data encoding="base64" compression="gzip">
-   H4sIAAAAAAAAE81VywrCMBDcjXrzdfYq+DMqgv//B77wYqul4AYNWWOSNpqEDAxtkp2dWVJoBS9UoMHf+bpmezf4Hw+iQM27o66vL+/n6iUxovMVcfLmDD9zSC6IA9QatNQozjt6qSytkWPMdDzPFL9r+LmvbsmeQ7T7pkYDZfju0FWZ1jcXQn3XAmBD3Iq8vrFg8/31jvcBupLm5Uj1fZc6r8SBeCSeMvuq/05t7Ks8PrqyKt+LR3t2+DbQDVMTonX16KOV81wN8llS+cZAbN8n1ndS82AJAAA=
+   H4sIAAAAAAAAE8WVzQ6DIBCE9d70/d/Gn4LwRlyLCZtMySysxaaHiZEd5mMNQpqmKRm1FK3laZ3HdEDWlrVnvQa5Z2bIig2fxnVZnmQg1zqH+Raix8wznvOnR+NafIwrioN1TT3uqLR1/Zr7r36t3HBx/lX/N/3etcdCxY0wfme/zGPt1w/0xxgtrpZbj8tZwTyt/+iAd0/8vojlM2+r5kB1zlq9s7NW+0atGvaqcfEsPbmpcNn90LsXcC3iccaMrWRIXeb0mJHk4r6SmsYWLnqFvUOWcMXXuwelJ7Y2GdO4OEcbQ7/lGzNua0/V62F14b4BIa8A3WAJAAA=
+  </data>
+ </layer>
+ <layer id="2" name="walls" width="30" height="20">
+  <data encoding="base64" compression="gzip">
+   H4sIAAAAAAAAE81VywrCMBDcRD2Knr2K/oyK4P//gS+82GoRukGXrCHbNpqEDAy0yc7ObFJoBW9UYMGf+XvN1u7wP55IrSwfQt1QX95P6mUwwf01cvrhTH3nMFwgR8pqlKeGOO/pRVleniykozwr5a/heYm+uiXbHyvZNyUaKMN37zmjHL65EOq70QBb5E7n9Y0Fn++vd3wI0JU0L0eq77vUeQ2OyBPynNmX/ju1s055uihlJd9rh/Yi+DbQD1cTopV6DNGaeW4O+SypfGMgtm8LOKI942AJAAA=
   </data>
  </layer>
  <layer id="3" name="sprites" width="30" height="20" locked="1">
@@ -43,11 +48,6 @@
    H4sIAAAAAAAAE+2SOQ6AMAwEN3kOZ8VZhev/X2IbJKrIJIYGj7SlNVqtAeMP1A5omNZ96x3pm5g54i08UDKV1/Nu9O3MEfF29PXMoOiVEOhbmFXZm7px7m9INta8u7hv/KSD5Dek5HZIRbODYRjvcAISAUqVYAkAAA==
   </data>
  </layer>
- <objectgroup id="6" name="walls">
-  <object id="49" name="player" x="236" y="177.333">
-   <point/>
-  </object>
- </objectgroup>
  <objectgroup id="7" name="exits">
   <object id="50" name="forest" x="349.559" y="620.319" width="102.742" height="55.6667">
    <properties>
