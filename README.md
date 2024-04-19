@@ -10,7 +10,7 @@ This project is based on Matt Owen's tutorial:
 
 Ninja sprite is from the same author:
 
-[Monochrome ninja](https://mowen88.itch.io/monochrome-ninjaa)
+[Monochrome ninja](https://mowen88.itch.io/monochrome-ninja)
 
 Cursor by:
 
