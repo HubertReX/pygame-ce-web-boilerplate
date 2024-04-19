@@ -108,7 +108,6 @@ class Game:
                 for action, definition in ACTIONS.items():
                     if event.key in definition["keys"]:
                         INPUTS[action] = True
-                        s            
             elif event.type == pygame.KEYUP:
                 for action, definition in ACTIONS.items():
                     if event.key in definition["keys"]:
