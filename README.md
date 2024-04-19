@@ -2,7 +2,7 @@
 
 This is a template for a game using Pygame-ce that can run in both desktop and browser.
 
-![screenshot](screenshots/screenshot.png)
+![screenshot](./screenshots/screenshot_gameplay.png)
 
 This project is based on Matt Owen's tutorial:
 
@@ -28,7 +28,7 @@ Precision icons created by [redempticon - Flaticon](https://www.flaticon.com/fre
 
 * runs in web (itch.io and GitHub Pages) thanks to [pygbag](https://pygame-web.github.io/)
 * implemented fine state machin
-* usage of menus [pygame-menu](https://github.com/ppizarror/pygame-menu)
+* usage of menus [pygame-menu](https://github.com/ppizarror/pygame-menu) (patched - gfxdraw not working in WEB)
 * partial mouse support (in menus)
 * [Tiled](https://www.mapeditor.org/) map loading [pytmx](https://github.com/bitcraft/pytmx)
 * Map reloading, scrolling and zooming [pyscroll](https://github.com/bitcraft/pyscroll)
@@ -41,16 +41,13 @@ Precision icons created by [redempticon - Flaticon](https://www.flaticon.com/fre
 
 ## Ideas for future
 
-* improve README.md
-* fix small map
-* list key bindings
+* ~~list key bindings~~ ✅
 * add enemies
 * add fog of war and/or line of sight
 * add particles system
-* screenshot of menu not working (showing only part of menu)
-* publish to itch.io
-* action to deploy on GitHub pages
-* some key events are lost (action is repeated even key is not pressed)
+* ~~screenshot of menu not working (showing only part of menu)~~ ✅
+* ~~some key events are lost (action is repeated even key is not pressed in menus)~~ ✅
+* continuing game after exiting menu causes loosing player's position on small map (works on grassland though)
 * should new map be a new game state?
 
 ## Installation
