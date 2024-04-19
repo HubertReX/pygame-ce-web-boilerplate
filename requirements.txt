@@ -4,3 +4,4 @@ pygbag==0.9.1
 pyperclip==1.8.2
 pyscroll==2.31
 PyTMX==3.32
+typing_extensions==4.10.0

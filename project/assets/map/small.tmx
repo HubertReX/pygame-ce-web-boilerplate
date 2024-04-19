@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="50" height="50" tilewidth="32" tileheight="32" infinite="0" nextlayerid="9" nextobjectid="54">
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="32" tileheight="32" infinite="0" nextlayerid="9" nextobjectid="54">
  <tileset firstgid="1" name="Revolution_Grasslands" tilewidth="32" tileheight="32" tilecount="190" columns="10">
   <image source="revolution_grasslands.png" trans="a349a4" width="320" height="608"/>
   <tile id="5">
@@ -18,29 +18,29 @@
  <tileset firstgid="764" name="revolution_grasslands_alpha" tilewidth="32" tileheight="32" tilecount="190" columns="10">
   <image source="revolution_grasslands_alpha.png" width="320" height="608"/>
  </tileset>
- <layer id="1" name="under0" width="50" height="50">
+ <layer id="1" name="under0" width="30" height="20">
   <data encoding="base64" compression="gzip">
-   H4sIAAAAAAAAE+WXuW4UQRCGe6ZnOkDmCIhILfkJLIcQcsSESDwqiYF9I8tErMWU/M23Nbu2d4yQCUq700fd9Vf1VSnl6glQ3+3S9ZE8f5X1eN2Vnnd/6Ky7/f8yse1NsrZErw7wWtPGb3vopMvtCzo9sP+i2+V1it+zxMb7+CnOXt/Rns2R+4foJPGBbTUt5c0xehyiY+38X+mp+e3nI5//F2itmn9s2zcPkHOXs/vO/O14fj/C/5dHxm+t+Bxav0zs3BzgkfnlWPoxEflvJPP7gr7Z2X17l+KzZkzGidqWuoniu8daN63dUN3SoP/Bp+K3n85wvZvO877lPIR68BlX4JdR5pMe9qwh4+2WLrZ0PlF25lx0jLxB/9eIxQ192NKnyZ770EWZ54l1Je3Lg/vGYyzLefN+ssf0Zfr9muxltn9O1t5B7wo7R8Qj6iiLW9TqiPtxfsBawzneHXB3gMyoy7A9bA2izTd7HyGjgb9jEfaEr2uZ+z/O9wt79MOA71pu8aSCR8huZV6rxJ4muQ33ajlc47S3ll2bLZP2kS/zL+ylXqN+I56MX/islrntPMMc6CR7BDXcN54Hn168I8ad7oZPM9ynD6hfBZ8sF2gPY8bvhvP0C/OI+pgXYxWyyZfrjAHzqOG74k4r89xj/dC/Jtd6rNGPrAdiSYaXGR/mQ1uQSz2Z9xXftLXD/ii57N/MGWJX1f6zhFgrg+RRzwpyrmQ5SX1YO8FjqQ/FPeK46+p1Qp3OtzL3J3OM8R4ljz6wT5l3+/rlWOb+Yl0Yv2if66SWeSwjTsQ95pBznrZQTqZr1tvZc5jHlJv9H8ty/JvuuE8Qr5ZwivGiDeMC8Tx5sq48Q/EM14gR1sWxpg8875s81zvve62P2gt/0n+0mXIyvCMv9h7Xj98v9AOJOZfpwtiNks11zhTu9dlcx95HbGevGcTbudXEi3plPd3Yw2/GJqtz2mL84tlsnrEN7gOcD4wV7ueMEbGT81eWq4wzcYn+5vzEumfNGbfpF2Mg7eJZrmV9hDmUzXXkZ1s8h7tOPddxfjCecs89gX0p6z9N+8SqDNNtjzHP+WbMZ57TTvbs+O8ZZtS3Zyv7IWQwp1izh2qV9rs/8tc1xHw33sQ+Y8tcIS/Oyp5RR337LcNc8lzLdwBxotM3a4N6ca8uyPG6cY/9wD0/6+fU2W8UxoP1wzwnnhtLOY+4Vhv4s8dRH/e7DM+c455VMhxi/hvPiU+sJ74DLJc1aexyTTl+5NPpDGPGHGFsXAeuR9aG3zDWmfMoezPfQuyH3HPv8ixBucwn+4o6ewZrumvs5rzHnkF9hoQf8YB6siexxj2PGIuZe5TJfuv+lN2zjz3b0z7mqnHBNUpejA3fMtTdtcX9rszznzzY94wVrMdh4Rzx3PjNt9AgWfZNhr2ZjKHs+tS9J+yy7s4/5zIx0f3EM5xx0vowB9xHiH9+TzLHwxbGM5tJrZdnQMeRernumVus3yzWYbvfCL7vd58xl3i/NIdkvZE46DqqyV3mrucezlLECdYK15mflG3ccj/L8tQzgckzGHUhb8aVGEVM92xEmzxvEtPIn/g66K57iOs4w3rPDEG/AerbPs0QJwAA
+   H4sIAAAAAAAAE8WVUQ7DIAxDe/9LQTsY3IjfUYlIFnIgjE77sKoRx49UHZTjOIpRrsm3p7WP6Q1ZZ9VV9drk3pmpKg98GjdURZKBXGsP8zmiGdcZuDMf44oYa6WuacbdlbavX3P/Na+Vmxb7V/3fzPvUN5Y6bob1J+dlHuu8cWM+xhhxtdx+Xc4K5hn9j/BsicQfm1g+845qAdTn+O43O2u1dzSq4awaF8/Sm1sal90Ps3sB9yKeYMw4W4bUpWfGzCQXvyupaWzholfYF2ThXeRJT38fyUxsb7KmcbFHW0O/5R0z7uib6vfD6sL9AB24r9dgCQAA
   </data>
  </layer>
- <layer id="2" name="under1" width="50" height="50">
+ <layer id="2" name="under1" width="30" height="20">
   <data encoding="base64" compression="gzip">
-   H4sIAAAAAAAAE+3VMQqAMAwF0NjrqXip3rlrBQcdXLoYoe9BINk+hJAWlxa3Z/82A2Q6luwEjFpLxHbWXrKTzMGN/JfdADCjmh0AABL5gwAAAPC9DpUv+Q8QJwAA
+   H4sIAAAAAAAAE81VywrCMBDcjXrzdfYq+DMqgv//B77wYqul4AYNWWOSNpqEDAxtkp2dWVJoBS9UoMHf+bpmezf4Hw+iQM27o66vL+/n6iUxovMVcfLmDD9zSC6IA9QatNQozjt6qSytkWPMdDzPFL9r+LmvbsmeQ7T7pkYDZfju0FWZ1jcXQn3XAmBD3Iq8vrFg8/31jvcBupLm5Uj1fZc6r8SBeCSeMvuq/05t7Ks8PrqyKt+LR3t2+DbQDVMTonX16KOV81wN8llS+cZAbN8n1ndS82AJAAA=
   </data>
  </layer>
- <layer id="3" name="sprites" width="50" height="50" locked="1">
+ <layer id="3" name="sprites" width="30" height="20" locked="1">
   <data encoding="base64" compression="gzip">
-   H4sIAAAAAAAAE+3BAQ0AAADCoPdPbQ43oAAAAAAAAAAAAODfAC7KO00QJwAA
+   H4sIAAAAAAAAE+3BMQEAAADCoPVPbQlPoAAAeBoqs0udYAkAAA==
   </data>
  </layer>
- <layer id="4" name="midheight" width="50" height="50">
+ <layer id="4" name="midheight" width="30" height="20">
   <data encoding="base64" compression="gzip">
-   H4sIAAAAAAAAE+3BAQ0AAADCoPdPbQ43oAAAAAAAAAAAAODfAC7KO00QJwAA
+   H4sIAAAAAAAAE+3BMQEAAADCoPVPbQlPoAAAeBoqs0udYAkAAA==
   </data>
  </layer>
- <layer id="5" name="player" width="50" height="50">
+ <layer id="5" name="over0" width="30" height="20">
   <data encoding="base64" compression="gzip">
-   H4sIAAAAAAAAE+2Zx0oDQRyH1/g21pP1ZH0QFbtiV4z9DSxH+8UuXhTUk4K52QvY9aBgeQk/D0qQ7O6U3Wwi88F3SYbN7z8785+BWJbBYHAiM8WysjA7JegkeuSTvwALXepIC1lWOmaE1H/Lzzkr5ZllWO7y7Bzy52KeRh2ic+YnReQvxhKNOkTnTBWd951I+0vnfSfCWvkh+n3Lzq/fa0WVRJpfHRJ1fg0Gg+G/UYf12ODT8yvo45VYFaOfn/PZBV7ilWa/b8cO7NR7jBIPZH/EJ3wWqKMaa7A2xnf9OICDniYUQ7aOFmzFNr+DSfJG9nf8wE+BOnoxjH1+BzP84rQH4oFXfS9ee2CDdTyG4zgRtaa96nvx2gO7ZJ/CaZyJqiPIvveN7HqI2NQRNLLrYYHsi7iEy4J1OJ3pXhH0ejD4w6hNH7PDru/Z0YhN2KyYT/RcmpTc/3Z9z44u7MYe96ExET2XZOuQ7XtDOIwj7kNjInouyfYxlb5nMOgwFWLf4AzO4hzOK/xvodvjdFki8zKu4Cqu4bpCHbo9TpdNMm/hG77jNu4o1KHS42TPQafxe2Texxd8xQOMaPwfJoPs+eE0/pDMR3iMJ3iKZx7V4Xa/97KOazLf4C3e4T0+eFSH2/0+Wc5Bc7/3jppU7qtYlxp0Ej1ayd+G7UleR5j8fdif5HX85Qt8ODPJECcAAA==
+   H4sIAAAAAAAAE+2SOQ6AMAwEN3kOZ8VZhev/X2IbJKrIJIYGj7SlNVqtAeMP1A5omNZ96x3pm5g54i08UDKV1/Nu9O3MEfF29PXMoOiVEOhbmFXZm7px7m9INta8u7hv/KSD5Dek5HZIRbODYRjvcAISAUqVYAkAAA==
   </data>
  </layer>
  <objectgroup id="6" name="walls">
@@ -49,13 +49,13 @@
   </object>
  </objectgroup>
  <objectgroup id="7" name="exits">
-  <object id="50" name="forest" x="62" y="206" width="34.6667" height="55.6667">
+  <object id="50" name="forest" x="349.559" y="620.319" width="102.742" height="55.6667">
    <properties>
     <property name="entry_point" value="portal_a_below"/>
     <property name="to_map" value="grasslands"/>
    </properties>
   </object>
-  <object id="51" name="vilage" x="352" y="254.667" width="34.6667" height="193.333">
+  <object id="51" name="vilage" x="363.737" y="-34.0654" width="101.568" height="46.6194">
    <properties>
     <property name="entry_point" value="portal_b_above"/>
     <property name="to_map" value="grasslands"/>
@@ -63,10 +63,10 @@
   </object>
  </objectgroup>
  <objectgroup id="8" name="entry_points">
-  <object id="52" name="left_entry" x="109" y="234.667">
+  <object id="52" name="forest_entry" x="401.254" y="597.343">
    <point/>
   </object>
-  <object id="53" name="right_entry" x="336" y="337.667">
+  <object id="53" name="vilage_entry" x="415.812" y="45.4135">
    <point/>
   </object>
  </objectgroup>
