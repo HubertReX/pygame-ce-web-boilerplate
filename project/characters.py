@@ -3,13 +3,15 @@ import pygame
 from pygame.math import Vector2 as vec
 from settings import HEIGHT, INPUTS, ANIMATION_SPEED, DEBUG, COLORS
 # from state import Scene, State
+import game
+import state
 
 class NPC_State():
     def enter_state(self, character: "NPC"):
-        pass
+        raise NotImplemented(f"'enter_state' is not implemented. NPC_State should be used only as abstract class")
     
     def update(self, dt: float, character: "NPC"):
-        pass
+        raise NotImplemented(f"'update' is not implemented. NPC_State should be used only as abstract class")
 
 class Idle(NPC_State):
     def __init__(self):
@@ -38,7 +40,7 @@ class Run(NPC_State):
         character.physics(dt)
 
 class NPC(pygame.sprite.Sprite):
-    def __init__(self, game, scene, groups: list[pygame.sprite.Group], pos: list[int], name: str):
+    def __init__(self, game: game.Game, scene: state.Scene, groups: list[pygame.sprite.Group], pos: list[int], name: str):
         super().__init__(groups)
         
         self.game = game
@@ -151,7 +153,7 @@ class NPC(pygame.sprite.Sprite):
                 self.game.render_text(msg, (0, HEIGHT - 25 - i * 25))
         
 class Player(NPC):
-    def __init__(self, game, scene, groups: list[pygame.sprite.Group], pos: list[int], name: str):
+    def __init__(self, game: game.Game, scene: state.Scene, groups: list[pygame.sprite.Group], pos: list[int], name: str):
         super().__init__(game, scene, groups, pos, name)
         
     def movement(self):

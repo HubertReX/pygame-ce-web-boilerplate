@@ -1,12 +1,10 @@
-from re import S
 from settings import *
 import pygame
 import pygame_menu
-from characters import Player
 from objects import Wall, Collider
 from transition import Transition
 from pytmx.util_pygame import load_pygame
-
+import game
 import pyscroll
 import pyscroll.data
 from pyscroll.group import PyscrollGroup
@@ -18,7 +16,7 @@ ABOUT = [
 ]
 
 class State:
-    def __init__(self, game) -> None:
+    def __init__(self, game: game.Game) -> None:
         self.game = game
         self.prev_state: "State" | None = None
 
@@ -44,7 +42,7 @@ class State:
                 self.game.render_text(msg, (10, 25 * i))
     
 class MenuScreen(State):
-    def __init__(self, game, name: str) -> None:
+    def __init__(self, game: game.Game, name: str) -> None:
         super().__init__(game)
         self.name = name
         # print("MenuScreen.__init__", game.__class__.__name__)
@@ -128,7 +126,7 @@ class MainMenuScreen(MenuScreen):
         super().update(dt, events)
 
         if INPUTS['select']:
-            self.game.reset_inputs()
+            # self.game.reset_inputs()
             widget = self.menu.get_current().get_selected_widget()
             if widget:
                 self.game.reset_inputs()
@@ -220,7 +218,7 @@ class AboutMenuScreen(MenuScreen):
     
     
 class SplashScreen(State):
-    def __init__(self, game, name: str="") -> None:
+    def __init__(self, game: game.Game, name: str="") -> None:
         super().__init__(game)
         self.name = name
         
@@ -252,7 +250,7 @@ class SplashScreen(State):
         self.game.render_text(f"press space to continue", (WIDTH / 2, HEIGHT / 2 + TILE_SIZE + 10), centred=True)
             
 class Scene(State):
-    def __init__(self, game, current_scene: str, entry_point: str) -> None:
+    def __init__(self, game: game.Game, current_scene: str, entry_point: str) -> None:
         super().__init__(game)
         self.current_scene = current_scene
         self.entry_point = entry_point
@@ -264,6 +262,8 @@ class Scene(State):
         self.exit_sprites = pygame.sprite.Group()
         
         self.transition = Transition(self)
+        # moved here to avoid circular imports
+        from characters import Player
         self.player: Player = Player(self.game, self, [self.update_sprites, self.draw_sprites], (WIDTH / 2, HEIGHT / 2), "monochrome_ninja")
         
         # load data from pytmx

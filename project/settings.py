@@ -11,8 +11,8 @@ if __import__("sys").platform == "emscripten":
     IS_WEB = True
 
 IS_FULLSCREEN = False
-FPS_CAP = 30
-ANIMATION_SPEED = 15 # frames per second
+FPS_CAP = 130
+ANIMATION_SPEED = 10 # frames per second
 WIDTH, HEIGHT = 900, 480
 DEBUG = True
 # FONT = "assets/homespun.ttf"

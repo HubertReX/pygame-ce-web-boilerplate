@@ -6,8 +6,6 @@ import asyncio
 import os
 from settings import *
 import pygame, sys
-from state import SplashScreen, MainMenuScreen
-
 
 
 class Game:
@@ -15,11 +13,11 @@ class Game:
         pygame.init()
         self.clock: pygame.time.Clock = pygame.time.Clock()
         # https://coderslegacy.com/python/pygame-rpg-improving-performance/
-        self.flags: int = 0 # pygame.RESIZABLE
+        self.flags: int =  pygame.SCALED | pygame.DOUBLEBUF # pygame.RESIZABLE
         if IS_FULLSCREEN:
-            self.flags = pygame.FULLSCREEN | pygame.SCALED | pygame.DOUBLEBUF
+            self.flags = self.flags | pygame.FULLSCREEN
             
-        self.screen: pygame.Surface = pygame.display.set_mode((WIDTH*SCALE, HEIGHT*SCALE), self.flags)
+        self.screen: pygame.Surface = pygame.display.set_mode((WIDTH*SCALE, HEIGHT*SCALE), self.flags, vsync=1)
         pygame.display.set_caption("GAME")
         self.canvas: pygame.Surface = pygame.Surface((WIDTH, HEIGHT)) #.convert_alpha()
         # self.canvas.set_colorkey(COLORS["black"])
@@ -27,7 +25,9 @@ class Game:
         self.running = True
 
         self.states = []
-        self.splash_screen = MainMenuScreen(self, "MainMenu")
+        # moved here to avoid circular imports
+        import state
+        self.splash_screen = state.MainMenuScreen(self, "MainMenu")
         self.states.append(self.splash_screen)
         if USE_CUSTOM_CURSOR:
             self.cursor_img = pygame.transform.scale(pygame.image.load("assets/aim.png"), (32,32)).convert_alpha()
