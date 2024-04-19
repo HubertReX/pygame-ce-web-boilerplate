@@ -1,7 +1,7 @@
 import os
 import pygame
 from pygame.math import Vector2 as vec
-from settings import HEIGHT, INPUTS, ANIMATION_SPEED, DEBUG, COLORS
+from settings import HEIGHT, INPUTS, ANIMATION_SPEED, SHOW_DEBUG_INFO, COLORS
 # from state import Scene, State
 import game
 import state
@@ -148,7 +148,7 @@ class NPC(pygame.sprite.Sprite):
         self.feet.midbottom = self.rect.midbottom
         
     def debug(self, msgs: list[str]):
-        if DEBUG:
+        if SHOW_DEBUG_INFO:
             for i, msg in enumerate(msgs):
                 self.game.render_text(msg, (0, HEIGHT - 25 - i * 25))
         

@@ -13,11 +13,17 @@ class Game:
         pygame.init()
         self.clock: pygame.time.Clock = pygame.time.Clock()
         # https://coderslegacy.com/python/pygame-rpg-improving-performance/
-        self.flags: int =  pygame.SCALED | pygame.DOUBLEBUF # pygame.RESIZABLE
+        self.flags: int =  0
+        if not IS_WEB:
+            self.flags = self.flags | pygame.SCALED | pygame.DOUBLEBUF # pygame.RESIZABLE
+            
         if IS_FULLSCREEN:
             self.flags = self.flags | pygame.FULLSCREEN
-            
-        self.screen: pygame.Surface = pygame.display.set_mode((WIDTH*SCALE, HEIGHT*SCALE), self.flags, vsync=1)
+        
+        if IS_WEB:
+            self.screen: pygame.Surface = pygame.display.set_mode((WIDTH*SCALE, HEIGHT*SCALE), self.flags)
+        else:
+            self.screen: pygame.Surface = pygame.display.set_mode((WIDTH*SCALE, HEIGHT*SCALE), self.flags, vsync=1)
         pygame.display.set_caption("GAME")
         self.canvas: pygame.Surface = pygame.Surface((WIDTH, HEIGHT)) #.convert_alpha()
         # self.canvas.set_colorkey(COLORS["black"])
@@ -35,11 +41,23 @@ class Game:
             self.cursor_img.set_alpha(150)
             pygame.mouse.set_visible(False)
         
-    def render_text(self, text: str, pos: list[int], color: str="white", font: pygame.font=None, centred=False):
+    def render_text(self, text: str, pos: list[int], color: str="white", bg_color: str=None, shadow: bool=True, font: pygame.font=None, centred=False):
         if not font:
             font = self.font
         surf: pygame.surface.Surface = font.render(text, False, color)
         rect: pygame.Rect = surf.get_rect(center = pos) if centred else surf.get_rect(topleft = pos)
+        
+        if bg_color:
+            bg_rect: pygame.Rect = rect.copy().inflate(15, 15)
+            pygame.draw.rect(self.canvas, bg_color, bg_rect)
+        
+        if shadow:
+            surf_shadow: pygame.surface.Surface = font.render(text, False, "black")
+            rect_shadow = rect.copy()
+            rect_shadow[0] += 2
+            rect_shadow[1] += 2
+            self.canvas.blit(surf_shadow, rect_shadow)
+            
         self.canvas.blit(surf, rect)
         
     def custom_cursor(self, screen: pygame.Surface):
@@ -75,6 +93,8 @@ class Game:
             pygame.image.save(self.screen, file_name)
             print(f"screenshot saved to file '{file_name}'")
             
+            self.reset_inputs()
+            
         
     def get_inputs(self) -> list[pygame.event.EventType]:
         events = pygame.event.get()
@@ -85,58 +105,15 @@ class Game:
                 sys.exit()
                 
             if event.type == pygame.KEYDOWN:
-                if event.key in[pygame.K_ESCAPE, pygame.K_q]:
-                    INPUTS['quit'] = True
-                    # self.running = False
-                elif event.key == pygame.K_SPACE:
-                    INPUTS['select'] = True
-                elif event.key == pygame.K_RETURN:
-                    INPUTS['accept'] = True
-                elif event.key == pygame.K_F1:
-                    INPUTS['help'] = True
-                elif event.key == pygame.K_F12:
-                    INPUTS['screenshot'] = True
-                elif event.key == pygame.K_r:
-                    INPUTS['reload'] = True
-                elif event.key == pygame.K_EQUALS:
-                    INPUTS['zoom_in'] = True
-                elif event.key == pygame.K_MINUS:
-                    INPUTS['zoom_out'] = True
-                elif event.key in [pygame.K_LEFT, pygame.K_a]:
-                    INPUTS['left'] = True
-                elif event.key in [pygame.K_RIGHT, pygame.K_d]:
-                    INPUTS['right'] = True
-                elif event.key in [pygame.K_UP, pygame.K_w]:
-                    INPUTS['up'] = True
-                elif event.key in [pygame.K_DOWN, pygame.K_s]:
-                    INPUTS['down'] = True
-            
+                for action, definition in ACTIONS.items():
+                    if event.key in definition["keys"]:
+                        INPUTS[action] = True
+                        s            
             elif event.type == pygame.KEYUP:
-                if event.key == pygame.K_ESCAPE:
-                    INPUTS['quit'] = False
-                elif event.key == pygame.K_SPACE:
-                    INPUTS['select'] = False
-                elif event.key == pygame.K_RETURN:
-                    INPUTS['accept'] = False
-                elif event.key == pygame.K_F1:
-                    INPUTS['help'] = False
-                elif event.key == pygame.K_F12:
-                    INPUTS['screenshot'] = False
-                elif event.key == pygame.K_r:
-                    INPUTS['reload'] = False
-                elif event.key == pygame.K_EQUALS:
-                    INPUTS['zoom_in'] = False
-                elif event.key == pygame.K_MINUS:
-                    INPUTS['zoom_out'] = False
-                elif event.key in [pygame.K_LEFT, pygame.K_a]:
-                    INPUTS['left'] = False
-                elif event.key in [pygame.K_RIGHT, pygame.K_d]:
-                    INPUTS['right'] = False
-                elif event.key in [pygame.K_UP, pygame.K_w]:
-                    INPUTS['up'] = False
-                elif event.key in [pygame.K_DOWN, pygame.K_s]:
-                    INPUTS['down'] = False
-                    
+                for action, definition in ACTIONS.items():
+                    if event.key in definition["keys"]:
+                        INPUTS[action] = False
+                                    
             elif event.type == pygame.MOUSEWHEEL:
                 if event.y == 1:
                     INPUTS["scroll_up"] = True
@@ -162,7 +139,7 @@ class Game:
         return events
                     
     def reset_inputs(self):
-        for key in KEYS:
+        for key in ACTIONS.keys():
             INPUTS[key] = False
             
     async def loop(self):
