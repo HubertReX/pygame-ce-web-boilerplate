@@ -184,8 +184,7 @@ async def custom_site():
     # cleanup
     screen.fill( (0,0,0,0) )
     pygame.display.flip()
-    # https://github.com/broofa/mime/blob/main/types/standard.ts
-    # platform.window.download("test_python.txt", "text/plain;charset=utf-8", "send from Python")
+
     await shell.runpy(main, callback=ui_callback)
 
 
@@ -437,10 +436,10 @@ frameborder="1"
 
     }
 
-    function download(filename, mime_type, text) {
+    function download(filename, mime_type, content) {
         var element = document.createElement('a');
-        // text/plain;charset=utf-8
-        element.setAttribute('href', 'data:' + mime_type + ',' + encodeURIComponent(text));
+        // mime_type for text file: text/plain;charset=utf-8
+        element.setAttribute('href', 'data:' + mime_type + ',' + encodeURIComponent(content));
         element.setAttribute('download', filename);
 
         element.style.display = 'none';
@@ -451,27 +450,21 @@ frameborder="1"
         document.body.removeChild(element);
     }
 
-    async function download_from_browser_fs(filename, mime_type) {
+    function download_from_browser_fs(filename, mime_type) {
         let link = document.createElement('a');
-        link.download = filename.replace(/^.*[\\\/]/, ''); // 'hello.txt';
-        // console.log(VM.FS.readdir("/data/data/project/assets"));
-        let fs_file = await VM.FS.readFile(filename);
+        link.download = filename.replace(/^.*[\\\/]/, ''); 
+        let fs_file = VM.FS.readFile(filename);
         let blob = new Blob([fs_file], {type: mime_type});
-        console.log(blob);
+
         let reader = new FileReader();
-        await reader.readAsDataURL(blob); // converts the blob to base64 and calls onload
+        reader.readAsDataURL(blob); // converts the blob to base64 and calls onload
 
         reader.onload = function() {
-            console.log(reader.result);
             link.href = reader.result; // data url
             link.click();
         };
     }
     
-
-    // await download_binary("/data/data/project/assets/assets/aim.png", "aim.png", "image/png")
-    // await download_binary("/data/data/project/assets/game.py", "game.py", 'text/plain')
-
     function custom_prerun(){
         // no python main and no (MEMFS + VFS) yet.
         console.log(__FILE__, "custom_prerun")

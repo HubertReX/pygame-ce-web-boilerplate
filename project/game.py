@@ -90,8 +90,6 @@ class Game:
         pygame.image.save(self.screen, file_name)
         if IS_WEB:
             import platform
-            # platform.window.download("actions.json", "application/json", json.dumps(ACTIONS, indent=4))
-            # platform.window.console.log(file_name.as_posix())
             platform.window.download_from_browser_fs(file_name.as_posix(), "image/png")
         else:
             print(f"screenshot saved to file '{file_name}'")
