@@ -27,7 +27,7 @@ class Game:
         pygame.display.set_caption("GAME")
         self.canvas: pygame.Surface = pygame.Surface((WIDTH, HEIGHT)) #.convert_alpha()
         # self.canvas.set_colorkey(COLORS["black"])
-        self.font = pygame.font.Font(FONT, TILE_SIZE)
+        self.font = pygame.font.Font(FONTS_DIR, TILE_SIZE * 2)
         self.running = True
 
         self.states = []
@@ -78,7 +78,8 @@ class Game:
     def get_animations(self, path: str):
         animations = {}
         for file in os.listdir(path):
-            animations.update({file: []})
+            if os.path.isdir(os.path.join(path, file)):
+                animations.update({file: []})
         return animations
 
     def save_screenshot(self):
@@ -89,7 +90,7 @@ class Game:
         # and there is access to it, but I don't see a way to download it)
         if not IS_WEB:
             time_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-            file_name = SCREENSHOT_FOLDER / f"screenshot_{time_str}.png"
+            file_name = SCREENSHOTS_DIR / f"screenshot_{time_str}.png"
             pygame.image.save(self.screen, file_name)
             print(f"screenshot saved to file '{file_name}'")
             

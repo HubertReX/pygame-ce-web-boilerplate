@@ -1,7 +1,8 @@
 import os
+from pathlib import Path
 import pygame
 from pygame.math import Vector2 as vec
-from settings import HEIGHT, INPUTS, ANIMATION_SPEED, SHOW_DEBUG_INFO, COLORS
+from settings import CHARACTERS_DIR, HEIGHT, INPUTS, ANIMATION_SPEED, RESOURCES_DIR, SHOW_DEBUG_INFO, COLORS, SPRITE_SHEET_DEFINITION, TILE_SIZE
 # from state import Scene, State
 import game
 import state
@@ -22,7 +23,8 @@ class Idle(NPC_State):
             return Run()
 
     def update(self, dt: float, character: "NPC"):
-        character.animate(f"idle_{character.get_direction_horizontal()}", character.animation_speed * dt)
+        # character.animate(f"idle_{character.get_direction_horizontal()}", character.animation_speed * dt)
+        character.animate(f"idle_{character.get_direction_360()}", character.animation_speed * dt)
         character.movement()
         character.physics(dt)
 
@@ -35,7 +37,8 @@ class Run(NPC_State):
             return Idle()
     
     def update(self, dt: float, character: "NPC"):
-        character.animate(f"run_{character.get_direction_horizontal()}", character.animation_speed * dt)
+        # character.animate(f"run_{character.get_direction_horizontal()}", character.animation_speed * dt)
+        character.animate(f"run_{character.get_direction_360()}", character.animation_speed * dt)
         character.movement()
         character.physics(dt)
 
@@ -48,10 +51,11 @@ class NPC(pygame.sprite.Sprite):
         self.name = name # monochrome_ninja
         self.animations: dict[str, list[pygame.surface.Surface]] = {}
         self.animation_speed = ANIMATION_SPEED
-        self.import_image(f"assets/{self.name}/")
+        # self.import_image(f"assets/{self.name}/")
+        self.import_sprite_sheet(CHARACTERS_DIR / self.name / "SpriteSheet.png")
         self.frame_index: float = 0.0
         # self.image = self.animations["idle"][int(self.frame_index)].convert_alpha()
-        self.image = self.animations["idle"][int(self.frame_index)]
+        self.image = self.animations["idle_down"][int(self.frame_index)]
         self.image.set_colorkey(COLORS["black"])
         self.rect = self.image.get_frect(topleft = pos)
         self.old_rect = pygame.Rect(self.rect)
@@ -63,9 +67,19 @@ class NPC(pygame.sprite.Sprite):
         self.friction: int = -15
         self.state: NPC_State = Idle()
         
-    def import_image(self, path: str):
-        self.animations = self.game.get_animations(path)
+    def import_sprite_sheet(self, path: str):
+        img = pygame.image.load(path).convert_alpha()
         
+        for key, definition in SPRITE_SHEET_DEFINITION.items():
+            self.animations[key] = []
+            for coord in definition:
+                x, y = coord
+                rec = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+                self.animations[key].append(img.subsurface(rec))
+        
+    def import_image(self, path: str):
+        # old implementation used with separate img per frame (e.g. monochrome_ninja)
+        self.animations = self.game.get_animations(path)
         animations_keys = list(self.animations.keys())
         for animation in animations_keys:
             full_path = os.path.join(path, animation)
@@ -114,14 +128,14 @@ class NPC(pygame.sprite.Sprite):
         
         self.acc.x += self.vel.x * self.friction
         self.vel.x += self.acc.x * dt
-        if -0.01 < self.vel.x < 0.01:
-            self.vel.x = 0.0
+        # if -0.01 < self.vel.x < 0.01:
+        #     self.vel.x = 0.0
         self.rect.centerx += self.vel.x * dt #+ (self.vel.x / 2) * dt
         
         self.acc.y += self.vel.y * self.friction
         self.vel.y += self.acc.y * dt
-        if -0.01 < self.vel.y < 0.01:
-            self.vel.y = 0.0
+        # if -0.01 < self.vel.y < 0.01:
+        #     self.vel.y = 0.0
         self.rect.centery += self.vel.y * dt #+ (self.vel.y / 2) * dt
         
         self.feet.midbottom = self.rect.midbottom

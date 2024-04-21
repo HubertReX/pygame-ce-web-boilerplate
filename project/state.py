@@ -129,7 +129,8 @@ class MainMenuScreen(MenuScreen):
         # am = AboutMenuScreen(self.game, "AboutMenu")
         # am.create_menu()
 
-        main_menu.add.button('Play', Scene(self.game, 'grasslands', 'start').enter_state)
+        # main_menu.add.button('Play', Scene(self.game, 'grasslands', 'start').enter_state)
+        main_menu.add.button('Play', Scene(self.game, 'Village', 'start').enter_state)
         main_menu.add.button('Settings', SplashScreen(self.game, "Settings").enter_state)
         main_menu.add.button('About', AboutMenuScreen(self.game, "AboutMenu").enter_state)
         # main_menu.add.button('Close menu', self.deactivate)
@@ -280,10 +281,10 @@ class Scene(State):
         self.transition = Transition(self)
         # moved here to avoid circular imports
         from characters import Player
-        self.player: Player = Player(self.game, self, [self.update_sprites, self.draw_sprites], (WIDTH / 2, HEIGHT / 2), "monochrome_ninja")
+        self.player: Player = Player(self.game, self, [self.update_sprites, self.draw_sprites], (WIDTH / 2, HEIGHT / 2), "GreenNinja") # Woman, GreenNinja, monochrome_ninja
         
         # load data from pytmx
-        tileset_map = load_pygame(RESOURCES_DIR / f"{self.current_scene}.tmx")
+        tileset_map = load_pygame(MAPS_DIR / f"{self.current_scene}.tmx")
 
         # setup level geometry with simple pygame rectangles, loaded from pytmx
         self.layers = []
@@ -327,7 +328,7 @@ class Scene(State):
             size=self.game.screen.get_size(),
             clamp_camera=True, # camera stops at map borders (no black area around), player needs to be stopped separately
         )
-        self.map_layer.zoom = 2
+        self.map_layer.zoom = ZOOM_LEVEL
         
 
         # pyscroll supports layered rendering.  our map has 3 'under'
@@ -335,7 +336,7 @@ class Scene(State):
         # sprites are always drawn over the tiles of the layer they are
         # on.  since we want the sprite to be on top of layer 2, we set
         # the default layer for sprites as 2.
-        self.group = PyscrollGroup(map_layer=self.map_layer, default_layer=2)        
+        self.group = PyscrollGroup(map_layer=self.map_layer, default_layer=3)        
         
         # put the player in the center of the map
         # self.player.rect.topleft = self.map_layer.map_rect.center
