@@ -85,16 +85,18 @@ class Game:
     def save_screenshot(self):
         # save current screen to SCREENSHOT_FOLDER as PNG with timestamp in name
         
-        # prevent from taking screenshots in web browser
-        # (it actually works, the file is saved in virtual FS 
-        # and there is access to it, but I don't see a way to download it)
-        if not IS_WEB:
-            time_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-            file_name = SCREENSHOTS_DIR / f"screenshot_{time_str}.png"
-            pygame.image.save(self.screen, file_name)
+        time_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_name = SCREENSHOTS_DIR / f"screenshot_{time_str}.png"
+        pygame.image.save(self.screen, file_name)
+        if IS_WEB:
+            import platform
+            # platform.window.download("actions.json", "application/json", json.dumps(ACTIONS, indent=4))
+            # platform.window.console.log(file_name.as_posix())
+            platform.window.download_from_browser_fs(file_name.as_posix(), "image/png")
+        else:
             print(f"screenshot saved to file '{file_name}'")
             
-            self.reset_inputs()
+        self.reset_inputs()
             
         
     def get_inputs(self) -> list[pygame.event.EventType]:

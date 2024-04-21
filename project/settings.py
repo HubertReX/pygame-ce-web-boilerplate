@@ -1,5 +1,4 @@
 from typing import Any
-from xml.dom.pulldom import CHARACTERS
 import pygame
 from pygame.math import Vector2 as vec
 from pygame.colordict import THECOLORS as COLORS
@@ -28,7 +27,7 @@ ACTIONS = {
     'select':     {"show": None,         "msg": "select",     "keys": [pygame.K_SPACE]},
     'accept':     {"show": None,         "msg": "accept",     "keys": [pygame.K_RETURN]},
     'help':       {"show": ["F1", 'h'],  "msg": "help",       "keys": [pygame.K_F1,    pygame.K_h]},
-    'screenshot': {"show": ([] if IS_WEB else ["F12"]),      "msg": "screenshot", "keys": [pygame.K_F12]},
+    'screenshot': {"show": ["F12"],      "msg": "screenshot", "keys": [pygame.K_F12]},
     'reload':     {"show": ([] if IS_WEB else ["r "]),       "msg": "reload map", "keys": [pygame.K_r]},
     'zoom_in':    {"show": ["+ "],       "msg": "zoom in",    "keys": [pygame.K_EQUALS]},
     'zoom_out':   {"show": ["- "],       "msg": "zoom out",   "keys": [pygame.K_MINUS]},
@@ -50,7 +49,11 @@ for key in ACTIONS.keys():
 
 # define configuration variables here
 CURRENT_DIR = Path(__file__).parent
-SCREENSHOTS_DIR = CURRENT_DIR / ".." / "screenshots"
+if IS_WEB:
+    SCREENSHOTS_DIR = CURRENT_DIR 
+else:
+    SCREENSHOTS_DIR = CURRENT_DIR / ".." / "screenshots"
+    
 ASSETS_DIR = CURRENT_DIR / "assets"
 FONTS_DIR = ASSETS_DIR / "fonts" / "font.ttf" # homespun
 
