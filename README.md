@@ -27,24 +27,43 @@ Precision icons created by [redempticon - Flaticon](https://www.flaticon.com/fre
 ## Features
 
 * runs in web (itch.io and GitHub Pages) thanks to [pygbag](https://pygame-web.github.io/)
-* implemented fine state machin
+* implemented finite state machine
 * usage of menus [pygame-menu](https://github.com/ppizarror/pygame-menu) (patched - gfxdraw not working in WEB)
 * partial mouse support (in menus)
 * [Tiled](https://www.mapeditor.org/) map loading [pytmx](https://github.com/bitcraft/pytmx)
-* Map reloading, scrolling and zooming [pyscroll](https://github.com/bitcraft/pyscroll)
-* map with layers (occlusion and collision)
+* Map live reloading, scrolling and zooming [pyscroll](https://github.com/bitcraft/pyscroll)
+* map with layers (occlusion, collision, player start, exits)
 * custom mouse cursor
 * animated sprites
-* separation keys from actions
+* separation keys bindings from actions
 * scene transitions
 * automatic screenshots
 
 ## Ideas for future
 
+Features:
+
 * ~~list key bindings~~ ✅
-* add enemies
+* create global config json with schema
+* add UI (health bar, stats)
+* add particles system (leafs, wind, footsteps, smoke)
+* add day/night cycle and weather (rain)
 * add fog of war and/or line of sight
-* add particles system
+* add light sources (camp fire, torch, houses)
+* add NPC, enemies and animals with movements (add shadows)
+* add item drop/pickup and inventory system
+* add fighting system
+* add sprites destroying system
+* add dialog system
+* add merchants
+* add cutscenes
+* add music and sfx
+* add better menus
+* add dungeons (generated procedurally)
+* make more maps
+
+Bugs:
+
 * ~~screenshot of menu not working (showing only part of menu)~~ ✅
 * ~~some key events are lost (action is repeated even key is not pressed in menus)~~ ✅
 * continuing game after exiting menu causes loosing player's position on small map (works on grassland though)

@@ -1,4 +1,4 @@
-
+#!../.venv/bin/python
 # /// script
 # dependencies = [
 #  "pytmx",

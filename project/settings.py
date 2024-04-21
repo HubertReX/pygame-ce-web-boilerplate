@@ -94,5 +94,3 @@ SPRITE_SHEET_DEFINITION = {
 def load_image(filename: str) -> Any:
     return pygame.image.load(str(RESOURCES_DIR / filename))
 
-# MAP_PATH = RESOURCES_DIR / "grasslands.tmx"
-# MAP_PATH = RESOURCES_DIR / "small.tmx"
