@@ -4,6 +4,8 @@ from pygame.math import Vector2 as vec
 from pygame.colordict import THECOLORS as COLORS
 from pathlib import Path
 
+GAME_NAME = "THE GAME"
+
 # Need a flag to handle differently when game is run in desktop mode or in a web browser
 IS_WEB = False
 # local storage in web version for high score table
@@ -61,6 +63,8 @@ ASSET_PACK = "NinjaAdventure"
 RESOURCES_DIR = ASSETS_DIR / ASSET_PACK
 MAPS_DIR = RESOURCES_DIR / "maps"
 CHARACTERS_DIR = RESOURCES_DIR / "characters"
+
+PROGRAM_ICON = ASSETS_DIR / "icon.png"
 
 SPRITE_SHEET_DEFINITION = {
     "idle_down":  [(0,0)],

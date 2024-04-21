@@ -12,6 +12,11 @@ class Game:
     def __init__(self) -> None:
         pygame.init()
         self.clock: pygame.time.Clock = pygame.time.Clock()
+        
+        pygame.display.set_caption(GAME_NAME)
+        program_icon = pygame.image.load(PROGRAM_ICON)
+        pygame.display.set_icon(program_icon)
+        
         # https://coderslegacy.com/python/pygame-rpg-improving-performance/
         self.flags: int =  0
         if not IS_WEB:
@@ -24,7 +29,6 @@ class Game:
             self.screen: pygame.Surface = pygame.display.set_mode((WIDTH*SCALE, HEIGHT*SCALE), self.flags)
         else:
             self.screen: pygame.Surface = pygame.display.set_mode((WIDTH*SCALE, HEIGHT*SCALE), self.flags, vsync=1)
-        pygame.display.set_caption("GAME")
         self.canvas: pygame.Surface = pygame.Surface((WIDTH, HEIGHT)) #.convert_alpha()
         # self.canvas.set_colorkey(COLORS["black"])
         self.font = pygame.font.Font(FONTS_DIR, TILE_SIZE * 2)

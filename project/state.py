@@ -280,7 +280,7 @@ class Scene(State):
         
         self.transition = Transition(self)
         # moved here to avoid circular imports
-        from characters import Player
+        from characters import Player, NPC
         self.player: Player = Player(self.game, self, [self.update_sprites, self.draw_sprites], (WIDTH / 2, HEIGHT / 2), "GreenNinja") # Woman, GreenNinja, monochrome_ninja
         
         # load data from pytmx
@@ -311,9 +311,12 @@ class Scene(State):
                 Collider([self.exit_sprites], (obj.x, obj.y), (obj.width, obj.height), obj.name, obj.to_map, obj.entry_point)
         
         self.entry_points = {}
+        self.NPC = []
         if "entry_points" in self.layers:
             for obj in tileset_map.get_layer_by_name("entry_points"):
                 self.entry_points[obj.name] = vec(obj.x, obj.y)
+                if obj.name != "start":
+                    self.NPC.append(NPC(self.game, self, [self.update_sprites, self.draw_sprites], (obj.x, obj.y), obj.name))
                 
         if self.entry_point in self.entry_points:
             ep = self.entry_points[self.entry_point]
@@ -343,6 +346,7 @@ class Scene(State):
 
         # add our player to the group
         self.group.add(self.player)
+        self.group.add(self.NPC)
     
     def go_to_scene(self):
         self.exit_state()
@@ -359,7 +363,7 @@ class Scene(State):
         # for sprite in self.group.sprites():
         #     if sprite.rect.collidelist(self.walls) > -1:
         #         sprite.move_back(dt)
-        if self.player.feet.collidelist(self.walls) > -1:
+        if self.player.feet.collidelist(self.walls + self.NPC) > -1:
             self.player.move_back(dt)
 
         # switch to splash screen        

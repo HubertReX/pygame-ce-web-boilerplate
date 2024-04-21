@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="0" nextlayerid="8" nextobjectid="2">
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="0" nextlayerid="8" nextobjectid="7">
  <tileset firstgid="1" source="tilesets/Water.tsx"/>
  <tileset firstgid="477" source="tilesets/Floor.tsx"/>
  <tileset firstgid="1049" source="tilesets/Field.tsx"/>
@@ -128,6 +128,21 @@
  <objectgroup id="7" name="exits"/>
  <objectgroup id="5" name="entry_points">
   <object id="1" name="start" x="71.6494" y="118.787">
+   <point/>
+  </object>
+  <object id="2" name="Woman" x="183.037" y="139.491">
+   <point/>
+  </object>
+  <object id="5" name="Villager3" x="144.113" y="89.8015">
+   <point/>
+  </object>
+  <object id="6" name="Villager4" x="328.378" y="293.942">
+   <point/>
+  </object>
+  <object id="4" name="Villager2" x="311.815" y="165.578">
+   <point/>
+  </object>
+  <object id="3" name="Villager1" x="59.6411" y="268.683">
    <point/>
   </object>
  </objectgroup>

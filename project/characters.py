@@ -57,7 +57,7 @@ class NPC(pygame.sprite.Sprite):
         # self.image = self.animations["idle"][int(self.frame_index)].convert_alpha()
         self.image = self.animations["idle_down"][int(self.frame_index)]
         self.image.set_colorkey(COLORS["black"])
-        self.rect = self.image.get_frect(topleft = pos)
+        self.rect = self.image.get_frect(center = pos)
         self.old_rect = pygame.Rect(self.rect)
         self.feet = pygame.Rect(0, 0, self.rect.width * 0.5, 8)
         self.speed: int = 160
@@ -123,6 +123,9 @@ class NPC(pygame.sprite.Sprite):
         if angle < 180: return "right"
         else: return "left"
         
+    def movement(self):
+        return
+
     def physics(self, dt: float):
         self.old_rect.topleft = self.rect.topleft
         
