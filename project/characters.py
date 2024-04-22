@@ -6,44 +6,14 @@ from settings import CHARACTERS_DIR, HEIGHT, INPUTS, ANIMATION_SPEED, RESOURCES_
 # from state import Scene, State
 import game
 import state
+import scene
+import npc_state
 
-class NPC_State():
-    def enter_state(self, character: "NPC"):
-        raise NotImplemented(f"'enter_state' is not implemented. NPC_State should be used only as abstract class")
-    
-    def update(self, dt: float, character: "NPC"):
-        raise NotImplemented(f"'update' is not implemented. NPC_State should be used only as abstract class")
-
-class Idle(NPC_State):
-    def __init__(self):
-        super().__init__()
-
-    def enter_state(self, character: "NPC"):
-        if character.vel.magnitude() > 1:
-            return Run()
-
-    def update(self, dt: float, character: "NPC"):
-        # character.animate(f"idle_{character.get_direction_horizontal()}", character.animation_speed * dt)
-        character.animate(f"idle_{character.get_direction_360()}", character.animation_speed * dt)
-        character.movement()
-        character.physics(dt)
-
-class Run(NPC_State):
-    def __init__(self):
-        super().__init__()
-
-    def enter_state(self, character: "NPC"):
-        if character.vel.magnitude() < 1:
-            return Idle()
-    
-    def update(self, dt: float, character: "NPC"):
-        # character.animate(f"run_{character.get_direction_horizontal()}", character.animation_speed * dt)
-        character.animate(f"run_{character.get_direction_360()}", character.animation_speed * dt)
-        character.movement()
-        character.physics(dt)
+##########################################################################################################################
+#MARK: NPC
 
 class NPC(pygame.sprite.Sprite):
-    def __init__(self, game: game.Game, scene: state.Scene, groups: list[pygame.sprite.Group], pos: list[int], name: str):
+    def __init__(self, game: game.Game, scene: scene.Scene, groups: list[pygame.sprite.Group], pos: list[int], name: str):
         super().__init__(groups)
         
         self.game = game
@@ -65,7 +35,7 @@ class NPC(pygame.sprite.Sprite):
         self.acc = vec()
         self.vel = vec()
         self.friction: int = -15
-        self.state: NPC_State = Idle()
+        self.state: npc_state.NPC_State = npc_state.Idle()
         
     def import_sprite_sheet(self, path: str):
         img = pygame.image.load(path).convert_alpha()
@@ -168,9 +138,11 @@ class NPC(pygame.sprite.Sprite):
         if SHOW_DEBUG_INFO:
             for i, msg in enumerate(msgs):
                 self.game.render_text(msg, (0, HEIGHT - 25 - i * 25))
-        
+
+##########################################################################################################################
+#MARK: Player        
 class Player(NPC):
-    def __init__(self, game: game.Game, scene: state.Scene, groups: list[pygame.sprite.Group], pos: list[int], name: str):
+    def __init__(self, game: game.Game, scene: scene.Scene, groups: list[pygame.sprite.Group], pos: list[int], name: str):
         super().__init__(game, scene, groups, pos, name)
         
     def movement(self):

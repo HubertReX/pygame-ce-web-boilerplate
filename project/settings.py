@@ -1,10 +1,17 @@
 from typing import Any
+from xml.etree.ElementTree import VERSION
 import pygame
 from pygame.math import Vector2 as vec
 from pygame.colordict import THECOLORS as COLORS
 from pathlib import Path
 
+VERSION = 0.1
 GAME_NAME = "THE GAME"
+ABOUT = [
+    f'Version: {VERSION}',
+    f'Author: Hubert Nafalski',
+    f'WWW: https://hubertnafalski.itch.io/'
+]
 
 # Need a flag to handle differently when game is run in desktop mode or in a web browser
 IS_WEB = False

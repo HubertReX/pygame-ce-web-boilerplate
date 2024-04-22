@@ -36,8 +36,8 @@ class Game:
 
         self.states = []
         # moved here to avoid circular imports
-        import state
-        self.splash_screen = state.MainMenuScreen(self, "MainMenu")
+        import menus
+        self.splash_screen = menus.MainMenuScreen(self, "MainMenu")
         self.states.append(self.splash_screen)
         if USE_CUSTOM_CURSOR:
             self.cursor_img = pygame.transform.scale(pygame.image.load("assets/aim.png"), (32,32)).convert_alpha()
