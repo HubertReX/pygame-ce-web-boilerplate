@@ -61,7 +61,8 @@ class MenuScreen(State):
             f"Menu   : {self.name}",
             f"Scenes : {len(self.game.states)}",
         ]
-        self.debug(msgs)
+        if SHOW_DEBUG_INFO:
+            self.debug(msgs)
             
 ##########################################################################################################################
 #MARK: MainMenuScreen

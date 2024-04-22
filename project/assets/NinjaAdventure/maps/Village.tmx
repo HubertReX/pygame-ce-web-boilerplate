@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="0" nextlayerid="8" nextobjectid="7">
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="0" nextlayerid="9" nextobjectid="13">
  <tileset firstgid="1" source="tilesets/Water.tsx"/>
  <tileset firstgid="477" source="tilesets/Floor.tsx"/>
  <tileset firstgid="1049" source="tilesets/Field.tsx"/>
@@ -136,14 +136,29 @@
   <object id="5" name="Villager3" x="144.113" y="89.8015">
    <point/>
   </object>
-  <object id="6" name="Villager4" x="328.378" y="293.942">
+  <object id="6" name="Villager4" x="424.751" y="267.104">
    <point/>
   </object>
-  <object id="4" name="Villager2" x="311.815" y="165.578">
+  <object id="4" name="Villager2" x="43.9434" y="198.809">
    <point/>
   </object>
-  <object id="3" name="Villager1" x="59.6411" y="268.683">
+  <object id="3" name="Villager1" x="90.2015" y="108.242">
    <point/>
+  </object>
+ </objectgroup>
+ <objectgroup id="8" name="waypoints">
+  <object id="8" name="Villager3" x="152.628" y="106.085">
+   <polygon points="0,0 0,190.062 239.752,190.062 239.919,-34.2132 159.662,-34.2881 159.834,-0.828157"/>
+  </object>
+  <object id="9" name="Villager1" x="89.0534" y="102.066">
+   <polygon points="0.360172,4.00797 223.597,2.70809 223.38,-30.4161 336.695,-30.0911 337.101,-65.4684 370.039,-65.4684 369.963,-30.9808 370.039,-54.0826 336.83,-54.056 336.505,-30.4711 223.57,-30.5527 223.813,2.73644"/>
+  </object>
+  <object id="10" name="Villager2" x="39.741" y="200.816" width="96.0447" height="69.7034"/>
+  <object id="11" name="Woman" x="183.579" y="136.165">
+   <polyline points="0,0 99.2868,0 0,0"/>
+  </object>
+  <object id="12" name="Villager4" x="423.894" y="263.819">
+   <polyline points="0,0 0.163689,-46.016 0.405252,0.405252"/>
   </object>
  </objectgroup>
 </map>

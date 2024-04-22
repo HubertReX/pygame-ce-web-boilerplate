@@ -1,24 +1,35 @@
 import os
-from pathlib import Path
+import random
 import pygame
 from pygame.math import Vector2 as vec
-from settings import CHARACTERS_DIR, HEIGHT, INPUTS, ANIMATION_SPEED, RESOURCES_DIR, SHOW_DEBUG_INFO, COLORS, SPRITE_SHEET_DEFINITION, TILE_SIZE
+from settings import *
+# from settings import CHARACTERS_DIR, HEIGHT, INPUTS, ANIMATION_SPEED, RESOURCES_DIR, SHOW_DEBUG_INFO, COLORS, SPRITE_SHEET_DEFINITION, TILE_SIZE
 # from state import Scene, State
 import game
-import state
 import scene
 import npc_state
+from objects import Shadow
 
 ##########################################################################################################################
 #MARK: NPC
 
 class NPC(pygame.sprite.Sprite):
-    def __init__(self, game: game.Game, scene: scene.Scene, groups: list[pygame.sprite.Group], pos: list[int], name: str):
+    def __init__(
+            self, 
+            game: game.Game, 
+            scene: scene.Scene, 
+            groups: list[pygame.sprite.Group], 
+            shadow_group: pygame.sprite.Group,
+            pos: list[int], 
+            name: str, 
+            waypoints: tuple[Point] = ()
+        ):
         super().__init__(groups)
         
         self.game = game
         self.scene = scene
         self.name = name # monochrome_ninja
+        self.shadow = Shadow(shadow_group, (0,0), [TILE_SIZE - 2, 6])
         self.animations: dict[str, list[pygame.surface.Surface]] = {}
         self.animation_speed = ANIMATION_SPEED
         # self.import_image(f"assets/{self.name}/")
@@ -30,11 +41,18 @@ class NPC(pygame.sprite.Sprite):
         self.rect = self.image.get_frect(center = pos)
         self.old_rect = pygame.Rect(self.rect)
         self.feet = pygame.Rect(0, 0, self.rect.width * 0.5, 8)
-        self.speed: int = 160
-        self.force: int = 2000
+        self.waypoints: tuple[Point] = waypoints
+        self.waypoints_cnt: int = len(waypoints)
+        # self.current_waypoint: Point | None = (self.way_points[0] if self.way_points_cnt > 0 else None)
+        self.current_waypoint_no: int = 0
+        self.speed_walk: int = 50
+        self.speed_run: int = 70
+        self.speed: int = random.choice([self.speed_walk, self.speed_run])
+        self.force: int = 2000 # random.choice([self.force_walk, self.force_run]) # 350 => speed = 23 # 800 => speed = 53 + random.randint(-200, 200)
         self.acc = vec()
         self.vel = vec()
-        self.friction: int = -15
+        self.friction: int = -12
+        self.is_jumping = False
         self.state: npc_state.NPC_State = npc_state.Idle()
         
     def import_sprite_sheet(self, path: str):
@@ -44,8 +62,15 @@ class NPC(pygame.sprite.Sprite):
             self.animations[key] = []
             for coord in definition:
                 x, y = coord
+                # shadow_surf = pygame.Surface((TILE_SIZE, TILE_SIZE+4))
+                # shadow_surf.set_colorkey("black")
+                
+                # pygame.draw.ellipse(shadow_surf, (10,10,10), (1, TILE_SIZE-3, TILE_SIZE-2, 6))
                 rec = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
-                self.animations[key].append(img.subsurface(rec))
+                img_part = img.subsurface(rec)
+                # shadow_surf.blit(img_part, (0,0,TILE_SIZE,TILE_SIZE))
+                # self.animations[key].append(shadow_surf)
+                self.animations[key].append(img_part)
         
     def import_image(self, path: str):
         # old implementation used with separate img per frame (e.g. monochrome_ninja)
@@ -94,7 +119,19 @@ class NPC(pygame.sprite.Sprite):
         else: return "left"
         
     def movement(self):
-        return
+        if self.waypoints_cnt > 0:
+            npc_pos = vec(self.feet.centerx, self.feet.bottom)
+            current_way_point_vec = vec(self.waypoints[self.current_waypoint_no])
+            # print(f"Distance to way point {self.current_way_point}: {current_way_point_vec.distance_squared_to(npc_pos):5.0f}")
+            if current_way_point_vec.distance_squared_to(npc_pos) < 3.0 ** 2:
+                self.current_waypoint_no += 1
+                if self.current_waypoint_no >= self.waypoints_cnt:
+                    self.current_waypoint_no = 0
+                # print(f"New way point: {self.current_way_point}")
+            direction = current_way_point_vec - npc_pos
+            direction = direction.normalize() * self.force
+            self.acc.x = direction.x
+            self.acc.y = direction.y
 
     def physics(self, dt: float):
         self.old_rect.topleft = self.rect.topleft
@@ -103,18 +140,24 @@ class NPC(pygame.sprite.Sprite):
         self.vel.x += self.acc.x * dt
         # if -0.01 < self.vel.x < 0.01:
         #     self.vel.x = 0.0
-        self.rect.centerx += self.vel.x * dt #+ (self.vel.x / 2) * dt
         
         self.acc.y += self.vel.y * self.friction
         self.vel.y += self.acc.y * dt
         # if -0.01 < self.vel.y < 0.01:
         #     self.vel.y = 0.0
-        self.rect.centery += self.vel.y * dt #+ (self.vel.y / 2) * dt
-        
-        self.feet.midbottom = self.rect.midbottom
         
         if self.vel.magnitude() >= self.speed:
             self.vel = self.vel.normalize() * self.speed
+            
+        self.rect.centerx += self.vel.x * dt + (self.vel.x / 2) * dt
+        self.rect.centery += self.vel.y * dt + (self.vel.y / 2) * dt
+        
+        self.feet.midbottom = self.rect.midbottom
+        self.shadow.rect.center = self.rect.midbottom
+        if self.is_jumping:
+            # self.shadow.rect.centerx = self.rect.centerx
+            self.shadow.rect.centery = self.rect.bottom + (TILE_SIZE)
+            self.feet.centery = self.rect.bottom + (TILE_SIZE)
 
     def change_state(self):
         new_state = self.state.enter_state(self)
@@ -133,6 +176,11 @@ class NPC(pygame.sprite.Sprite):
         # self.debug([f"{self.rect.topleft=}", f"{self.old_rect.topleft=}"])
         self.rect.topleft = self.old_rect.topleft
         self.feet.midbottom = self.rect.midbottom
+        self.shadow.rect.center = self.old_rect.midbottom
+        if self.is_jumping:
+            self.shadow.rect.centery = self.old_rect.bottom + (TILE_SIZE)
+            self.feet.centery = self.old_rect.bottom + (TILE_SIZE)
+            
         
     def debug(self, msgs: list[str]):
         if SHOW_DEBUG_INFO:
@@ -142,10 +190,23 @@ class NPC(pygame.sprite.Sprite):
 ##########################################################################################################################
 #MARK: Player        
 class Player(NPC):
-    def __init__(self, game: game.Game, scene: scene.Scene, groups: list[pygame.sprite.Group], pos: list[int], name: str):
-        super().__init__(game, scene, groups, pos, name)
+    def __init__(
+            self, 
+            game: game.Game, 
+            scene: scene.Scene, 
+            groups: list[pygame.sprite.Group],
+            shadow_group: pygame.sprite.Group,
+            pos: list[int], 
+            name: str
+        ):
+        super().__init__(game, scene, groups, shadow_group, pos, name)
+        # self.friction: int = -10
+        self.speed_run  *= 1.2
+        self.speed_walk *= 1.2
+        self.speed = self.speed_walk
         
     def movement(self):
+        # return
         if INPUTS["left"]:
             self.acc.x = -self.force
         elif INPUTS["right"]:
@@ -160,7 +221,7 @@ class Player(NPC):
         else:
             self.acc.y = 0
                     
-    def exit_scene(self):
+    def check_scene_exit(self):
         for exit in self.scene.exit_sprites:
             if self.feet.colliderect(exit.rect):
                 self.scene.new_scene = exit.to_map
@@ -169,5 +230,5 @@ class Player(NPC):
                 # self.scene.go_to_scene()
                 
     def update(self, dt: float):
-        self.exit_scene()
+        self.check_scene_exit()
         super().update(dt)

@@ -36,8 +36,10 @@ class State:
         raise NotImplementedError("Subclasses should implement this!")
         
     def debug(self, msgs: list[str]):
-        if SHOW_DEBUG_INFO:
-            for i, msg in enumerate(msgs):
-                self.game.render_text(msg, (10, 25 * i))
+        global SHOW_DEBUG_INFO
+        # print(f"STATE {SHOW_DEBUG_INFO=}")
+        # if SHOW_DEBUG_INFO:
+        for i, msg in enumerate(msgs):
+            self.game.render_text(msg, (10, 25 * i))
     
     

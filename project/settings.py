@@ -1,9 +1,17 @@
+from collections import namedtuple
 from typing import Any
 from xml.etree.ElementTree import VERSION
 import pygame
 from pygame.math import Vector2 as vec
 from pygame.colordict import THECOLORS as COLORS
 from pathlib import Path
+
+from functools import partial
+from rich import inspect, pretty, print
+from rich import traceback
+help = partial(inspect, help=True, methods=True)
+pretty.install()
+
 
 VERSION = 0.1
 GAME_NAME = "THE GAME"
@@ -13,6 +21,8 @@ ABOUT = [
     f'WWW: https://hubertnafalski.itch.io/'
 ]
 
+Point = namedtuple("Point", ["x", "y"])
+
 # Need a flag to handle differently when game is run in desktop mode or in a web browser
 IS_WEB = False
 # local storage in web version for high score table
@@ -20,6 +30,7 @@ if __import__("sys").platform == "emscripten":
     IS_WEB = True
 
 IS_FULLSCREEN = False
+IS_PAUSED = False
 FPS_CAP = 30
 ANIMATION_SPEED = 10 # frames per second
 WIDTH, HEIGHT = 1280, 1024
@@ -32,18 +43,22 @@ ZOOM_LEVEL = 3
 USE_CUSTOM_CURSOR = False
 ACTIONS = {
     'quit':       {"show": ["ESC", "q"], "msg": "back",       "keys": [pygame.K_ESCAPE,    pygame.K_q]},
-    'debug':      {"show": ["`       "], "msg": "debug",      "keys": [pygame.K_BACKQUOTE]},
+    'debug':      {"show": ["`", "z"],   "msg": "debug",      "keys": [pygame.K_BACKQUOTE, pygame.K_z]},
+    'run':        {"show": ["CTRL"],     "msg": "toggle run", "keys": [pygame.K_LCTRL]},
+    'jump':       {"show": ["SPACE"],    "msg": "jump",       "keys": [pygame.K_SPACE]},
     'select':     {"show": None,         "msg": "select",     "keys": [pygame.K_SPACE]},
-    'accept':     {"show": None,         "msg": "accept",     "keys": [pygame.K_RETURN]},
+    'accept':     {"show": None,         "msg": "accept",     "keys": [pygame.K_RETURN, pygame.K_KP_ENTER]},
     'help':       {"show": ["F1", 'h'],  "msg": "help",       "keys": [pygame.K_F1,    pygame.K_h]},
     'screenshot': {"show": ["F12"],      "msg": "screenshot", "keys": [pygame.K_F12]},
     'reload':     {"show": ([] if IS_WEB else ["r "]),       "msg": "reload map", "keys": [pygame.K_r]},
-    'zoom_in':    {"show": ["+ "],       "msg": "zoom in",    "keys": [pygame.K_EQUALS]},
-    'zoom_out':   {"show": ["- "],       "msg": "zoom out",   "keys": [pygame.K_MINUS]},
+    'zoom_in':    {"show": ["+ "],       "msg": "zoom in",    "keys": [pygame.K_EQUALS, pygame.K_KP_PLUS]},
+    'zoom_out':   {"show": ["- "],       "msg": "zoom out",   "keys": [pygame.K_MINUS, pygame.K_KP_MINUS]},
     'left':       {"show": None,         "msg": "",           "keys": [pygame.K_LEFT,  pygame.K_a]},
     'right':      {"show": None,         "msg": "",           "keys": [pygame.K_RIGHT, pygame.K_d]},
     'up':         {"show": None,         "msg": "",           "keys": [pygame.K_UP,    pygame.K_w]},
     'down':       {"show": None,         "msg": "",           "keys": [pygame.K_DOWN,  pygame.K_s]},
+    
+    # 'pause':      {"show": None,        "msg": "",           "keys": []},
     
     'scroll_up':   {"show": None,        "msg": "",           "keys": []},
     'left_click':  {"show": None,        "msg": "",           "keys": []},
@@ -64,7 +79,11 @@ else:
     SCREENSHOTS_DIR = CURRENT_DIR / ".." / "screenshots"
     
 ASSETS_DIR = CURRENT_DIR / "assets"
-FONTS_DIR = ASSETS_DIR / "fonts" / "font.ttf" # homespun
+MAIN_FONT = ASSETS_DIR / "fonts" / "font.ttf" # homespun
+
+FONT_SIZE_SMALL = 24 # TILE_SIZE * 2
+FONT_SIZE_MEDIUM = 38
+FONT_SIZE_LARGE = 55
 
 ASSET_PACK = "NinjaAdventure"
 RESOURCES_DIR = ASSETS_DIR / ASSET_PACK
