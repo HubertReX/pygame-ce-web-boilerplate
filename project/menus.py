@@ -52,7 +52,7 @@ class MenuScreen(State):
         # if INPUTS['quit']:
         #     self.deactivate()
             
-    def draw(self, screen: pygame.Surface):
+    def draw(self, screen: pygame.Surface, dt: float):
         # screen.fill(COLORS["blue"])
         # self.game.render_text(f"{self.__class__.__name__}: press space to continue", (WIDTH / 2, HEIGHT / 2), centred=True)
         if self.menu.is_enabled:

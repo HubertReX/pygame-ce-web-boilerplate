@@ -31,6 +31,7 @@ if __import__("sys").platform == "emscripten":
 
 IS_FULLSCREEN = False
 IS_PAUSED = False
+USE_ALPHA_FILTER = False
 FPS_CAP = 30
 ANIMATION_SPEED = 10 # frames per second
 WIDTH, HEIGHT = 1280, 1024
@@ -39,20 +40,32 @@ SHOW_HELP_INFO = False
 
 TILE_SIZE = 16
 SCALE = 1
-ZOOM_LEVEL = 3
+ZOOM_LEVEL = 3.25
 USE_CUSTOM_CURSOR = False
 ACTIONS = {
     'quit':       {"show": ["ESC", "q"], "msg": "back",       "keys": [pygame.K_ESCAPE,    pygame.K_q]},
     'debug':      {"show": ["`", "z"],   "msg": "debug",      "keys": [pygame.K_BACKQUOTE, pygame.K_z]},
+    'alpha':      {"show": ["f"],        "msg": "filter",     "keys": [pygame.K_f]},
     'run':        {"show": ["CTRL"],     "msg": "toggle run", "keys": [pygame.K_LCTRL]},
     'jump':       {"show": ["SPACE"],    "msg": "jump",       "keys": [pygame.K_SPACE]},
     'select':     {"show": None,         "msg": "select",     "keys": [pygame.K_SPACE]},
     'accept':     {"show": None,         "msg": "accept",     "keys": [pygame.K_RETURN, pygame.K_KP_ENTER]},
     'help':       {"show": ["F1", 'h'],  "msg": "help",       "keys": [pygame.K_F1,    pygame.K_h]},
     'screenshot': {"show": ["F12"],      "msg": "screenshot", "keys": [pygame.K_F12]},
-    'reload':     {"show": ([] if IS_WEB else ["r "]),       "msg": "reload map", "keys": [pygame.K_r]},
-    'zoom_in':    {"show": ["+ "],       "msg": "zoom in",    "keys": [pygame.K_EQUALS, pygame.K_KP_PLUS]},
-    'zoom_out':   {"show": ["- "],       "msg": "zoom out",   "keys": [pygame.K_MINUS, pygame.K_KP_MINUS]},
+    'reload':     {"show": ([] if IS_WEB else ["r"]),       "msg": "reload map", "keys": [pygame.K_r]},
+    'zoom_in':    {"show": ["+"],       "msg": "zoom in",    "keys": [pygame.K_EQUALS, pygame.K_KP_PLUS]},
+    'zoom_out':   {"show": ["-"],       "msg": "zoom out",   "keys": [pygame.K_MINUS, pygame.K_KP_MINUS]},
+    # 'quit':       {"show": ["ESC", "q"], "msg": "back",       "keys": [pygame.K_ESCAPE,    pygame.K_q]},
+    # 'debug':      {"show": ["`", "z  "],   "msg": "debug",      "keys": [pygame.K_BACKQUOTE, pygame.K_z]},
+    # 'run':        {"show": ["CTRL  "],     "msg": "toggle run", "keys": [pygame.K_LCTRL]},
+    # 'jump':       {"show": ["SPACE "],    "msg": "jump",       "keys": [pygame.K_SPACE]},
+    # 'select':     {"show": None,         "msg": "select",     "keys": [pygame.K_SPACE]},
+    # 'accept':     {"show": None,         "msg": "accept",     "keys": [pygame.K_RETURN, pygame.K_KP_ENTER]},
+    # 'help':       {"show": ["F1", 'h '],  "msg": "help",       "keys": [pygame.K_F1,    pygame.K_h]},
+    # 'screenshot': {"show": ["F12   "],      "msg": "screenshot", "keys": [pygame.K_F12]},
+    # 'reload':     {"show": ([] if IS_WEB else ["r     "]),       "msg": "reload map", "keys": [pygame.K_r]},
+    # 'zoom_in':    {"show": ["+     "],       "msg": "zoom in",    "keys": [pygame.K_EQUALS, pygame.K_KP_PLUS]},
+    # 'zoom_out':   {"show": ["-     "],       "msg": "zoom out",   "keys": [pygame.K_MINUS, pygame.K_KP_MINUS]},
     'left':       {"show": None,         "msg": "",           "keys": [pygame.K_LEFT,  pygame.K_a]},
     'right':      {"show": None,         "msg": "",           "keys": [pygame.K_RIGHT, pygame.K_d]},
     'up':         {"show": None,         "msg": "",           "keys": [pygame.K_UP,    pygame.K_w]},
@@ -79,16 +92,24 @@ else:
     SCREENSHOTS_DIR = CURRENT_DIR / ".." / "screenshots"
     
 ASSETS_DIR = CURRENT_DIR / "assets"
-MAIN_FONT = ASSETS_DIR / "fonts" / "font.ttf" # homespun
+# font_name = "font"
+font_name = "font_pixel"
+MAIN_FONT = ASSETS_DIR / "fonts" / f"{font_name}.ttf" # homespun
 
-FONT_SIZE_SMALL = 24 # TILE_SIZE * 2
-FONT_SIZE_MEDIUM = 38
-FONT_SIZE_LARGE = 55
+FONT_SIZES_DICT = {
+    "font":       [24, 38, 55],
+    "font_pixel": [12, 16, 155],
+}
+FONT_SIZE_SMALL  = FONT_SIZES_DICT[font_name][0]
+FONT_SIZE_MEDIUM = FONT_SIZES_DICT[font_name][1]
+FONT_SIZE_LARGE  = FONT_SIZES_DICT[font_name][2]
+TEXT_ROW_SPACING  = 1.4 
 
 ASSET_PACK = "NinjaAdventure"
 RESOURCES_DIR = ASSETS_DIR / ASSET_PACK
 MAPS_DIR = RESOURCES_DIR / "maps"
 CHARACTERS_DIR = RESOURCES_DIR / "characters"
+PARTICLES_DIR = RESOURCES_DIR / "particles"
 
 PROGRAM_ICON = ASSETS_DIR / "icon.png"
 

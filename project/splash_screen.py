@@ -30,7 +30,7 @@ class SplashScreen(State):
             self.game.reset_inputs()
             self.exit_state()
             
-    def draw(self, screen: pygame.Surface):
+    def draw(self, screen: pygame.Surface, dt: float):
         screen.fill(COLORS["blue"])
         self.game.render_text(f"{self.__class__.__name__}-{self.name}", (WIDTH / 2, HEIGHT / 2), centred=True)
         self.game.render_text(f"press space to continue", (WIDTH / 2, HEIGHT / 2 + TILE_SIZE + 10), centred=True)

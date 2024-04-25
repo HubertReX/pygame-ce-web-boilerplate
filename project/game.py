@@ -6,6 +6,8 @@ import asyncio
 import os
 from settings import *
 import pygame, sys
+if IS_WEB:
+    from opengl_shader import OpenGL_shader
 
 traceback.install(show_locals=True, width=150, )  
 
@@ -19,7 +21,7 @@ class Game:
         pygame.display.set_icon(program_icon)
         
         # https://coderslegacy.com/python/pygame-rpg-improving-performance/
-        self.flags: int =  0
+        self.flags: int = 0
         if not IS_WEB:
             self.flags = self.flags | pygame.SCALED | pygame.DOUBLEBUF # pygame.RESIZABLE
             
@@ -27,10 +29,17 @@ class Game:
             self.flags = self.flags | pygame.FULLSCREEN
         
         if IS_WEB:
+            self.flags = self.flags | pygame.OPENGL | pygame.DOUBLEBUF
             self.screen: pygame.Surface = pygame.display.set_mode((WIDTH*SCALE, HEIGHT*SCALE), self.flags)
         else:
             self.screen: pygame.Surface = pygame.display.set_mode((WIDTH*SCALE, HEIGHT*SCALE), self.flags, vsync=1)
-        self.canvas: pygame.Surface = pygame.Surface((WIDTH, HEIGHT)) #.convert_alpha()
+            
+            
+        self.canvas: pygame.Surface = self.screen # pygame.Surface((WIDTH, HEIGHT), self.flags, 32) # , 32 .convert_alpha() # pygame.SRCALPHA
+
+        size = pygame.display.get_window_size()
+        if IS_WEB:
+            self.shader = OpenGL_shader(size, Path("shaders") / "fs.glsl", Path("shaders") / "vs.glsl")
         # self.canvas.set_colorkey(COLORS["black"])
         self.fonts = {}
         font_sizes = [FONT_SIZE_SMALL, FONT_SIZE_MEDIUM, FONT_SIZE_LARGE]
@@ -41,21 +50,33 @@ class Game:
         self.running = True
 
         self.states = []
+        self.custom_events = {}
         # moved here to avoid circular imports
-        import menus
-        self.splash_screen = menus.MainMenuScreen(self, "MainMenu")
-        self.states.append(self.splash_screen)
+        # import menus
+        # start_state = menus.MainMenuScreen(self, "MainMenu")
+        # self.states.append(start_state)
+        import scene
+        start_state = scene.Scene(self, 'Village', 'start')
+        start_state.enter_state()
+        # self.states.append(start_state)
+        self.states.append(start_state)
         if USE_CUSTOM_CURSOR:
             self.cursor_img = pygame.transform.scale(pygame.image.load("assets/aim.png"), (32,32)).convert_alpha()
             self.cursor_img = pygame.transform.invert(self.cursor_img)
             self.cursor_img.set_alpha(150)
             pygame.mouse.set_visible(False)
+            
+    
+    def render_panel(self, rect: pygame.Rect, color: str):
+            surf = pygame.Surface(rect.size, pygame.SRCALPHA)
+            pygame.draw.rect(surf, color, surf.get_rect())
+            self.canvas.blit(surf, rect)        
         
     def render_text(
             self, text: str, 
             pos: list[int], 
             color: str="white", 
-            bg_color: str=None, 
+            bg_color: list[int] | None = None, 
             shadow: bool=True, 
             font_size: int=0, 
             centred=False
@@ -66,13 +87,17 @@ class Game:
             
         surf: pygame.surface.Surface = selected_font.render(text, False, color)
         rect: pygame.Rect = surf.get_rect(center = pos) if centred else surf.get_rect(topleft = pos)
-        
+
+        # alpha blend semitransparent rect in background 8 pixels bigger than rect       
         if bg_color:
-            bg_rect: pygame.Rect = rect.copy().inflate(15, 15)
-            pygame.draw.rect(self.canvas, bg_color, bg_rect)
-        
+            bg_rect: pygame.Rect = rect.copy().inflate(18, 18).move(-4, -4)
+            bg_surf = pygame.Surface(bg_rect.size, pygame.SRCALPHA) #, pygame.SRCALPHA)
+            pygame.draw.rect(bg_surf, bg_color, bg_surf.get_rect())
+            self.canvas.blit(bg_surf, bg_rect)        
+
+        # add black outline (render black text moved by offset to all 4 directions)
         if shadow:
-            surf_shadow: pygame.surface.Surface = selected_font.render(text, False, "black")
+            surf_shadow: pygame.surface.Surface = selected_font.render(text, False, (0,0,0,0))
             offset = 2
             self.canvas.blit(surf_shadow, (rect.x-offset, rect.y))
             self.canvas.blit(surf_shadow, (rect.x+offset, rect.y))
@@ -123,7 +148,9 @@ class Game:
             
         # self.reset_inputs()
             
-        
+    def register_custom_event(self, custom_event_id: int, handle_function: callable):
+        self.custom_events[custom_event_id] = handle_function
+    
     def get_inputs(self) -> list[pygame.event.EventType]:
         events = pygame.event.get()
         for event in events:
@@ -141,6 +168,9 @@ class Game:
             elif event.type in [pygame.WINDOWSHOWN, pygame.WINDOWMAXIMIZED, pygame.WINDOWRESTORED, pygame.WINDOWFOCUSGAINED]:
                 IS_PAUSED = False
                 # print(f"{IS_PAUSED=}")
+            elif event.type in self.custom_events:
+                handler = self.custom_events[event.type]
+                handler()
             elif event.type == pygame.KEYDOWN:
                 for action, definition in ACTIONS.items():
                     if event.key in definition["keys"]:
@@ -187,15 +217,18 @@ class Game:
             # print(f"loop {IS_PAUSED=}")
             if not IS_PAUSED:
                 self.states[-1].update(dt, events)
-                self.canvas.fill("black")
-                self.states[-1].draw(self.canvas)
-                self.custom_cursor(self.canvas)
-                # self.screen.fill("black")
-            else:
-                self.render_text("PAUSED", (WIDTH*SCALE // 2, HEIGHT*SCALE // 2), font_size=FONT_SIZE_LARGE, centred=True)
+            self.canvas.fill((0,0,0,0))
+            self.states[-1].draw(self.canvas, dt)
+            self.custom_cursor(self.canvas)
+            
+            if IS_PAUSED:
+                self.render_text("PAUSED", (WIDTH*SCALE // 2, HEIGHT*SCALE // 2), font_size=FONT_SIZE_LARGE, centred=True, bg_color=(10,10,10,150), shadow=True)
             
             self.screen.blit(pygame.transform.scale_by(self.canvas, SCALE), (0,0))
-            pygame.display.update()
+            if IS_WEB:
+                self.shader.render(self.screen, dt)
+            else:
+                pygame.display.update()
             await asyncio.sleep(0)
             
             

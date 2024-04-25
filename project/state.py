@@ -17,6 +17,9 @@ class State:
     def exit_state(self):
         if len(self.game.states) > 1:
             self.game.states.pop()
+        else:
+            if not IS_WEB:
+                self.game.running = False
             
     def update(self, dt: float, events: list[pygame.event.EventType]):
         if INPUTS['quit'] and not IS_WEB:
@@ -32,14 +35,17 @@ class State:
             SHOW_HELP_INFO = not SHOW_HELP_INFO
             self.game.reset_inputs()
             
-    def draw(self, screen: pygame.Surface):
+    def draw(self, screen: pygame.Surface, dt: float):
         raise NotImplementedError("Subclasses should implement this!")
         
     def debug(self, msgs: list[str]):
         global SHOW_DEBUG_INFO
         # print(f"STATE {SHOW_DEBUG_INFO=}")
         # if SHOW_DEBUG_INFO:
+        rect = pygame.Rect(10 - 4, -10 + FONT_SIZE_MEDIUM * TEXT_ROW_SPACING, 400, (len(msgs) + 1) * FONT_SIZE_MEDIUM * TEXT_ROW_SPACING)
+        self.game.render_panel(rect, (10,10,10,150))
+
         for i, msg in enumerate(msgs):
-            self.game.render_text(msg, (10, 25 * i))
+            self.game.render_text(msg, (10, FONT_SIZE_MEDIUM * TEXT_ROW_SPACING * (i + 1)))
     
     

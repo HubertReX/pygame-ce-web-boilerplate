@@ -10,6 +10,7 @@ class Transition():
         self.fade_out_speed: int = 800
         self.fade_in_speed: int = 200
         self.alpha: int = 255
+        self.radius: int = 0
         
     def update(self, dt: float):
         if self.exiting:
@@ -18,8 +19,25 @@ class Transition():
                 self.scene.go_to_scene()
         else:
             self.alpha = max(0, self.alpha - int(self.fade_in_speed * dt))
+        # self.radius = (WIDTH//2) -  (WIDTH//2) * (self.alpha/255)
+        self.radius = (WIDTH*1.7) -  (WIDTH*1.7) * (self.alpha/255)
             
     def draw(self, screen: pygame.Surface):
         self.fade_surf.fill(COLORS["black"])
         self.fade_surf.set_alpha(self.alpha)
         screen.blit(self.fade_surf, (0,0))
+        # pygame.draw.circle(screen, (10,10,10), (WIDTH//2, HEIGHT//2), self.radius)
+        
+class TransitionCircle(Transition):
+
+    def draw(self, screen: pygame.Surface):
+        self.fade_surf.fill((1,1,1))
+        pos = self.scene.player.rect.center
+        offset_x, offset_y = self.scene.map_layer.get_center_offset()
+        zoom = self.scene.map_layer.zoom
+        # pygame.draw.circle(self.fade_surf, (0,0,0), (WIDTH//2, HEIGHT//2), self.radius)
+        pygame.draw.circle(self.fade_surf, (0,0,0), ((pos[0] + offset_x) * zoom, (pos[1] + offset_y) * zoom), self.radius)
+        # self.fade_surf.set_alpha(self.alpha)
+        self.fade_surf.set_colorkey((0,0,0))
+        screen.blit(self.fade_surf, (0,0))
+        # pygame.draw.circle(screen, (10,10,10), (WIDTH//2, HEIGHT//2), self.radius)

@@ -1,9 +1,11 @@
+import random
+from particles import ParticleImageBased
 from state import State
 from settings import *
 import pygame
 import game
 from objects import Wall, Collider
-from transition import Transition
+from transition import Transition, TransitionCircle
 from pytmx.util_pygame import load_pygame
 import pyscroll
 import pyscroll.data
@@ -19,12 +21,18 @@ class Scene(State):
         self.entry_point = entry_point
         self.new_scene: str = "0"
         
+        spawn_rect = pygame.Rect(0,0,WIDTH, HEIGHT // 2)
+        leaf_img = pygame.image.load(PARTICLES_DIR / "Leaf_single.png").convert_alpha()
+        self.particle_leaf = ParticleImageBased(screen=self.game.canvas, img=leaf_img, rate=1, scale_speed=0.125, alpha_speed=0.125, rotation_speed=0.0, spawn_rect=spawn_rect)
+        self.game.register_custom_event(self.particle_leaf.custom_event_id, self.add_leafs)
+        
         self.shadow_sprites = pygame.sprite.Group()
         self.draw_sprites = pygame.sprite.Group()
         self.block_sprites = pygame.sprite.Group()
         self.exit_sprites = pygame.sprite.Group()
         
-        self.transition = Transition(self)
+        # self.transition = Transition(self)
+        self.transition = TransitionCircle(self)
         # moved here to avoid circular imports
         from characters import Player, NPC
         self.player: Player = Player(self.game, self, [self.draw_sprites], self.shadow_sprites, (WIDTH / 2, HEIGHT / 2), "GreenNinja") # Woman, GreenNinja, monochrome_ninja
@@ -73,7 +81,8 @@ class Scene(State):
             for obj in tileset_map.get_layer_by_name("entry_points"):
                 self.entry_points[obj.name] = vec(obj.x, obj.y)
                 waypoint = waypoints.get(obj.name, ())
-                if obj.name != "start":
+                
+                if obj.sprite_name != "null":
                     self.NPC.append(NPC(self.game, self, [self.draw_sprites], self.shadow_sprites, (obj.x, obj.y), obj.name, waypoint))
                 
         if self.entry_point in self.entry_points:
@@ -107,6 +116,9 @@ class Scene(State):
         self.group.add(self.player)
         self.group.add(self.NPC)        
     
+    def add_leafs(self):
+        self.particle_leaf.add_particles(start_pos=pygame.mouse.get_pos(), move_speed=40, move_dir=230 + random.randint(-30, 30), scale=5, lifetime=8)
+
     def go_to_scene(self):
         self.exit_state()
         Scene(self.game, self.new_scene, self.entry_point).enter_state()
@@ -153,6 +165,11 @@ class Scene(State):
             # print(f"{SHOW_DEBUG_INFO=}")
             # self.game.reset_inputs()
             INPUTS['debug'] = False            
+
+        global USE_ALPHA_FILTER
+        if INPUTS['alpha']:
+            USE_ALPHA_FILTER = not USE_ALPHA_FILTER
+            INPUTS['alpha'] = False            
 
         global SHOW_HELP_INFO
         if INPUTS['help']:
@@ -216,13 +233,16 @@ class Scene(State):
             INPUTS['zoom_out'] = False
             
     def show_help(self):
-        i = 0
-        for definition in ACTIONS.values():
-            if definition["show"]:
-                self.game.render_text(f"{', '.join(definition['show'])} - {definition['msg']}", (WIDTH - 300, i * 30), shadow=True)
+        i = 1
+        show_actions = [action for action in ACTIONS.values() if action["show"]]
+        rect = pygame.Rect(WIDTH - 360 - 4, -10 + FONT_SIZE_MEDIUM * TEXT_ROW_SPACING, 368, (len(show_actions) + 1) * FONT_SIZE_MEDIUM * TEXT_ROW_SPACING)
+        self.game.render_panel(rect, (10,10,10,150))
+        # self.game.render_text(" \n"*len(show_actions), (WIDTH - 360, FONT_SIZE_MEDIUM * TEXT_ROW_SPACING), bg_color=(10,10,10,150))
+        for action in show_actions:
+                self.game.render_text(f"{', '.join(action['show']):>9} - {action['msg']}", (WIDTH - 360, i * FONT_SIZE_MEDIUM * TEXT_ROW_SPACING), shadow=True) # 
                 i += 1
     
-    def draw(self, screen: pygame.Surface):
+    def draw(self, screen: pygame.Surface, dt: float):
         # screen.fill(COLORS["red"])
         self.group.center(self.player.rect.center)
         # self.draw_sprites.draw(screen)
@@ -235,11 +255,12 @@ class Scene(State):
         #     screen.blit(self.shadow_surf, pos)
         
         self.group.draw(screen)
+        self.particle_leaf.emit(dt)
         
         self.transition.draw(screen)
         
         if not SHOW_HELP_INFO:
-            self.game.render_text(f"press [h] for help", (WIDTH // 2, HEIGHT - 25), shadow=True, centred=True)
+            self.game.render_text(f"press [h] for help", (WIDTH // 2, HEIGHT - FONT_SIZE_MEDIUM * TEXT_ROW_SPACING), shadow=True, centred=True)
         
         msgs = [
             f"FPS: {self.game.clock.get_fps(): 6.1f}",
@@ -253,9 +274,27 @@ class Scene(State):
                 zoom = self.map_layer.zoom
                 pos = [(npc.feet.centerx + offset_x)*zoom, (npc.feet.bottom + offset_y)*zoom]
                 self.game.render_text(npc.name, pos, font_size=FONT_SIZE_SMALL, centred=True)
-                pos[1] += FONT_SIZE_SMALL
-                self.game.render_text(f"v={npc.vel.magnitude(): 4.1f} j={npc.is_jumping} s={npc.state} vp={npc.current_waypoint_no}", pos, font_size=FONT_SIZE_SMALL, centred=True) 
+                pos[1] += FONT_SIZE_SMALL * TEXT_ROW_SPACING
+                self.game.render_text(f"s={npc.state} j={npc.is_jumping}", pos, font_size=FONT_SIZE_SMALL, centred=True) 
+                pos[1] += FONT_SIZE_SMALL * TEXT_ROW_SPACING
+                self.game.render_text(f"v={npc.vel.magnitude():04.1f} vp={npc.current_waypoint_no}", pos, font_size=FONT_SIZE_SMALL, centred=True) 
                 # a={npc.acc.magnitude():4.1f}
         
         if SHOW_HELP_INFO:
             self.show_help()
+            
+        # alpha filter demo
+        if USE_ALPHA_FILTER: 
+            # radius = 300
+            # circle = pygame.Surface((radius*2, radius*2), pygame.SRCALPHA)   
+            # pygame.draw.rect(circle, (192, 192, 0, 128), (radius, radius), radius)
+            # screen.blit(circle, (radius, radius))
+            h = HEIGHT // 2
+            self.game.render_text("Day",   (0, h - FONT_SIZE_MEDIUM * TEXT_ROW_SPACING))
+            self.game.render_text("Night", (0, h +                    TEXT_ROW_SPACING))
+            half_screen = pygame.Surface((WIDTH, h), pygame.SRCALPHA)   
+            # pygame.draw.rect(half_screen, (192, 192, 0, 128), (radius, radius), radius)
+            half_screen.fill((152, 152, 0, 70))
+            screen.blit(half_screen, (0, 0))    
+            half_screen.fill((0, 0, 102, 120))
+            screen.blit(half_screen, (0, h))    

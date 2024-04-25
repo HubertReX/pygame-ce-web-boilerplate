@@ -37,7 +37,7 @@ class NPC(pygame.sprite.Sprite):
         self.frame_index: float = 0.0
         # self.image = self.animations["idle"][int(self.frame_index)].convert_alpha()
         self.image = self.animations["idle_down"][int(self.frame_index)]
-        self.image.set_colorkey(COLORS["black"])
+        # self.image.set_colorkey(COLORS["black"])
         self.rect = self.image.get_frect(center = pos)
         self.old_rect = pygame.Rect(self.rect)
         self.feet = pygame.Rect(0, 0, self.rect.width * 0.5, 8)
@@ -45,8 +45,8 @@ class NPC(pygame.sprite.Sprite):
         self.waypoints_cnt: int = len(waypoints)
         # self.current_waypoint: Point | None = (self.way_points[0] if self.way_points_cnt > 0 else None)
         self.current_waypoint_no: int = 0
-        self.speed_walk: int = 50
-        self.speed_run: int = 70
+        self.speed_walk: int = 30
+        self.speed_run: int = 40
         self.speed: int = random.choice([self.speed_walk, self.speed_run])
         self.force: int = 2000 # random.choice([self.force_walk, self.force_run]) # 350 => speed = 23 # 800 => speed = 53 + random.randint(-200, 200)
         self.acc = vec()
@@ -201,7 +201,7 @@ class Player(NPC):
         ):
         super().__init__(game, scene, groups, shadow_group, pos, name)
         # self.friction: int = -10
-        self.speed_run  *= 1.2
+        self.speed_run  *= 1.5
         self.speed_walk *= 1.2
         self.speed = self.speed_walk
         

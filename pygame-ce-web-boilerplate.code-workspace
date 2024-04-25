@@ -6,7 +6,10 @@
 	],
 	"settings": {
 		"cSpell.words": [
-			"emscripten"
+			"bottomright",
+			"emscripten",
+			"opengl",
+			"zengl"
 		]
 	}
 }

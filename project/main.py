@@ -13,6 +13,9 @@
 #  "functools",
 #  "rich",
 #  "Pygments",
+#  "zengl",
+#  "struct",
+#  "pathlib",
 # ]
 # ///
 

@@ -1,6 +1,6 @@
 from settings import ANIMATION_SPEED
 
-RUN_SPEED: float = 70.0
+RUN_SPEED: float = 39.0
 
 class NPC_State():
     def enter_state(self, character: "NPC"):

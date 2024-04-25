@@ -13,10 +13,11 @@ class Collider(pygame.sprite.Sprite):
 class Shadow(pygame.sprite.Sprite):
     def __init__(self, groups: list[pygame.sprite.Group], pos: list[int], size: list[int]):
         super().__init__(groups)
-        self.image: pygame.Surface = pygame.Surface((size))
+        self.image: pygame.Surface = pygame.Surface((size)).convert_alpha()
         self.rect: pygame.FRect = self.image.get_frect(topleft = pos)
-        self.image.set_colorkey("black")
-        pygame.draw.ellipse(self.image, (10,10,10), self.rect)
+        self.image.fill((0,0,0,0))
+        # self.image.set_colorkey("black")
+        pygame.draw.ellipse(self.image, (0,0,0,255), self.rect)
         
 class Object(pygame.sprite.Sprite):
     def __init__(self, groups: list[pygame.sprite.Group], pos: list[int], z: str ="blocks", surf=pygame.Surface((TILE_SIZE, TILE_SIZE))):
