@@ -32,12 +32,20 @@ Precision icons created by [redempticon - Flaticon](https://www.flaticon.com/fre
 * partial mouse support (in menus)
 * [Tiled](https://www.mapeditor.org/) map loading [pytmx](https://github.com/bitcraft/pytmx)
 * Map live reloading, scrolling and zooming [pyscroll](https://github.com/bitcraft/pyscroll)
+* transition between maps (Village, VillageHouse)
 * map with layers (occlusion, collision, player start, exits)
+* semi transparent panels and text background (alpha blending)
+* full screen color filter (alpha blending, e.g.: warm sunny light, dark blue at night)
+* particle system (falling leafs, more to come) - currently not working in WEB
+* game auto pause (if window is out of focus)
+* pixel style monospace font
 * custom mouse cursor
-* animated sprites
+* animated sprites with shadows and different moving states (Idle, Walk, Run, Jump)
+* characters follow individual list of waypoints
 * separation keys bindings from actions
-* scene transitions
+* scene transitions (fade in/out, round shutter)
 * automatic screenshots
+* experimental use of OpenGL/WebGL shaders ([zengl](https://github.com/szabolcsdombi/zengl)) for postprocessing effects - for now works only in Web version
 
 ## Ideas for future
 
@@ -46,20 +54,25 @@ Features:
 * ~~list key bindings~~ ✅
 * create global config json with schema
 * add UI (health bar, stats)
-* add particles system (leafs, wind, footsteps, smoke)
+* ~~add particles system~~ ✅ (~~leafs~~ ✅, ~~wind~~ ✅, rain, footsteps, smoke) - WIP ⏳🔄
 * add day/night cycle and weather (rain)
 * add fog of war and/or line of sight
 * add light sources (camp fire, torch, houses)
-* add NPC, enemies and animals with movements (add shadows)
+* ~~add NPC, enemies and animals with movements (add shadows)~~ ✅
+* add movable objects
+* add object destruction
 * add item drop/pickup and inventory system
 * add fighting system
-* add sprites destroying system
 * add dialog system
 * add merchants
 * add cutscenes
+* add game save/load system
+* add game highscore table
+* add game achievements
 * add music and sfx
 * add better menus
 * add dungeons (generated procedurally)
+* add path finding algorithm
 * make more maps
 
 Bugs:
