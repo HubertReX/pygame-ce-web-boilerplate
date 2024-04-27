@@ -42,7 +42,7 @@ class State:
         global SHOW_DEBUG_INFO
         # print(f"STATE {SHOW_DEBUG_INFO=}")
         # if SHOW_DEBUG_INFO:
-        rect = pygame.Rect(10 - 4, -10 + FONT_SIZE_MEDIUM * TEXT_ROW_SPACING, 400, (len(msgs) + 1) * FONT_SIZE_MEDIUM * TEXT_ROW_SPACING)
+        rect = pygame.Rect(10 - 4, -10 + FONT_SIZE_MEDIUM * TEXT_ROW_SPACING, 600, (len(msgs) + 1) * FONT_SIZE_MEDIUM * TEXT_ROW_SPACING)
         self.game.render_panel(rect, (10,10,10,150))
 
         for i, msg in enumerate(msgs):

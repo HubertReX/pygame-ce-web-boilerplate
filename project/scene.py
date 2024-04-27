@@ -11,6 +11,7 @@ import pyscroll
 import pyscroll.data
 from pyscroll.group import PyscrollGroup
 import menus 
+# from threading import Timer
 
 ##########################################################################################################################
 #MARK: State
@@ -21,10 +22,13 @@ class Scene(State):
         self.entry_point = entry_point
         self.new_scene: str = "0"
         
-        spawn_rect = pygame.Rect(0,0,WIDTH, HEIGHT // 2)
+        spawn_rect = pygame.Rect(0, 0, WIDTH, HEIGHT // 2)
         leaf_img = pygame.image.load(PARTICLES_DIR / "Leaf_single.png").convert_alpha()
-        self.particle_leaf = ParticleImageBased(screen=self.game.canvas, img=leaf_img, rate=1, scale_speed=0.125, alpha_speed=0.125, rotation_speed=0.0, spawn_rect=spawn_rect)
-        self.game.register_custom_event(self.particle_leaf.custom_event_id, self.add_leafs)
+        self.particle_leafs = ParticleImageBased(screen=self.game.canvas, img=leaf_img, rate=0.5, scale_speed=0.25, alpha_speed=0.1, rotation_speed=0.0, spawn_rect=spawn_rect)
+        self.particle_leafs.next_run = self.game.time_elapsed + self.particle_leafs.interval
+        # self.game.register_custom_event(self.particle_leaf.custom_event_id, self.add_leafs)
+        # Timer(self.particle_leaf.interval, self.add_leafs).start()
+
         
         self.shadow_sprites = pygame.sprite.Group()
         self.draw_sprites = pygame.sprite.Group()
@@ -58,6 +62,10 @@ class Scene(State):
         #     self.walls.append(pygame.Rect(obj.x, obj.y, obj.width, obj.height))
         
         # under1 layer contains 'walls' - tiles that collide with characters
+        
+        # string with coma separated names of particle systems active in this map
+        self.map_particles = tileset_map.properties.get("particles", "")
+        
         if "walls" in self.layers:
             for x, y, surf in tileset_map.get_layer_by_name("walls").tiles():
                 rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, surf.get_width(), surf.get_height())
@@ -117,7 +125,8 @@ class Scene(State):
         self.group.add(self.NPC)        
     
     def add_leafs(self):
-        self.particle_leaf.add_particles(start_pos=pygame.mouse.get_pos(), move_speed=40, move_dir=230 + random.randint(-30, 30), scale=5, lifetime=8)
+        # move 80 pixels/seconds into south-west (down-left) +/- 30 degree, enlarge 5 x, kill after 4 seconds
+        self.particle_leafs.add_particles(start_pos=pygame.mouse.get_pos(), move_speed=80, move_dir=210 + random.randint(-30, 30), scale=5, lifetime=4)
 
     def go_to_scene(self):
         self.exit_state()
@@ -129,6 +138,12 @@ class Scene(State):
         # self.update_sprites.update(dt)
         self.group.update(dt)
         self.transition.update(dt)
+        
+        if "leafs" in self.map_particles:
+            if self.game.time_elapsed >= self.particle_leafs.next_run:
+                self.particle_leafs.next_run = self.game.time_elapsed + self.particle_leafs.interval
+                self.add_leafs()
+
         # check if the sprite's feet are colliding with wall       
         # sprite must have a rect called feet, and move_back method,
         # otherwise this will fail
@@ -138,11 +153,11 @@ class Scene(State):
         if self.player.feet.collidelist(self.walls) > -1:
             self.player.move_back(dt)
 
-        if not self.player.is_jumping:
+        if not self.player.is_flying:
             if self.player.feet.collidelist(self.NPC) > -1:
                 self.player.move_back(dt)
             
-        if self.player.is_jumping:
+        if self.player.is_flying:
             colliders = self.walls
         else:
             colliders = self.walls + [self.player]
@@ -186,9 +201,28 @@ class Scene(State):
             # self.game.reset_inputs()
         
         if INPUTS["jump"]:
-            self.player.is_jumping = not self.player.is_jumping
-            if self.player.is_jumping:
+            # self.player.is_jumping = not self.player.is_jumping
+            if not self.player.is_jumping:
+                self.player.is_jumping = True
+                # move sprite up (in character physics shadow is offset down to the ground)
+                # self.player.rect.y -= TILE_SIZE
+                self.player.jump()
+                # when airborn move one layer above so it's not colliding with obstacles on ground 
+                self.group.remove(self.player)
+                self.group.add(self.player, layer=4)
+            # else:
+            #     self.player.rect.y += TILE_SIZE
+            #     self.group.remove(self.player)
+            #     self.group.add(self.player, layer=3)
+            
+            INPUTS["jump"] = False
+            
+        if INPUTS["fly"]:
+            self.player.is_flying = not self.player.is_flying
+            if self.player.is_flying:
+                # move sprite up (in character physics shadow is offset down to the ground)
                 self.player.rect.y -= TILE_SIZE
+                # when airborn move one layer above so it's not colliding with obstacles on ground 
                 self.group.remove(self.player)
                 self.group.add(self.player, layer=4)
             else:
@@ -196,7 +230,7 @@ class Scene(State):
                 self.group.remove(self.player)
                 self.group.add(self.player, layer=3)
             
-            INPUTS["jump"] = False
+            INPUTS["fly"] = False
         
         if INPUTS['right_click']:
             self.exit_state()
@@ -235,7 +269,7 @@ class Scene(State):
     def show_help(self):
         i = 1
         show_actions = [action for action in ACTIONS.values() if action["show"]]
-        rect = pygame.Rect(WIDTH - 360 - 4, -10 + FONT_SIZE_MEDIUM * TEXT_ROW_SPACING, 368, (len(show_actions) + 1) * FONT_SIZE_MEDIUM * TEXT_ROW_SPACING)
+        rect = pygame.Rect(WIDTH - 360 - 4, -10 + FONT_SIZE_MEDIUM * TEXT_ROW_SPACING, 358, (len(show_actions) + 1) * FONT_SIZE_MEDIUM * TEXT_ROW_SPACING)
         self.game.render_panel(rect, (10,10,10,150))
         # self.game.render_text(" \n"*len(show_actions), (WIDTH - 360, FONT_SIZE_MEDIUM * TEXT_ROW_SPACING), bg_color=(10,10,10,150))
         for action in show_actions:
@@ -244,7 +278,7 @@ class Scene(State):
     
     def draw(self, screen: pygame.Surface, dt: float):
         # screen.fill(COLORS["red"])
-        self.group.center(self.player.rect.center)
+        self.group.center(self.player.feet.center)
         # self.draw_sprites.draw(screen)
 
         # for npc in self.NPC + [self.player]:
@@ -255,7 +289,8 @@ class Scene(State):
         #     screen.blit(self.shadow_surf, pos)
         
         self.group.draw(screen)
-        self.particle_leaf.emit(dt)
+        if "leafs" in self.map_particles:
+            self.particle_leafs.emit(dt)
         
         self.transition.draw(screen)
         
@@ -265,8 +300,15 @@ class Scene(State):
         msgs = [
             f"FPS: {self.game.clock.get_fps(): 6.1f}",
             f"vel: {self.player.vel.x: 6.1f} {self.player.vel.y: 6.1f}",
+            f"up_vel: {self.player.up_vel: 6.1f} up_acc{self.player.up_acc: 6.1f}",
+            f"offset: {self.player.jumping_offset: 6.1f}",
             # f"col: {self.player.rect.collidelist(self.walls):06.02f}",
+            # f"bored={self.player.state.enter_time: 5.1f} time_elapsed={self.game.time_elapsed: 5.1f}",
+            # f"next_run={self.particle_leaf.next_run: 5.1f} time_elapsed={self.game.time_elapsed: 5.1f}",
+            # f"interval={self.particle_leaf.interval: 5.1f}",
         ]
+        # print(f"up_vel: {self.player.up_vel: 6.1f} up_acc{self.player.up_acc: 6.1f} offset: {self.player.jumping_offset: 6.1f}")
+        
         if SHOW_DEBUG_INFO:
             self.debug(msgs)
             for npc in self.NPC + [self.player]:
@@ -275,10 +317,11 @@ class Scene(State):
                 pos = [(npc.feet.centerx + offset_x)*zoom, (npc.feet.bottom + offset_y)*zoom]
                 self.game.render_text(npc.name, pos, font_size=FONT_SIZE_SMALL, centred=True)
                 pos[1] += FONT_SIZE_SMALL * TEXT_ROW_SPACING
-                self.game.render_text(f"s={npc.state} j={npc.is_jumping}", pos, font_size=FONT_SIZE_SMALL, centred=True) 
+                self.game.render_text(f"s={npc.state} j={npc.is_flying}", pos, font_size=FONT_SIZE_SMALL, centred=True)
                 pos[1] += FONT_SIZE_SMALL * TEXT_ROW_SPACING
                 self.game.render_text(f"v={npc.vel.magnitude():04.1f} vp={npc.current_waypoint_no}", pos, font_size=FONT_SIZE_SMALL, centred=True) 
                 # a={npc.acc.magnitude():4.1f}
+                
         
         if SHOW_HELP_INFO:
             self.show_help()

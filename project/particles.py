@@ -3,7 +3,7 @@ import math
 import pygame, random
 from pygame.math import Vector2 as vec
 
-################################################################################################################################
+#####################################################################################################################
 
 @dataclass
 class Particle():
@@ -18,7 +18,8 @@ class Particle():
     lifetime: int = 1
     time_elapsed: float = 0.0
 
-################################################################################################################################
+#####################################################################################################################
+
 class ParticleImageBased:
     def __init__(
             self,
@@ -44,8 +45,9 @@ class ParticleImageBased:
         # amount of new particles per second
         self.rate = rate
         self.custom_event_id  = pygame.event.custom_type() # pygame.USEREVENT + 1
-        pygame.time.set_timer(self.custom_event_id, int(1000 / rate))
-        
+        # pygame.time.set_timer(self.custom_event_id, int(1000 / rate))
+        self.interval: float = 1 / rate
+        self.next_run: float = 0.0
         
         # scale_speed: 1.0 ==> from 100% to 0% size in 1 second
         self.scale_speed = scale_speed
@@ -119,4 +121,4 @@ class ParticleImageBased:
         particle_copy = [particle for particle in self.particles if particle.lifetime > 0]
         self.particles = particle_copy
 
-################################################################################################################################
+

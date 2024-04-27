@@ -6,7 +6,7 @@ import asyncio
 import os
 from settings import *
 import pygame, sys
-if IS_WEB:
+if USE_SHADERS:
     from opengl_shader import OpenGL_shader
 
 traceback.install(show_locals=True, width=150, )  
@@ -15,6 +15,8 @@ class Game:
     def __init__(self) -> None:
         pygame.init()
         self.clock: pygame.time.Clock = pygame.time.Clock()
+        # time elapsed in seconds (milliseconds as fraction) without pause time
+        self.time_elapsed: float = 0.0
         
         pygame.display.set_caption(GAME_NAME)
         program_icon = pygame.image.load(PROGRAM_ICON)
@@ -22,23 +24,25 @@ class Game:
         
         # https://coderslegacy.com/python/pygame-rpg-improving-performance/
         self.flags: int = 0
-        if not IS_WEB:
-            self.flags = self.flags | pygame.SCALED | pygame.DOUBLEBUF # pygame.RESIZABLE
             
         if IS_FULLSCREEN:
             self.flags = self.flags | pygame.FULLSCREEN
         
         if IS_WEB:
-            self.flags = self.flags | pygame.OPENGL | pygame.DOUBLEBUF
+            if USE_SHADERS:
+                self.flags = self.flags | pygame.OPENGL | pygame.DOUBLEBUF
+            else:
+                self.flags = self.flags | pygame.DOUBLEBUF
+    
             self.screen: pygame.Surface = pygame.display.set_mode((WIDTH*SCALE, HEIGHT*SCALE), self.flags)
         else:
+            self.flags = self.flags | pygame.SCALED | pygame.DOUBLEBUF # pygame.RESIZABLE
             self.screen: pygame.Surface = pygame.display.set_mode((WIDTH*SCALE, HEIGHT*SCALE), self.flags, vsync=1)
-            
             
         self.canvas: pygame.Surface = self.screen # pygame.Surface((WIDTH, HEIGHT), self.flags, 32) # , 32 .convert_alpha() # pygame.SRCALPHA
 
         size = pygame.display.get_window_size()
-        if IS_WEB:
+        if USE_SHADERS:
             self.shader = OpenGL_shader(size, Path("shaders") / "fs.glsl", Path("shaders") / "vs.glsl")
         # self.canvas.set_colorkey(COLORS["black"])
         self.fonts = {}
@@ -57,8 +61,8 @@ class Game:
         # self.states.append(start_state)
         import scene
         start_state = scene.Scene(self, 'Village', 'start')
-        start_state.enter_state()
-        # self.states.append(start_state)
+        # start_state.enter_state()
+        self.states.append(start_state)
         self.states.append(start_state)
         if USE_CUSTOM_CURSOR:
             self.cursor_img = pygame.transform.scale(pygame.image.load("assets/aim.png"), (32,32)).convert_alpha()
@@ -209,6 +213,7 @@ class Game:
             
     async def loop(self):
         while self.running:
+            # delta time since last frame in milliseconds
             dt = self.clock.tick(FPS_CAP) / 1000
             events = []
             # if self.states[-1].__class__.__name__ != "MenuScreen":
@@ -216,6 +221,7 @@ class Game:
             events = self.get_inputs()
             # print(f"loop {IS_PAUSED=}")
             if not IS_PAUSED:
+                self.time_elapsed += dt
                 self.states[-1].update(dt, events)
             self.canvas.fill((0,0,0,0))
             self.states[-1].draw(self.canvas, dt)
@@ -225,7 +231,7 @@ class Game:
                 self.render_text("PAUSED", (WIDTH*SCALE // 2, HEIGHT*SCALE // 2), font_size=FONT_SIZE_LARGE, centred=True, bg_color=(10,10,10,150), shadow=True)
             
             self.screen.blit(pygame.transform.scale_by(self.canvas, SCALE), (0,0))
-            if IS_WEB:
+            if USE_SHADERS:
                 self.shader.render(self.screen, dt)
             else:
                 pygame.display.update()

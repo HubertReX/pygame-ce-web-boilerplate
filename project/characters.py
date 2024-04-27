@@ -38,9 +38,11 @@ class NPC(pygame.sprite.Sprite):
         # self.image = self.animations["idle"][int(self.frame_index)].convert_alpha()
         self.image = self.animations["idle_down"][int(self.frame_index)]
         # self.image.set_colorkey(COLORS["black"])
-        self.rect = self.image.get_frect(center = pos)
+        self.pos = pos
+        self.rect = self.image.get_frect(midbottom = pos)
         self.old_rect = pygame.Rect(self.rect)
         self.feet = pygame.Rect(0, 0, self.rect.width * 0.5, 8)
+        self.feet.midbottom = pos
         self.waypoints: tuple[Point] = waypoints
         self.waypoints_cnt: int = len(waypoints)
         # self.current_waypoint: Point | None = (self.way_points[0] if self.way_points_cnt > 0 else None)
@@ -52,14 +54,25 @@ class NPC(pygame.sprite.Sprite):
         self.acc = vec()
         self.vel = vec()
         self.friction: int = -12
+        self.up_acc = 0.0
+        self.up_vel = 0.0
+        self.jumping_offset = 0
+        self.is_flying = False
         self.is_jumping = False
         self.state: npc_state.NPC_State = npc_state.Idle()
+        self.state.enter_time = self.scene.game.time_elapsed
         
     def import_sprite_sheet(self, path: str):
         img = pygame.image.load(path).convert_alpha()
-        
+        img_rect = img.get_rect()
+        # use first tile (from upper left corner) as default 1 frame animation
+        rec_def = pygame.Rect(0, 0, TILE_SIZE, TILE_SIZE)
+        img_def = img.subsurface(rec_def)
+        animation_def = [img_def]
+        directions = ["up", "down", "left", "right"]
+
         for key, definition in SPRITE_SHEET_DEFINITION.items():
-            self.animations[key] = []
+            animation = []
             for coord in definition:
                 x, y = coord
                 # shadow_surf = pygame.Surface((TILE_SIZE, TILE_SIZE+4))
@@ -67,11 +80,30 @@ class NPC(pygame.sprite.Sprite):
                 
                 # pygame.draw.ellipse(shadow_surf, (10,10,10), (1, TILE_SIZE-3, TILE_SIZE-2, 6))
                 rec = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
-                img_part = img.subsurface(rec)
-                # shadow_surf.blit(img_part, (0,0,TILE_SIZE,TILE_SIZE))
-                # self.animations[key].append(shadow_surf)
-                self.animations[key].append(img_part)
-        
+                if rec.colliderect(img_rect):                   
+                    img_part = img.subsurface(rec)
+                    # shadow_surf.blit(img_part, (0,0,TILE_SIZE,TILE_SIZE))
+                    # self.animations[key].append(shadow_surf)
+                    animation.append(img_part)
+                else:
+                    # if "Green" in self.name:
+                    #     print(f"coordinate {x}x{y} not inside sprite sheet for {key} animation")
+                    continue
+            
+            if len(animation) > 0:
+                self.animations[key] = animation
+            else:
+                self.animations[key] = animation_def
+            
+            # if there is only one animation for each direction
+            # that is when animation name doesn't include direction (e.g. 'idle')
+            # than add reference in all directions (e.g. 'idle_up', 'idle_down',...)
+            for direction in directions:
+                if direction not in key:
+                    self.animations[f"{key}_{direction}"] = self.animations[key]
+        # if "Green" in self.name:
+        #     print(self.animations.keys())
+
     def import_image(self, path: str):
         # old implementation used with separate img per frame (e.g. monochrome_ninja)
         self.animations = self.game.get_animations(path)
@@ -133,6 +165,14 @@ class NPC(pygame.sprite.Sprite):
             self.acc.x = direction.x
             self.acc.y = direction.y
 
+    def jump(self):
+        self.is_jumping = True
+        self.up_acc = self.force * 0.10
+        self.up_vel = 50
+        self.jumping_offset = 1
+        self.org_y = self.rect.y
+        
+        
     def physics(self, dt: float):
         self.old_rect.topleft = self.rect.topleft
         
@@ -149,12 +189,34 @@ class NPC(pygame.sprite.Sprite):
         if self.vel.magnitude() >= self.speed:
             self.vel = self.vel.normalize() * self.speed
             
+        if self.is_jumping:
+            self.up_acc += self.up_vel * self.friction * 0.1
+            self.up_vel += self.up_acc * dt
+            self.jumping_offset = self.up_vel * dt #+ (self.up_vel / 2) * dt
+            if int(self.jumping_offset) <= 0:
+                self.is_jumping = False
+                self.up_acc = 0.0
+                self.up_vel = 0.0
+                self.jumping_offset = 0
+                self.rect.y =  self.org_y
+
+                # TODO not a good place to do it
+                self.scene.group.remove(self)
+                self.scene.group.add(self, layer=3)
+            
         self.rect.centerx += self.vel.x * dt + (self.vel.x / 2) * dt
-        self.rect.centery += self.vel.y * dt + (self.vel.y / 2) * dt
+        self.rect.centery += self.vel.y * dt + (self.vel.y / 2) * dt - self.jumping_offset
         
         self.feet.midbottom = self.rect.midbottom
         self.shadow.rect.center = self.rect.midbottom
         if self.is_jumping:
+            # self.shadow.rect.centerx = self.rect.centerx
+            # self.shadow.rect.centery = self.rect.bottom + self.jumping_offset
+            self.shadow.rect.centery = self.org_y + (TILE_SIZE)
+
+            self.feet.centery = self.org_y + (TILE_SIZE)# self.rect.bottom + self.jumping_offset
+            
+        if self.is_flying:
             # self.shadow.rect.centerx = self.rect.centerx
             self.shadow.rect.centery = self.rect.bottom + (TILE_SIZE)
             self.feet.centery = self.rect.bottom + (TILE_SIZE)
@@ -162,6 +224,7 @@ class NPC(pygame.sprite.Sprite):
     def change_state(self):
         new_state = self.state.enter_state(self)
         if new_state:
+            new_state.enter_time = self.scene.game.time_elapsed
             self.state = new_state
         
     def update(self, dt: float):
@@ -177,7 +240,7 @@ class NPC(pygame.sprite.Sprite):
         self.rect.topleft = self.old_rect.topleft
         self.feet.midbottom = self.rect.midbottom
         self.shadow.rect.center = self.old_rect.midbottom
-        if self.is_jumping:
+        if self.is_flying:
             self.shadow.rect.centery = self.old_rect.bottom + (TILE_SIZE)
             self.feet.centery = self.old_rect.bottom + (TILE_SIZE)
             

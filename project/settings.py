@@ -23,6 +23,11 @@ ABOUT = [
 
 Point = namedtuple("Point", ["x", "y"])
 
+WIDTH, HEIGHT = 1280, 1024
+TILE_SIZE = 16
+SCALE = 1
+ZOOM_LEVEL = 3.25
+
 # Need a flag to handle differently when game is run in desktop mode or in a web browser
 IS_WEB = False
 # local storage in web version for high score table
@@ -32,22 +37,26 @@ if __import__("sys").platform == "emscripten":
 IS_FULLSCREEN = False
 IS_PAUSED = False
 USE_ALPHA_FILTER = False
-FPS_CAP = 30
-ANIMATION_SPEED = 10 # frames per second
-WIDTH, HEIGHT = 1280, 1024
+USE_CUSTOM_CURSOR = False
+USE_SHADERS = False
 SHOW_DEBUG_INFO = False
 SHOW_HELP_INFO = False
 
-TILE_SIZE = 16
-SCALE = 1
-ZOOM_LEVEL = 3.25
-USE_CUSTOM_CURSOR = False
+FPS_CAP = 30
+ANIMATION_SPEED = 10 # frames per second
+# when character speed is grater than this value, it's state changes to Run
+RUN_SPEED: float = 39.0
+# after how many seconds of Idle state player changes state to Bored
+BORED_TIME: float = 4.0
+
+
 ACTIONS = {
     'quit':       {"show": ["ESC", "q"], "msg": "back",       "keys": [pygame.K_ESCAPE,    pygame.K_q]},
     'debug':      {"show": ["`", "z"],   "msg": "debug",      "keys": [pygame.K_BACKQUOTE, pygame.K_z]},
     'alpha':      {"show": ["f"],        "msg": "filter",     "keys": [pygame.K_f]},
     'run':        {"show": ["CTRL"],     "msg": "toggle run", "keys": [pygame.K_LCTRL]},
     'jump':       {"show": ["SPACE"],    "msg": "jump",       "keys": [pygame.K_SPACE]},
+    'fly':        {"show": ["SHIFT"],    "msg": "fly",        "keys": [pygame.K_LSHIFT, pygame.K_RSHIFT]},
     'select':     {"show": None,         "msg": "select",     "keys": [pygame.K_SPACE]},
     'accept':     {"show": None,         "msg": "accept",     "keys": [pygame.K_RETURN, pygame.K_KP_ENTER]},
     'help':       {"show": ["F1", 'h'],  "msg": "help",       "keys": [pygame.K_F1,    pygame.K_h]},
@@ -138,7 +147,9 @@ SPRITE_SHEET_DEFINITION = {
     "item":       [(1,6)],
     "special1":   [(2,6)],
     "special2":   [(3,6)],
-    
+
+    "bored":      [(4,0), (4,1), (4,2), (4,3), (4,4), (4,5)],
+        
 }
 
 # make loading images a little easier
