@@ -18,7 +18,7 @@ jobs:
             python -m pip install pygbag
             python -m pygbag --ume_block 0 --template utils/default.tmpl --icon project/assets/icon.png --no_opt --build $GITHUB_WORKSPACE/project/main.py
     - name : "Upload to GitHub pages branch gh-pages"
-      uses: JamesIves/github-pages-deploy-action@4.6.0
+      uses: JamesIves/github-pages-deploy-action@v4.6.0
       with:
         branch: gh-pages
         folder: project/build/web
