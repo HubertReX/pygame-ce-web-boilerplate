@@ -10,5 +10,5 @@ jobs:
           run: |
             REPO=${{ github.ref }}
             echo $REPO
-            BRANCH_NAME="${REPO//ref/}"
+            BRANCH_NAME="${REPO//refs\/heads/}"
             echo $BRANCH_NAME
