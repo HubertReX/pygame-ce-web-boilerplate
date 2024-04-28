@@ -101,7 +101,7 @@
 </data>
  </layer>
  <objectgroup id="6" name="exits">
-  <object id="3" name="Village" x="45.5576" y="118.216" width="20.7455" height="20.6632">
+  <object id="3" name="Village" x="48" y="123" width="16" height="13">
    <properties>
     <property name="entry_point" value="Door"/>
     <property name="to_map" value="Village"/>
@@ -109,13 +109,13 @@
   </object>
  </objectgroup>
  <objectgroup id="7" name="entry_points">
-  <object id="2" name="Door" x="55.8154" y="110.577">
+  <object id="2" name="Door" x="56" y="120">
    <properties>
     <property name="sprite_name" value="null"/>
    </properties>
    <point/>
   </object>
-  <object id="5" name="start" x="55.8698" y="74.4642">
+  <object id="5" name="start" x="56" y="72">
    <properties>
     <property name="sprite_name" value="null"/>
    </properties>

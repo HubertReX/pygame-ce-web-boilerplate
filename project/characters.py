@@ -25,7 +25,6 @@ class NPC(pygame.sprite.Sprite):
             waypoints: tuple[Point] = ()
         ):
         super().__init__(groups)
-        
         self.game = game
         self.scene = scene
         self.name = name # monochrome_ninja
@@ -38,11 +37,12 @@ class NPC(pygame.sprite.Sprite):
         # self.image = self.animations["idle"][int(self.frame_index)].convert_alpha()
         self.image = self.animations["idle_down"][int(self.frame_index)]
         # self.image.set_colorkey(COLORS["black"])
-        self.pos = pos
-        self.rect = self.image.get_frect(midbottom = pos)
-        self.old_rect = pygame.Rect(self.rect)
-        self.feet = pygame.Rect(0, 0, self.rect.width * 0.5, 8)
-        self.feet.midbottom = pos
+        self.pos: vec = vec(pos[0], pos[1])
+        self.prev_pos: vec = self.pos.copy()
+        self.rect = self.image.get_frect(midbottom = self.pos)
+        # self.old_rect = pygame.Rect(self.rect)
+        self.feet = pygame.Rect(0, 0, self.rect.width - 4, TILE_SIZE // 2)
+        self.feet.midbottom = self.pos
         self.waypoints: tuple[Point] = waypoints
         self.waypoints_cnt: int = len(waypoints)
         # self.current_waypoint: Point | None = (self.way_points[0] if self.way_points_cnt > 0 else None)
@@ -152,13 +152,16 @@ class NPC(pygame.sprite.Sprite):
         
     def movement(self):
         if self.waypoints_cnt > 0:
-            npc_pos = vec(self.feet.centerx, self.feet.bottom)
+            npc_pos = self.pos
             current_way_point_vec = vec(self.waypoints[self.current_waypoint_no])
+            current_way_point_vec.y += TILE_SIZE // 4
             # print(f"Distance to way point {self.current_way_point}: {current_way_point_vec.distance_squared_to(npc_pos):5.0f}")
-            if current_way_point_vec.distance_squared_to(npc_pos) < 3.0 ** 2:
+            if current_way_point_vec.distance_squared_to(npc_pos) <= 1.0:
                 self.current_waypoint_no += 1
                 if self.current_waypoint_no >= self.waypoints_cnt:
                     self.current_waypoint_no = 0
+                current_way_point_vec = vec(self.waypoints[self.current_waypoint_no])
+                current_way_point_vec.y += TILE_SIZE // 4
                 # print(f"New way point: {self.current_way_point}")
             direction = current_way_point_vec - npc_pos
             direction = direction.normalize() * self.force
@@ -167,14 +170,15 @@ class NPC(pygame.sprite.Sprite):
 
     def jump(self):
         self.is_jumping = True
-        self.up_acc = self.force * 0.10
+        self.up_acc = self.force * 1.60
         self.up_vel = 50
         self.jumping_offset = 1
-        self.org_y = self.rect.y
+        # self.org_y = self.rect.y
         
         
     def physics(self, dt: float):
-        self.old_rect.topleft = self.rect.topleft
+        # self.old_rect.topleft = self.rect.topleft
+        self.prev_pos = self.pos.copy()
         
         self.acc.x += self.vel.x * self.friction
         self.vel.x += self.acc.x * dt
@@ -189,6 +193,17 @@ class NPC(pygame.sprite.Sprite):
         if self.vel.magnitude() >= self.speed:
             self.vel = self.vel.normalize() * self.speed
             
+        if self.is_flying:
+            
+            if self.scene.game.time_elapsed % 0.25 < 0.125:
+                oscillation = 1
+            else:
+                oscillation = 0
+            self.jumping_offset = TILE_SIZE + oscillation
+        else:
+            if not self.is_jumping:
+                self.jumping_offset = 0.0
+            
         if self.is_jumping:
             self.up_acc += self.up_vel * self.friction * 0.1
             self.up_vel += self.up_acc * dt
@@ -198,28 +213,35 @@ class NPC(pygame.sprite.Sprite):
                 self.up_acc = 0.0
                 self.up_vel = 0.0
                 self.jumping_offset = 0
-                self.rect.y =  self.org_y
+                # self.rect.y =  self.org_y
 
                 # TODO not a good place to do it
                 self.scene.group.remove(self)
                 self.scene.group.add(self, layer=3)
-            
-        self.rect.centerx += self.vel.x * dt + (self.vel.x / 2) * dt
-        self.rect.centery += self.vel.y * dt + (self.vel.y / 2) * dt - self.jumping_offset
         
-        self.feet.midbottom = self.rect.midbottom
-        self.shadow.rect.center = self.rect.midbottom
-        if self.is_jumping:
-            # self.shadow.rect.centerx = self.rect.centerx
-            # self.shadow.rect.centery = self.rect.bottom + self.jumping_offset
-            self.shadow.rect.centery = self.org_y + (TILE_SIZE)
+        self.pos.x += self.vel.x * dt + (self.vel.x / 2) * dt
+        self.pos.y += self.vel.y * dt + (self.vel.y / 2) * dt
+        
+        self.adjust_rect()
+        
+        # self.rect.midbottom = self.pos + vec(0,  -self.jumping_offset - 3)
+        # self.rect.centerx += self.vel.x * dt + (self.vel.x / 2) * dt
+        # self.rect.centery += self.vel.y * dt + (self.vel.y / 2) * dt - self.jumping_offset
+        
+        # self.feet.midbottom = self.pos
+        # self.shadow.rect.midbottom = self.pos
+        
+        # if self.is_jumping:
+        #     # self.shadow.rect.centerx = self.rect.centerx
+        #     # self.shadow.rect.centery = self.rect.bottom + self.jumping_offset
+        #     self.shadow.rect.centery = self.org_y + (TILE_SIZE)
 
-            self.feet.centery = self.org_y + (TILE_SIZE)# self.rect.bottom + self.jumping_offset
+        #     self.feet.centery = self.org_y + (TILE_SIZE)# self.rect.bottom + self.jumping_offset
             
-        if self.is_flying:
-            # self.shadow.rect.centerx = self.rect.centerx
-            self.shadow.rect.centery = self.rect.bottom + (TILE_SIZE)
-            self.feet.centery = self.rect.bottom + (TILE_SIZE)
+        # if self.is_flying:
+        #     # self.shadow.rect.centerx = self.rect.centerx
+        #     self.shadow.rect.centery = self.rect.bottom + (TILE_SIZE)
+        #     self.feet.centery = self.rect.bottom + (TILE_SIZE)
 
     def change_state(self):
         new_state = self.state.enter_state(self)
@@ -227,9 +249,20 @@ class NPC(pygame.sprite.Sprite):
             new_state.enter_time = self.scene.game.time_elapsed
             self.state = new_state
         
+                    
+    def check_scene_exit(self):
+        for exit in self.scene.exit_sprites:
+            if self.feet.colliderect(exit.rect):
+                # self.scene.group.remove(self)
+                self.scene.NPC = [npc for npc in self.scene.NPC if not npc == self]
+                self.shadow.kill()
+                # self.scene.shadow_sprites = [npc for npc in self.scene.NPC if not npc == self]
+                self.kill()
+                # TODO NPC goes to another map
+
     def update(self, dt: float):
-        self.change_state()
         self.state.update(dt, self)
+        self.change_state()
         
     def move_back(self, dt: float) -> None:
         """
@@ -237,12 +270,20 @@ class NPC(pygame.sprite.Sprite):
 
         """
         # self.debug([f"{self.rect.topleft=}", f"{self.old_rect.topleft=}"])
-        self.rect.topleft = self.old_rect.topleft
-        self.feet.midbottom = self.rect.midbottom
-        self.shadow.rect.center = self.old_rect.midbottom
-        if self.is_flying:
-            self.shadow.rect.centery = self.old_rect.bottom + (TILE_SIZE)
-            self.feet.centery = self.old_rect.bottom + (TILE_SIZE)
+        self.pos = self.prev_pos.copy()
+        
+        self.adjust_rect()
+
+    def adjust_rect(self):
+        # display sprite n pixels above position so the shadow doesn't stick out from the bottom
+        self.rect.midbottom = self.pos + vec(0,  -self.jumping_offset - 3)
+        # 'hitbox' for collisions
+        self.feet.midbottom = self.pos
+        # shadow
+        self.shadow.rect.midbottom = self.pos #+ vec(0, -1)
+        # if self.is_flying:
+        #     self.shadow.rect.centery = self.old_rect.bottom + (TILE_SIZE)
+        #     self.feet.centery = self.old_rect.bottom + (TILE_SIZE)
             
         
     def debug(self, msgs: list[str]):
@@ -292,6 +333,6 @@ class Player(NPC):
                 self.scene.transition.exiting = True
                 # self.scene.go_to_scene()
                 
-    def update(self, dt: float):
-        self.check_scene_exit()
-        super().update(dt)
+    # def update(self, dt: float):
+    #     # self.check_scene_exit()
+    #     super().update(dt)

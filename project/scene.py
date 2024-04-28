@@ -96,7 +96,8 @@ class Scene(State):
         if self.entry_point in self.entry_points:
             ep = self.entry_points[self.entry_point]
             # print(ep)
-            self.player.rect.center = [ep.x, ep.y]
+            self.player.pos = vec(ep.x, ep.y)
+            self.player.adjust_rect()
         else:
             print("[red]no entry point found!")
             
@@ -202,35 +203,40 @@ class Scene(State):
         
         if INPUTS["jump"]:
             # self.player.is_jumping = not self.player.is_jumping
-            if not self.player.is_jumping:
-                self.player.is_jumping = True
-                # move sprite up (in character physics shadow is offset down to the ground)
-                # self.player.rect.y -= TILE_SIZE
-                self.player.jump()
-                # when airborn move one layer above so it's not colliding with obstacles on ground 
-                self.group.remove(self.player)
-                self.group.add(self.player, layer=4)
-            # else:
-            #     self.player.rect.y += TILE_SIZE
-            #     self.group.remove(self.player)
-            #     self.group.add(self.player, layer=3)
+            if not self.player.is_flying:
+                if not self.player.is_jumping:
+                    self.player.is_jumping = True
+                    # move sprite up (in character physics shadow is offset down to the ground)
+                    # self.player.rect.y -= TILE_SIZE
+                    self.player.jump()
+                    # when airborn move one layer above so it's not colliding with obstacles on ground 
+                    # self.group.remove(self.player)
+                    # self.group.add(self.player, layer=4)
+                    self.group.change_layer(self.player, 4)
+                # else:
+                #     self.player.rect.y += TILE_SIZE
+                #     self.group.remove(self.player)
+                #     self.group.add(self.player, layer=3)
             
             INPUTS["jump"] = False
             
         if INPUTS["fly"]:
-            self.player.is_flying = not self.player.is_flying
-            if self.player.is_flying:
-                # move sprite up (in character physics shadow is offset down to the ground)
-                self.player.rect.y -= TILE_SIZE
-                # when airborn move one layer above so it's not colliding with obstacles on ground 
-                self.group.remove(self.player)
-                self.group.add(self.player, layer=4)
-            else:
-                self.player.rect.y += TILE_SIZE
-                self.group.remove(self.player)
-                self.group.add(self.player, layer=3)
-            
-            INPUTS["fly"] = False
+            if not self.player.is_jumping:            
+                self.player.is_flying = not self.player.is_flying
+                if self.player.is_flying:
+                    # move sprite up (in character physics shadow is offset down to the ground)
+                    # self.player.rect.y -= TILE_SIZE
+                    # when airborn move one layer above so it's not colliding with obstacles on ground 
+                    # self.group.remove(self.player)
+                    # self.group.add(self.player, layer=4)
+                    self.group.change_layer(self.player, 4)
+                else:
+                    # self.player.rect.y += TILE_SIZE
+                    # self.group.remove(self.player)
+                    # self.group.add(self.player, layer=3)
+                    self.group.change_layer(self.player, 3)
+                
+                INPUTS["fly"] = False
         
         if INPUTS['right_click']:
             self.exit_state()
@@ -278,7 +284,7 @@ class Scene(State):
     
     def draw(self, screen: pygame.Surface, dt: float):
         # screen.fill(COLORS["red"])
-        self.group.center(self.player.feet.center)
+        self.group.center(self.player.pos)
         # self.draw_sprites.draw(screen)
 
         # for npc in self.NPC + [self.player]:
@@ -312,14 +318,20 @@ class Scene(State):
         if SHOW_DEBUG_INFO:
             self.debug(msgs)
             for npc in self.NPC + [self.player]:
-                offset_x, offset_y = self.map_layer.get_center_offset()
-                zoom = self.map_layer.zoom
-                pos = [(npc.feet.centerx + offset_x)*zoom, (npc.feet.bottom + offset_y)*zoom]
+                # offset_x, offset_y = self.map_layer.get_center_offset()
+                # zoom = self.map_layer.zoom
+                # pos = [(npc.pos.x + offset_x)*zoom, (npc.pos.y + offset_y)*zoom]
+                pos = self.map_layer.translate_point(npc.pos)
                 self.game.render_text(npc.name, pos, font_size=FONT_SIZE_SMALL, centred=True)
-                pos[1] += FONT_SIZE_SMALL * TEXT_ROW_SPACING
+                
+                pos = self.map_layer.translate_point((npc.pos.x, npc.pos.y + (8 * 1)))
                 self.game.render_text(f"s={npc.state} j={npc.is_flying}", pos, font_size=FONT_SIZE_SMALL, centred=True)
-                pos[1] += FONT_SIZE_SMALL * TEXT_ROW_SPACING
+
+                pos = self.map_layer.translate_point((npc.pos.x, npc.pos.y + (8 * 2)))
                 self.game.render_text(f"v={npc.vel.magnitude():04.1f} vp={npc.current_waypoint_no}", pos, font_size=FONT_SIZE_SMALL, centred=True) 
+                
+                rect = self.map_layer.translate_rect(npc.feet)
+                pygame.draw.rect(self.game.canvas, "red", rect, width=2)
                 # a={npc.acc.magnitude():4.1f}
                 
         

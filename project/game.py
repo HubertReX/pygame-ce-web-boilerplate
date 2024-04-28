@@ -39,7 +39,7 @@ class Game:
             self.flags = self.flags | pygame.SCALED | pygame.DOUBLEBUF # pygame.RESIZABLE
             self.screen: pygame.Surface = pygame.display.set_mode((WIDTH*SCALE, HEIGHT*SCALE), self.flags, vsync=1)
             
-        self.canvas: pygame.Surface = self.screen # pygame.Surface((WIDTH, HEIGHT), self.flags, 32) # , 32 .convert_alpha() # pygame.SRCALPHA
+        self.canvas: pygame.Surface = pygame.Surface((WIDTH, HEIGHT), self.flags) # , 32 .convert_alpha() # pygame.SRCALPHA
 
         size = pygame.display.get_window_size()
         if USE_SHADERS:

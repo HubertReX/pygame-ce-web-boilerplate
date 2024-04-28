@@ -46,6 +46,7 @@ class NPC_State():
         character.animate(f"{self.action}_{character.get_direction_360()}", character.animation_speed * dt)
         character.movement()
         character.physics(dt)
+        character.check_scene_exit()
     
     def __repr__(self) -> str:
         return self.__class__.__name__

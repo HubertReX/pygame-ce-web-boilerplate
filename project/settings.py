@@ -23,7 +23,7 @@ ABOUT = [
 
 Point = namedtuple("Point", ["x", "y"])
 
-WIDTH, HEIGHT = 1280, 1024
+WIDTH, HEIGHT = 1600, 1024
 TILE_SIZE = 16
 SCALE = 1
 ZOOM_LEVEL = 3.25
@@ -54,9 +54,9 @@ ACTIONS = {
     'quit':       {"show": ["ESC", "q"], "msg": "back",       "keys": [pygame.K_ESCAPE,    pygame.K_q]},
     'debug':      {"show": ["`", "z"],   "msg": "debug",      "keys": [pygame.K_BACKQUOTE, pygame.K_z]},
     'alpha':      {"show": ["f"],        "msg": "filter",     "keys": [pygame.K_f]},
-    'run':        {"show": ["CTRL"],     "msg": "toggle run", "keys": [pygame.K_LCTRL]},
+    'run':        {"show": ["CTRL"],     "msg": "toggle run", "keys": [pygame.K_LSHIFT, pygame.K_RSHIFT]},
     'jump':       {"show": ["SPACE"],    "msg": "jump",       "keys": [pygame.K_SPACE]},
-    'fly':        {"show": ["SHIFT"],    "msg": "fly",        "keys": [pygame.K_LSHIFT, pygame.K_RSHIFT]},
+    'fly':        {"show": ["SHIFT"],    "msg": "fly",        "keys": [pygame.K_LALT, pygame.K_RALT]},
     'select':     {"show": None,         "msg": "select",     "keys": [pygame.K_SPACE]},
     'accept':     {"show": None,         "msg": "accept",     "keys": [pygame.K_RETURN, pygame.K_KP_ENTER]},
     'help':       {"show": ["F1", 'h'],  "msg": "help",       "keys": [pygame.K_F1,    pygame.K_h]},

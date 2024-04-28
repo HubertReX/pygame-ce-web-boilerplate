@@ -1,9 +1,10 @@
 import pygame
 from settings import *
+# import scene
 
 class Transition():
     
-    def __init__(self, scene) -> None:
+    def __init__(self, scene: "Scene") -> None:
         self.fade_surf: pygame.Surface = pygame.Surface((WIDTH, HEIGHT))
         self.scene = scene
         self.exiting: bool = False
@@ -32,11 +33,12 @@ class TransitionCircle(Transition):
 
     def draw(self, screen: pygame.Surface):
         self.fade_surf.fill((1,1,1))
-        pos = self.scene.player.rect.center
-        offset_x, offset_y = self.scene.map_layer.get_center_offset()
-        zoom = self.scene.map_layer.zoom
+        # pos = self.scene.player.pos
+        # offset_x, offset_y = self.scene.map_layer.get_center_offset()
+        # zoom = self.scene.map_layer.zoom
+        pos = self.scene.map_layer.translate_point(self.scene.player.pos)
         # pygame.draw.circle(self.fade_surf, (0,0,0), (WIDTH//2, HEIGHT//2), self.radius)
-        pygame.draw.circle(self.fade_surf, (0,0,0), ((pos[0] + offset_x) * zoom, (pos[1] + offset_y) * zoom), self.radius)
+        pygame.draw.circle(self.fade_surf, (0,0,0), pos, self.radius)
         # self.fade_surf.set_alpha(self.alpha)
         self.fade_surf.set_colorkey((0,0,0))
         screen.blit(self.fade_surf, (0,0))
