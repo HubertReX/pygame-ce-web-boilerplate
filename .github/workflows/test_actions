@@ -1,0 +1,14 @@
+
+name: Test Actions scripts
+on: [workflow_dispatch]
+
+jobs:
+  test_action_scripts:
+    runs-on: ubuntu-latest
+      steps:
+        - name: character-replacement-test
+          run: |
+            REPO={{ github.ref }}
+            echo $REPO
+            BRANCH_NAME="${REPO//ref/}"
+            echo $BRANCH_NAME
