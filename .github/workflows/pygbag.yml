@@ -21,4 +21,4 @@ jobs:
       with:
         branch: gh-pages
         folder: project/build/web
-        target-folder: ${{ steps.replace_str.outputs.BRANCH }}
+        target-folder: ${{ github.event.repository.name }}/${{ steps.replace_str.outputs.BRANCH }}
