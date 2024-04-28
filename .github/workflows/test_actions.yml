@@ -21,4 +21,4 @@ jobs:
         - name: new_step
           run: |
               echo ${{ steps.findandreplace.outputs.result }}
-              echo ${GITHUB_REF///refs\/heads\//}
+              echo ${GITHUB_REF//refs\/heads\//}
