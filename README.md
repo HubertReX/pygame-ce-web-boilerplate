@@ -10,7 +10,7 @@ This project is based on Matt Owen's tutorial:
 
 Ninja sprite is from the same author:
 
-[Monochrome ninja](https://mowen88.itch.io/monochrome-ninjaa)
+[Monochrome ninja](https://mowen88.itch.io/monochrome-ninja)
 
 Cursor by:
 
@@ -27,24 +27,56 @@ Precision icons created by [redempticon - Flaticon](https://www.flaticon.com/fre
 ## Features
 
 * runs in web (itch.io and GitHub Pages) thanks to [pygbag](https://pygame-web.github.io/)
-* implemented fine state machin
+* implemented finite state machine
 * usage of menus [pygame-menu](https://github.com/ppizarror/pygame-menu) (patched - gfxdraw not working in WEB)
 * partial mouse support (in menus)
 * [Tiled](https://www.mapeditor.org/) map loading [pytmx](https://github.com/bitcraft/pytmx)
-* Map reloading, scrolling and zooming [pyscroll](https://github.com/bitcraft/pyscroll)
-* map with layers (occlusion and collision)
+* Map live reloading, scrolling and zooming [pyscroll](https://github.com/bitcraft/pyscroll)
+* transition between maps (Village, VillageHouse)
+* map with layers (occlusion, collision, player start, exits)
+* semi transparent panels and text background (alpha blending)
+* full screen color filter (alpha blending, e.g.: warm sunny light, dark blue at night)
+* particle system (falling leafs, more to come) - currently not working in WEB
+* game auto pause (if window is out of focus)
+* pixel style monospace font
 * custom mouse cursor
-* animated sprites
-* separation keys from actions
-* scene transitions
+* animated sprites with shadows and different moving states (Idle, Walk, Run, Jump, Fly)
+* characters follow individual list of waypoints
+* separation keys bindings from actions
+* scene transitions (fade in/out, round shutter)
 * automatic screenshots
+* experimental use of OpenGL/WebGL shaders ([zengl](https://github.com/szabolcsdombi/zengl)) for postprocessing effects - for now works only in Web version
 
 ## Ideas for future
 
+Features:
+
 * ~~list key bindings~~ ✅
-* add enemies
+* create global config json with schema
+* add UI (health bar, stats)
+* ~~add particles system~~ ✅ (~~leafs~~ ✅, ~~wind~~ ✅, rain, footsteps, smoke) - WIP ⏳🔄
+* add day/night cycle and weather (rain)
 * add fog of war and/or line of sight
-* add particles system
+* add light sources (camp fire, torch, houses)
+* ~~add NPC, enemies and animals with movements (add shadows)~~ ✅
+* add movable objects
+* add object destruction
+* add item drop/pickup and inventory system
+* add fighting system
+* add dialog system
+* add merchants
+* add cutscenes
+* add game save/load system
+* add game highscore table
+* add game achievements
+* add music and sfx
+* add better menus
+* add dungeons (generated procedurally)
+* add path finding algorithm
+* make more maps
+
+Bugs:
+
 * ~~screenshot of menu not working (showing only part of menu)~~ ✅
 * ~~some key events are lost (action is repeated even key is not pressed in menus)~~ ✅
 * continuing game after exiting menu causes loosing player's position on small map (works on grassland though)
