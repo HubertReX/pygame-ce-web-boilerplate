@@ -11,6 +11,11 @@ jobs:
             REPO=${{ github.ref }}
             echo $REPO
             BRANCH_NAME="${REPO//refs\/heads\//}"
+        - uses: bluwy/substitute-string-action@v3
+          id: sub
+          with:
+            _input-text: ${{ github.ref }}
+            refs/heads/: ''
         - name: new_step
           run: |
-            echo $BRANCH_NAME
+            echo ${{ steps.sub.outputs.result }} 
