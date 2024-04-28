@@ -1,4 +1,6 @@
-<html lang="en-us"><script src="https://pygame-web.github.io/archives/0.9/pythons.js" type=module id=site data-LINES=57 data-CONSOLE=25 data-python=python3.12 data-os=vtx,fs,snd,gui async defer>#<!--
+<html lang="en-us">
+<script src="https://pygame-web.github.io/archives/0.9/pythons.js" type=module id=site data-LINES=57 data-CONSOLE=25 data-python=python3.12 data-os=vtx,fs,snd,gui async defer>
+#<!--
 
 print("""
 Loading project from project.apk
@@ -62,7 +64,7 @@ async def custom_site():
     import embed
 
 
-    platform.document.body.style.background = "#7f7f7f"
+    platform.document.body.style.background = "#000000" # "#ff00ff"
 
     import pygame
 
@@ -119,7 +121,7 @@ async def custom_site():
         slot = ux(.060)/ total # 60%
 
         pygame.draw.rect(screen,(10,10,10),( marginx-ux(10), marginy-uy(10), (total*slot)+ux(20), uy(110) ) )
-        pygame.draw.rect(screen,(0,255,0), ( marginx, marginy, track.pos*slot, uy(90)) )
+        pygame.draw.rect(screen,(0,0,0), ( marginx, marginy, track.pos*slot, uy(90)) )
 
     # wait until zip mount + overlayfs is complete
     while not track.ready:
@@ -169,7 +171,7 @@ async def custom_site():
 
         # now make a prompt
         fnt = pygame.sysfont.SysFont("freesans",  uy(80) )
-        prompt = fnt.render("Ready to start !", True, "blue")
+        prompt = fnt.render("Press any key to start", True, "white")
         pg_bar(track.len)
         screen.blit(prompt, ( marginx+ ux(80), marginy - uy(10) ) )
         compose()
@@ -237,7 +239,7 @@ config = {
     _sdl2 : "canvas",
     user_canvas : 0,
     user_canvas_managed : 0,
-    ume_block : 1,
+    ume_block : 0,
     can_close : 0,
     archive : "project",
     gui_debug : 3,
@@ -291,6 +293,8 @@ config = {
             width: 100%;
             height: 100%;
             z-index: 5;
+            outline: none;
+            -webkit-tap-highlight-color: rgba(255, 255, 255, 0); /* mobile webkit */
 
             padding: 0;
             margin: 0 auto;
@@ -304,9 +308,10 @@ config = {
 
         body {
             font-family: arial;
+            color: white;
             margin: 0;
             padding: none;
-            background-color:powderblue;
+            background-color: black;
         }
 
         .topright{
@@ -434,6 +439,35 @@ frameborder="1"
 
     }
 
+    function download(filename, mime_type, content) {
+        var element = document.createElement('a');
+        // mime_type for text file: text/plain;charset=utf-8
+        element.setAttribute('href', 'data:' + mime_type + ',' + encodeURIComponent(content));
+        element.setAttribute('download', filename);
+
+        element.style.display = 'none';
+        document.body.appendChild(element);
+
+        element.click();
+
+        document.body.removeChild(element);
+    }
+
+    function download_from_browser_fs(filename, mime_type) {
+        let link = document.createElement('a');
+        link.download = filename.replace(/^.*[\\\/]/, ''); 
+        let fs_file = VM.FS.readFile(filename);
+        let blob = new Blob([fs_file], {type: mime_type});
+
+        let reader = new FileReader();
+        reader.readAsDataURL(blob); // converts the blob to base64 and calls onload
+
+        reader.onload = function() {
+            link.href = reader.result; // data url
+            link.click();
+        };
+    }
+    
     function custom_prerun(){
         // no python main and no (MEMFS + VFS) yet.
         console.log(__FILE__, "custom_prerun")
