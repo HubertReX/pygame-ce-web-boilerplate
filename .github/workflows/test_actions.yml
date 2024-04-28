@@ -8,7 +8,7 @@ jobs:
     steps:
         - name: character-replacement-test
           run: |
-            REPO={{ github.ref }}
+            REPO=${{ github.ref }}
             echo $REPO
             BRANCH_NAME="${REPO//ref/}"
             echo $BRANCH_NAME
