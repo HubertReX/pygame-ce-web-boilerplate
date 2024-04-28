@@ -17,9 +17,17 @@ jobs:
       run: |
             python -m pip install pygbag
             python -m pygbag --ume_block 0 --template utils/default.tmpl --icon project/assets/icon.png --no_opt --build $GITHUB_WORKSPACE/project/main.py
-    - name : "Upload to GitHub pages branch gh-pages"
+    - name: Run find-and-replace to remove refs/heads/
+      uses: mad9000/actions-find-and-replace-string@5
+      id: findandreplace
+      with:
+        source: '${{ github.ref }}'
+        find: 'refs/heads/'
+        replace: ''
+    
+    - name: "Upload to GitHub pages branch gh-pages"
       uses: JamesIves/github-pages-deploy-action@v4.6.0
       with:
         branch: gh-pages
         folder: project/build/web
-        target-folder: ${{ github.event.repository.name }}/${{ github.ref }}
+        target-folder: ${{ steps.findandreplace.outputs.result }} 
