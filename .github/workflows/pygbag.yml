@@ -30,4 +30,4 @@ jobs:
       with:
         branch: gh-pages
         folder: project/build/web
-        target-folder: ${{ steps.findandreplace.outputs.result }} 
+        target-folder: ${{ github.event.repository.name }}/${{ steps.findandreplace.outputs.result }} 
