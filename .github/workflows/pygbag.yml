@@ -22,4 +22,4 @@ jobs:
       with:
         branch: gh-pages
         folder: project/build/web
-        target-folder: ${{ github.event.repository.name }}/${GITHUB_REF//refs\/heads\//}
+        target-folder: ${GITHUB_REF//refs\/heads\//}
