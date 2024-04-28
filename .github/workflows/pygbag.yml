@@ -16,7 +16,7 @@ jobs:
     - name: Checkout
       run: |
             python -m pip install pygbag
-            python -m pygbag --ume_block 0 --template utils/default.tmpl --icon project/assets/icon.png --no_opt --build $GITHUB_WORKSPACE/project/main.py            
+            python -m pygbag --ume_block 0 --no_opt --build $GITHUB_WORKSPACE/project/main.py            
     - name: replace str
       id: replace_str
       run: echo BRANCH=${GITHUB_REF//refs\/heads\//}  >> $GITHUB_OUTPUT
