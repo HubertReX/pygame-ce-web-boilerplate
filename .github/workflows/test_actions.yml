@@ -15,7 +15,7 @@ jobs:
           uses: mad9000/actions-find-and-replace-string@5
           id: findandreplace
           with:
-            source: ${{ github.ref }}
+            source: '${{ github.ref }}'
             find: 'refs/heads/'
             replace: ''
         - name: new_step
