@@ -21,11 +21,11 @@ jobs:
       uses: mad9000/actions-find-and-replace-string@5
       id: findandreplace
       with:
-        source: '${{ github.ref }}'
-        find: 'refs/heads/'
-        replace: ''
+        source: "${{ github.ref }}"
+        find: "refs/heads/"
+        replace: ""
     - name: Checkout
-      run: echo "${{ github.ref }} => ${{ steps.findandreplace.outputs.result }}"
+      run: echo "${{ github.ref }} _ ${{ steps.findandreplace.outputs.result }}"
     - name: "Upload to GitHub pages branch gh-pages"
       uses: JamesIves/github-pages-deploy-action@v4.6.0
       with:
