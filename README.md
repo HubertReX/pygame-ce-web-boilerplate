@@ -40,7 +40,7 @@ Precision icons created by [redempticon - Flaticon](https://www.flaticon.com/fre
 * game auto pause (if window is out of focus)
 * pixel style monospace font
 * custom mouse cursor
-* animated sprites with shadows and different moving states (Idle, Walk, Run, Jump)
+* animated sprites with shadows and different moving states (Idle, Walk, Run, Jump, Fly)
 * characters follow individual list of waypoints
 * separation keys bindings from actions
 * scene transitions (fade in/out, round shutter)
