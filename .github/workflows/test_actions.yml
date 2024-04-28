@@ -16,7 +16,7 @@ jobs:
           id: findandreplace
           with:
             source: '${{ github.ref }}'
-            find: 'refs/heads/'
+            find: 'refs\/heads\/'
             replace: ''
         - name: new_step
           run: |
