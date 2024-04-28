@@ -25,7 +25,7 @@ jobs:
         find: 'refs/heads/'
         replace: ''
     - name: Checkout
-      run: echo "${{ github.ref } => ${{ steps.findandreplace.outputs.result }}"
+      run: echo "${{ github.ref }} => ${{ steps.findandreplace.outputs.result }}"
     - name: "Upload to GitHub pages branch gh-pages"
       uses: JamesIves/github-pages-deploy-action@v4.6.0
       with:
