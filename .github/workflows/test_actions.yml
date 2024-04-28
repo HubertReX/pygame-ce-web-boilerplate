@@ -20,7 +20,7 @@ jobs:
             replace: ''
         - name: replace str
           id: replace_str
-          run: echo ${GITHUB_REF//refs\/heads\//}
+          run: echo ${GITHUB_REF//refs\/heads\//}  >> $GITHUB_OUTPUT
         - name: replace
           run: |
               echo ${{ steps.findandreplace.outputs.result }}
