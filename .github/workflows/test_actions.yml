@@ -11,11 +11,13 @@ jobs:
             REPO=${{ github.ref }}
             echo $REPO
             BRANCH_NAME="${REPO//refs\/heads\//}"
-        - uses: bluwy/substitute-string-action@v3
-          id: sub
+        - name: Run find-and-replace to remove refs/heads/
+          uses: mad9000/actions-find-and-replace-string@5
+          id: findandreplace
           with:
-            _input-text: ${{ github.ref }}
-            refs/heads/: ''
+            source: ${{ github.ref }}
+            find: 'refs/heads/'
+            replace: ''
         - name: new_step
           run: |
-            echo ${{ steps.sub.outputs.result }} 
+              echo ${{ steps.findandreplace.outputs.result }} 
