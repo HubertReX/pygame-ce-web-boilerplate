@@ -18,7 +18,10 @@ jobs:
             source: '${{ github.ref }}'
             find: 'refs\/heads\/'
             replace: ''
-        - name: new_step
+        - name: replace str
+          id: replace_str
+          run: echo ${GITHUB_REF//refs\/heads\//}
+        - name: replace
           run: |
               echo ${{ steps.findandreplace.outputs.result }}
-              echo ${GITHUB_REF//refs\/heads\//}
+              echo ${{ steps.replace_str.outputs.result }}
