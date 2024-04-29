@@ -59,9 +59,10 @@ Features:
 * add fog of war and/or line of sight
 * add light sources (camp fire, torch, houses)
 * ~~add NPC, enemies and animals with movements (add shadows)~~ ✅
+* add item drop/pickup and inventory system
+* add cary on items (e.g. weapon)
 * add movable objects
 * add object destruction
-* add item drop/pickup and inventory system
 * add fighting system
 * add dialog system
 * add merchants
