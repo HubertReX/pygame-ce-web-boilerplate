@@ -9,7 +9,7 @@ import pygame, sys
 if USE_SHADERS:
     from opengl_shader import OpenGL_shader
 
-traceback.install(show_locals=True, width=150, )  
+traceback.install(show_locals=True, width=150, )
 
 class Game:
     def __init__(self) -> None:

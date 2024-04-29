@@ -100,6 +100,8 @@ class Scene(State):
             self.player.adjust_rect()
         else:
             print("[red]no entry point found!")
+            # put the player in the center of the map
+            self.player.pos = self.map_layer.map_rect.center
             
         # create new renderer (camera)
         self.map_layer = pyscroll.BufferedRenderer(
@@ -117,9 +119,6 @@ class Scene(State):
         # the default layer for sprites as 2.
         self.group = PyscrollGroup(map_layer=self.map_layer, default_layer=3)        
         
-        # put the player in the center of the map
-        # self.player.rect.topleft = self.map_layer.map_rect.center
-
         # add our player to the group
         self.group.add(self.shadow_sprites, layer=2)
         self.group.add(self.player)
