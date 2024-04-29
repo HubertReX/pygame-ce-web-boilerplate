@@ -1,20 +1,10 @@
 # Introduction
 
-This is a template for a game using Pygame-ce that can run in both desktop and browser.
+This is a template for a game using [Pygame-CE](https://pyga.me/) that can run on both desktop and browser.
 
 ![screenshot](./screenshots/screenshot_gameplay.png)
 
-This project is based on Matt Owen's tutorial:
-
-[Pygame ARPG Tutorial Series](https://www.youtube.com/watch?v=a1NIscbsmKo&list=PLLdd2IQ6qKU7OAOpVdaK304D_BGSOw3iW&pp=iAQB)
-
-Ninja sprite is from the same author:
-
-[Monochrome ninja](https://mowen88.itch.io/monochrome-ninja)
-
-Cursor by:
-
-Precision icons created by [redempticon - Flaticon](https://www.flaticon.com/free-icons/precision)
+You can play an online demo [here](https://hubertrex.github.io/pygame-ce-web-boilerplate/NinjaAdventure).
 
 ## TOC
 
@@ -23,29 +13,30 @@ Precision icons created by [redempticon - Flaticon](https://www.flaticon.com/fre
 * [Installation](#installation)
 * [Run](#run)
 * [Deploying](#deploying)
+* [Contribution](#contribution)
 
 ## Features
 
-* runs in web (itch.io and GitHub Pages) thanks to [pygbag](https://pygame-web.github.io/)
+* runs on the web browser (itch.io and GitHub Pages) thanks to [pygbag](https://pygame-web.github.io/)
 * implemented finite state machine
 * usage of menus [pygame-menu](https://github.com/ppizarror/pygame-menu) (patched - gfxdraw not working in WEB)
 * partial mouse support (in menus)
 * [Tiled](https://www.mapeditor.org/) map loading [pytmx](https://github.com/bitcraft/pytmx)
-* Map live reloading, scrolling and zooming [pyscroll](https://github.com/bitcraft/pyscroll)
+* map live reloading, scrolling, and zooming [pyscroll](https://github.com/bitcraft/pyscroll)
 * transition between maps (Village, VillageHouse)
 * map with layers (occlusion, collision, player start, exits)
-* semi transparent panels and text background (alpha blending)
-* full screen color filter (alpha blending, e.g.: warm sunny light, dark blue at night)
-* particle system (falling leafs, more to come) - currently not working in WEB
-* game auto pause (if window is out of focus)
+* semi-transparent panels and text background (alpha blending)
+* full-screen color filter (alpha blending, e.g.: warm sunny light, dark blue at night)
+* particle system (falling leaves, more to come) - currently not working in WEB
+* game auto pause (if the game window is out of focus)
 * pixel style monospace font
-* custom mouse cursor
+* a custom mouse cursor
 * animated sprites with shadows and different moving states (Idle, Walk, Run, Jump, Fly)
-* characters follow individual list of waypoints
-* separation keys bindings from actions
+* characters follow individual lists of waypoints
+* separation of key bindings from actions
 * scene transitions (fade in/out, round shutter)
 * automatic screenshots
-* experimental use of OpenGL/WebGL shaders ([zengl](https://github.com/szabolcsdombi/zengl)) for postprocessing effects - for now works only in Web version
+* experimental use of OpenGL/WebGL shaders ([zengl](https://github.com/szabolcsdombi/zengl)) for postprocessing effects - for now, works only in the Web version
 
 ## Ideas for future
 
@@ -138,3 +129,18 @@ upload `'build/web.zip'` to [itch.io](https://itch.io/) or any other hosted site
 ### To GitHub pages
 
 full instruction [here](https://pygame-web.github.io/wiki/pygbag/github.io/)
+
+
+## Contribution
+
+This project is based on Matt Owen's tutorial:
+
+[Pygame ARPG Tutorial Series](https://www.youtube.com/watch?v=a1NIscbsmKo&list=PLLdd2IQ6qKU7OAOpVdaK304D_BGSOw3iW&pp=iAQB)
+
+Ninja Sprite is from the same author:
+
+[Monochrome ninja](https://mowen88.itch.io/monochrome-ninja)
+
+Cursor by:
+
+Precision icons created by [redempticon - Flaticon](https://www.flaticon.com/free-icons/precision)
