@@ -140,7 +140,10 @@ class Scene(State):
                     
         if self.is_maze:
             
-            self.NPC.append(NPC(self.game, self, [self.draw_sprites], self.shadow_sprites, ( (5 + ((self.maze_cols - 1) * 6)) * TILE_SIZE + 2, ((7 + (self.maze_rows - 1) *6)) * TILE_SIZE + 2), "Villager1", ()))
+            self.NPC.append(NPC(self.game, self, [self.draw_sprites], self.shadow_sprites, ( (5 + ((self.maze_cols - 1) * 6)) * TILE_SIZE + 2, ((7 + (self.maze_rows - 1) *6)) * TILE_SIZE + 2), "Snake", () ))
+            self.NPC.append(NPC(self.game, self, [self.draw_sprites], self.shadow_sprites, ( (5                             ) * TILE_SIZE + 2, ((7 + (self.maze_rows - 1) *6)) * TILE_SIZE + 2), "SpiderRed", () ))
+            self.NPC.append(NPC(self.game, self, [self.draw_sprites], self.shadow_sprites, ( (5 + ((self.maze_cols - 1) * 6)) * TILE_SIZE + 2, ((7                          )) * TILE_SIZE + 2), "Spirit", () ))
+            self.NPC.append(NPC(self.game, self, [self.draw_sprites], self.shadow_sprites, ( (5 + ((self.maze_cols //2) * 6)) * TILE_SIZE + 2, ((7 + (self.maze_rows //2) *6)) * TILE_SIZE + 2), "Slime", () ))
             
         if self.entry_point in self.entry_points:
             ep = self.entry_points[self.entry_point]
@@ -212,7 +215,8 @@ class Scene(State):
 
         if not self.player.is_flying:
             if self.player.feet.collidelist(self.NPC) > -1:
-                self.player.move_back()
+                # self.player.move_back()
+                self.player.slide(self.NPC)
             
         if self.player.is_flying:
             colliders = self.walls
