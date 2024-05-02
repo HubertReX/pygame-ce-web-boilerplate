@@ -22,6 +22,9 @@ class MenuScreen(State):
     # def debug(self, msgs: list[str]):
     #     return super().debug(msgs)
         
+    def __repr__(self) -> str:
+        return f"{__class__.__name__}: {self.name}"
+        
     def create_menu() -> pygame_menu.Menu:
         raise NotImplementedError("Subclasses should implement this!")
     

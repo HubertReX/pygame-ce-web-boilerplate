@@ -2,6 +2,7 @@ import os
 import random
 import pygame
 from pygame.math import Vector2 as vec
+from maze_generator.maze_utils import a_star
 from settings import *
 # from settings import CHARACTERS_DIR, HEIGHT, INPUTS, ANIMATION_SPEED, RESOURCES_DIR, SHOW_DEBUG_INFO, COLORS, SPRITE_SHEET_DEFINITION, TILE_SIZE
 # from state import Scene, State
@@ -41,12 +42,13 @@ class NPC(pygame.sprite.Sprite):
         self.prev_pos: vec = self.pos.copy()
         self.rect = self.image.get_frect(midbottom = self.pos)
         # self.old_rect = pygame.Rect(self.rect)
-        self.feet = pygame.Rect(0, 0, self.rect.width - 4, TILE_SIZE // 2)
+        self.feet = pygame.Rect(0, 0, self.rect.width // 2, TILE_SIZE // 2)
         self.feet.midbottom = self.pos
         self.waypoints: tuple[Point] = waypoints
         self.waypoints_cnt: int = len(waypoints)
         # self.current_waypoint: Point | None = (self.way_points[0] if self.way_points_cnt > 0 else None)
         self.current_waypoint_no: int = 0
+        self.target: vec | None = vec(0,0)
         self.speed_walk: int = 30
         self.speed_run: int = 40
         self.speed: int = random.choice([self.speed_walk, self.speed_run])
@@ -151,17 +153,104 @@ class NPC(pygame.sprite.Sprite):
         else: return "left"
         
     def movement(self):
+        if not self.target == vec(0,0) or self.waypoints_cnt == 0:
+            if not self.name == "GreenNinja" and (self.waypoints_cnt == 0 or not self.target == self.scene.player.pos):
+                # target = vec(pygame.mouse.get_pos())
+                # mx, my = self.scene.map_layer.get_center_offset()
+                # x = target.x // self.scene.map_layer._real_ratio_x - mx
+                # y = target.y // self.scene.map_layer._real_ratio_x - my 
+                self.target = self.scene.player.pos.copy()
+                start = (int((self.pos.y - 2) // TILE_SIZE), int((self.pos.x)// TILE_SIZE))
+                goal = (int((self.target.y - 4) // TILE_SIZE), int(self.target.x // TILE_SIZE))
+                path = a_star(start=start, goal=goal, grid=self.scene.path_finding_grid)
+                if path:
+                    waypoints = []
+                    path_list = list(path)
+                    start_index = 0
+                    # when following Player, stop 1 step before
+                    if len(path_list) >= 2:
+                        # is first waypoint in opposite direction than second
+                        # p1 = Point(path_list[0][1] * TILE_SIZE + TILE_SIZE // 2 + TILE_SIZE // 4, path_list[0][0] * TILE_SIZE + TILE_SIZE // 2)
+                        # p2 = Point(path_list[1][1] * TILE_SIZE + TILE_SIZE // 2 + TILE_SIZE // 4, path_list[1][0] * TILE_SIZE + TILE_SIZE // 2)
+                        # p3 = Point(path_list[2][1] * TILE_SIZE + TILE_SIZE // 2 + TILE_SIZE // 4, path_list[2][0] * TILE_SIZE + TILE_SIZE // 2)
+                        # to_first = vec(p1) - self.pos
+                        # to_second = vec(p2) - self.pos
+                        # to_third = vec(p2) - self.pos
+                        # angle = abs(to_first.angle_to(to_second))
+                        # angle2 = abs(to_first.angle_to(to_third))
+                        # angle3 = abs(to_third.angle_to(to_second))
+                        # 180 degree +- 20 degree
+                        # if 160 <= angle <= 200:
+                        
+                        if path_list[0] == start:
+                            start_index = 1
+                        
+                        # print(f"{start_index} {start} 0:{path_list[0]} 1:{path_list[1]} 2:{path_list[2]}")
+                        # print(f"{angle=:7.3f} {angle2=:7.3f} {angle3=:7.3f} {start_index=} {to_first=} {to_second=}")
+                    for waypoint in path_list[start_index:-1]:
+                        y, x = waypoint
+                        p = Point(x * TILE_SIZE + TILE_SIZE // 2, y * TILE_SIZE + TILE_SIZE // 2)
+                        # if self.pos.distance_squared_to(vec(p)) <= 12**2:
+                        #     continue
+                        waypoints.append(p)
+                    self.waypoints = tuple(waypoints)
+                    self.waypoints_cnt = len(waypoints)
+                    self.current_waypoint_no = 0
+                else:
+                    print(f"{self.name}: Path not found!")
+                    self.waypoints = ()
+                    self.waypoints_cnt = 0
+                    self.current_waypoint_no = 0
+                    self.acc = vec(0,0)
+                    self.vel = vec(0,0)
+                    
+                
+            global INPUTS
+            if INPUTS["left_click"] and self.name == "GreenNinja":
+                target = vec(pygame.mouse.get_pos())
+                mx, my = self.scene.map_layer.get_center_offset()
+                x = target.x // self.scene.map_layer._real_ratio_x - mx
+                y = target.y // self.scene.map_layer._real_ratio_x - my 
+                self.target = vec(x, y)
+                # print(x, y)
+                start = (int((self.pos.y - 2) // TILE_SIZE), int((self.pos.x)// TILE_SIZE))
+                goal = (int((self.target.y - 4) // TILE_SIZE), int(self.target.x // TILE_SIZE))
+                path = a_star(start=start, goal=goal, grid=self.scene.path_finding_grid)
+                # print(f"{start=}")
+                # print(f"{goal=}")
+                # print(path)
+                # print(self.scene.path_finding_grid)
+                if path:
+                    waypoints = []
+                    for waypoint in list(path):
+                        y, x = waypoint
+                        waypoints.append(Point(x * TILE_SIZE + TILE_SIZE // 2, y * TILE_SIZE + TILE_SIZE // 2))
+                    self.waypoints = tuple(waypoints)
+                    self.waypoints_cnt = len(waypoints)
+                    self.current_waypoint_no = 0
+                        
+                INPUTS["left_click"] = False
+            
         if self.waypoints_cnt > 0:
             npc_pos = self.pos
             current_way_point_vec = vec(self.waypoints[self.current_waypoint_no])
-            current_way_point_vec.y += TILE_SIZE // 4
+            current_way_point_vec.y += 4
             # print(f"Distance to way point {self.current_way_point}: {current_way_point_vec.distance_squared_to(npc_pos):5.0f}")
-            if current_way_point_vec.distance_squared_to(npc_pos) <= 1.0:
+            if current_way_point_vec.distance_squared_to(npc_pos) <= 2.0:
                 self.current_waypoint_no += 1
+                # if following target and reached goal do not start over again
                 if self.current_waypoint_no >= self.waypoints_cnt:
-                    self.current_waypoint_no = 0
-                current_way_point_vec = vec(self.waypoints[self.current_waypoint_no])
-                current_way_point_vec.y += TILE_SIZE // 4
+                    if not self.target == vec(0,0):
+                        self.waypoints = ()
+                        self.waypoints_cnt = 0
+                        self.current_waypoint_no = 0
+                        self.acc = vec(0,0)
+                        self.vel = vec(0,0)
+                        return
+                    else:
+                        self.current_waypoint_no = 0
+                    current_way_point_vec = vec(self.waypoints[self.current_waypoint_no])
+                    current_way_point_vec.y += 4
                 # print(f"New way point: {self.current_way_point}")
             direction = current_way_point_vec - npc_pos
             direction = direction.normalize() * self.force
@@ -216,8 +305,9 @@ class NPC(pygame.sprite.Sprite):
                 # self.rect.y =  self.org_y
 
                 # TODO not a good place to do it
-                self.scene.group.remove(self)
-                self.scene.group.add(self, layer=3)
+                # self.scene.group.remove(self)
+                # self.scene.group.add(self, layer=3)
+                self.scene.group.change_layer(self, self.scene.sprites_layer)
         
         self.pos.x += self.vel.x * dt + (self.vel.x / 2) * dt
         self.pos.y += self.vel.y * dt + (self.vel.y / 2) * dt
@@ -260,11 +350,39 @@ class NPC(pygame.sprite.Sprite):
                 self.kill()
                 # TODO NPC goes to another map
 
+
     def update(self, dt: float):
         self.state.update(dt, self)
         self.change_state()
         
-    def move_back(self, dt: float) -> None:
+        
+    def slide(self, colliders) -> None:
+        move_vec = self.pos - self.prev_pos
+        # can't move by full vector,
+        # first try move ony in one axis (reset the movement along the other axis to zero)
+        
+        # slide along y axis
+        self.pos.x -= move_vec.x
+        self.adjust_rect()
+        if self.feet.collidelist(colliders) == -1:
+            # looks ok, so set prev pos
+            self.prev_pos = self.pos.copy()
+            return
+        
+        # slide along x axis
+        self.pos.x += move_vec.x
+        self.pos.y -= move_vec.y
+        self.adjust_rect()
+        if self.feet.collidelist(colliders) == -1:
+            # looks ok, so set prev pos
+            self.prev_pos = self.pos.copy()
+            return
+        
+        # slide is not possible, block movement
+        self.move_back()
+        
+        
+    def move_back(self) -> None: # start_index = 0
         """
         If called after an update, the sprite can move back
 
@@ -310,26 +428,49 @@ class Player(NPC):
         self.speed = self.speed_walk
         
     def movement(self):
-        # return
+        global INPUTS
+        if INPUTS["left_click"] or not self.target == vec(0,0):
+            super().movement()
+            # target = vec(pygame.mouse.get_pos())
+            # mx, my = self.scene.map_layer.get_center_offset()
+            # x = target.x // self.scene.map_layer._real_ratio_x - mx
+            # y = target.y // self.scene.map_layer._real_ratio_x - my
+            # self.target = vec(x // TILE_SIZE, y // TILE_SIZE)
+            # INPUTS["left_click"] = False
+        if INPUTS["right_click"]:
+            self.target = vec(0,0)
+            self.waypoints_cnt = 0
+            self.waypoints = ()
+            
         if INPUTS["left"]:
             self.acc.x = -self.force
+            self.target = vec(0,0)
         elif INPUTS["right"]:
             self.acc.x = self.force
+            self.target = vec(0,0)
         else:
-            self.acc.x = 0
+            if self.target == vec(0,0):
+                self.acc.x = 0
             
         if INPUTS["up"]:
             self.acc.y = -self.force
+            self.target = vec(0,0)
         elif INPUTS["down"]:
             self.acc.y = self.force
+            self.target = vec(0,0)
         else:
-            self.acc.y = 0
+            if self.target == vec(0,0):
+                self.acc.y = 0
+
                     
     def check_scene_exit(self):
         for exit in self.scene.exit_sprites:
             if self.feet.colliderect(exit.rect):
-                self.scene.new_scene = exit.to_map
-                self.scene.entry_point = exit.entry_point
+                if exit.to_map == "Maze":
+                    pass
+                # self.scene.new_scene = exit.to_map
+                self.scene.new_scene = exit
+                # self.scene.entry_point = exit.entry_point
                 self.scene.transition.exiting = True
                 # self.scene.go_to_scene()
                 

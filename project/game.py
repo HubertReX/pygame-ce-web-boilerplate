@@ -61,8 +61,9 @@ class Game:
         # self.states.append(start_state)
         import scene
         start_state = scene.Scene(self, 'Village', 'start')
-        # start_state.enter_state()
-        self.states.append(start_state)
+        # start_state = scene.Scene(self, 'Maze', 'start', is_maze=True, maze_cols=10, maze_rows=5)
+        start_state.enter_state()
+        # self.states.append(start_state)
         self.states.append(start_state)
         if USE_CUSTOM_CURSOR:
             self.cursor_img = pygame.transform.scale(pygame.image.load("assets/aim.png"), (32,32)).convert_alpha()
@@ -76,8 +77,25 @@ class Game:
             pygame.draw.rect(surf, color, surf.get_rect())
             self.canvas.blit(surf, rect)        
         
+    def render_texts(            
+            self, 
+            texts: list[str], 
+            pos: list[int], 
+            color: str="white", 
+            bg_color: list[int] | None = None, 
+            shadow: bool=True, 
+            font_size: int=0, 
+            centred=False
+        ):
+        for line_no, text in enumerate(texts):
+            if font_size == 0:
+                font_size = FONT_SIZE_SMALL
+            new_pos = [pos[0], pos[1] + line_no * font_size * TEXT_ROW_SPACING]
+            self.render_text(text, new_pos, color, bg_color, shadow, font_size, centred)
+        
     def render_text(
-            self, text: str, 
+            self, 
+            text: str, 
             pos: list[int], 
             color: str="white", 
             bg_color: list[int] | None = None, 

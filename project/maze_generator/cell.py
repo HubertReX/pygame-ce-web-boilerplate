@@ -14,6 +14,8 @@ class Cell:
         self.y = y
         self.links: list[Cell] = []
         self.neighbors: dict[int, Cell] = dict()
+        self.allowed_moves: list[bool] = []
+        self.image_index: int = 0
 
 
     def add_neighbor(self, direction: int, cell: "Cell") -> None:

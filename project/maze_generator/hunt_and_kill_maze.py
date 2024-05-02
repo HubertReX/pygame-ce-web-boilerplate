@@ -1,6 +1,6 @@
 import random
 # from cell import Cell
-from maze import Maze
+from .maze import Maze
 
 
 class HuntAndKillMaze(Maze):
@@ -75,3 +75,11 @@ class HuntAndKillMaze(Maze):
                             neighbor = random.choice(visited_neighbors)
                             current_cell.link(neighbor)
                             break
+                        
+        for cell in self.get_all_cells():
+            cell.allowed_moves = cell.get_allowed_moves()
+            index = 0
+            for dir in range(4):
+                if cell.allowed_moves[dir]:
+                    index += 2**dir
+                cell.image_index = index

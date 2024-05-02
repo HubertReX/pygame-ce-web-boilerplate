@@ -1,5 +1,5 @@
 import random
-from cell import *
+from .cell import *
 
 
 class Maze:
@@ -49,3 +49,6 @@ class Maze:
 
     def get_number_cells(self):
         return self.num_rows * self.num_cols
+    
+    def generate(self):
+        raise NotImplementedError("[red]error[/] This is abstract class. 'generate' method needs to be implemented in subclass.")

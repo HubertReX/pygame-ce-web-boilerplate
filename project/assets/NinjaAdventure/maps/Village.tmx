@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="52" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="9" nextobjectid="19">
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="52" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="9" nextobjectid="21">
  <properties>
   <property name="particles" value="leafs"/>
  </properties>
@@ -48,7 +48,7 @@
   <data encoding="csv">
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,337,450,339,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2665,0,0,0,0,1368,0,0,449,452,367,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2665,0,2572,0,0,0,1368,0,0,449,452,367,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2664,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1371,0,0,0,0,0,393,394,395,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2664,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1574,1571,1572,1572,1572,1573,1571,1572,0,27,28,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,2634,0,0,0,0,0,0,0,0,2664,0,0,0,0,0,1571,1571,0,0,0,2634,0,0,0,0,0,1574,0,0,0,0,1574,0,0,0,0,0,0,0,
@@ -184,12 +184,23 @@
   <object id="15" name="VillageHouse" x="384" y="80" width="16" height="16">
    <properties>
     <property name="entry_point" value="Door"/>
+    <property name="is_maze" type="bool" value="false"/>
     <property name="to_map" value="VillageHouse"/>
+   </properties>
+  </object>
+  <object id="19" name="Maze" x="629" y="37" width="8" height="8">
+   <properties>
+    <property name="entry_point" value="Entry"/>
+    <property name="is_maze" type="bool" value="true"/>
+    <property name="maze_cols" type="int" value="10"/>
+    <property name="maze_rows" type="int" value="7"/>
+    <property name="return_entry_point" value="Stairs"/>
+    <property name="to_map" value="Maze"/>
    </properties>
   </object>
  </objectgroup>
  <objectgroup id="5" name="entry_points">
-  <object id="1" name="start" x="392" y="128">
+  <object id="1" name="start" x="624" y="64">
    <properties>
     <property name="sprite_name" value="null"/>
    </properties>
@@ -226,6 +237,12 @@
    <point/>
   </object>
   <object id="14" name="Door" x="392" y="112">
+   <properties>
+    <property name="sprite_name" value="null"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="20" name="Stairs" x="620" y="48">
    <properties>
     <property name="sprite_name" value="null"/>
    </properties>

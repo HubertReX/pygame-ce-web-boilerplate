@@ -3,6 +3,8 @@
 from pathlib import Path
 import pygame
 import hunt_and_kill_maze
+from maze import Maze
+from maze_utils import get_gid_from_tmx_id, get_pyscroll_from_maze
 from cell import *
 
 from pytmx.util_pygame import load_pygame
@@ -98,10 +100,7 @@ class MazeDrawer:
                 
         image = self.tilesheet.subsurface((512, 128, 16, 16))
         self.wizard_image = pygame.transform.scale_by(image, (SCALE_FACTOR, SCALE_FACTOR))
-        
-        # draw the outside walls around the maze
-        # self.draw_background()
-        
+                
         # center the maze
         self.maze_offset_x = (WINDOW_WIDTH - self.maze.num_cols * CELLSIZE_SCALED) // 2
         self.maze_offset_y = (WINDOW_HEIGHT - self.maze.num_rows * CELLSIZE_SCALED) // 2
@@ -116,32 +115,16 @@ class MazeDrawer:
         
         self.current_scene = "DummyLevel"
         self.tileset_map = load_pygame(MAPS_DIR / f"{self.current_scene}.tmx")
-        # with open(MAPS_DIR / f"{self.current_scene}.tmx", encoding="utf-8") as tmx:
-        #     self.org_tmx = "".join(tmx.readlines())
-            
-        # print(self.org_tmx)
+
         self.layers = []
         for layer in self.tileset_map.layers:
             self.layers.append(layer.name)
         
-        self.convert_map()
-        
-        # print("get_tile_properties")
-        # print(tileset_map.get_tile_properties(1,1,1))
-        # print("get_tile_gid")
-        # print(tileset_map.get_tile_gid(1,1,1))
-        # print("get_tileset_from_gid")
-        # tileset = tileset_map.get_tileset_from_gid(2)
-        # print(tileset.__dict__)
-        # tileset_map.tilesets[0]
-        # print("map_gid")
-        # print(tileset_map.map_gid(2))
-        # print(tileset_map.map_gid2(2)[0])
-        # print("gidmap")
-        # print(tileset_map.gidmap)
-        # print(tileset_map.tiledgidmap)
-        
-        
+        # clean_tileset_name = "MazeTileset_clean"
+        self.tileset_map = load_pygame(MAPS_DIR / f"MazeTileset_clean.tmx")
+        get_pyscroll_from_maze(self.tileset_map, self.maze)
+        # self.convert_map()
+                
         # create new renderer (camera)
         self.map_layer = pyscroll.BufferedRenderer(
             data=pyscroll.data.TiledMapData(self.tileset_map),
@@ -159,33 +142,14 @@ class MazeDrawer:
         self.group = PyscrollGroup(map_layer=self.map_layer, default_layer=3)        
         self.group.center(self.map_layer.map_rect.center)
         
-        
-        # print(tileset_map.get_layer_by_name("walls"))
-        # help(tileset_map.get_layer_by_name("walls"))
-        # print("-"*10)
-        # sprite = tileset_map.get_tile_gid(1,1,1)
-        # print(sprite)
-        # help(sprite)
-
-        # walls_layer_id = self.layers.index("walls")
-        # print(f"{walls_layer_id=}")
-        # walls = self.group.get_sprites_from_layer(walls_layer_id)
-        # if len(walls) > 0:
-        #     first_sprite = walls[0]
-        #     print(first_sprite)
-        #     help(first_sprite)
-        # self.org_tmx = self.org_tmx.replace("5,5,5,5,", "5,19,5,5,")
-        # # print(self.org_tmx)
-        # with open(MAPS_DIR / f"{self.current_scene}_mod.tmx", mode="w", encoding="utf-8") as tmx:
-        #     tmx.write(self.org_tmx)
-
 
     def generate_map(self):
         self.maze = hunt_and_kill_maze.HuntAndKillMaze(COLS, ROWS)
         self.maze.generate()
-        # self.tileset_map.from_xml_string(self.org_tmx)
-        self.convert_map()
-        # self.tileset_map = load_pygame(MAPS_DIR / f"{self.current_scene}_mod.tmx")
+        # self.convert_map()
+        self.tileset_map = load_pygame(MAPS_DIR / f"MazeTileset_clean.tmx")
+        get_pyscroll_from_maze(self.tileset_map, self.maze)
+        
         # create new renderer (camera)
         self.map_layer = pyscroll.BufferedRenderer(
             data=pyscroll.data.TiledMapData(self.tileset_map),
@@ -203,22 +167,12 @@ class MazeDrawer:
         self.group = PyscrollGroup(map_layer=self.map_layer, default_layer=1)        
         self.group.center(self.map_layer.map_rect.center)
 
-        
-    def get_gid_from_tmx_id(self, tmx_id: int) -> int:
-        gid_tuple = self.tileset_map.gidmap[tmx_id+1]
-        if len(gid_tuple):
-            return gid_tuple[0][0]
-        else:
-            print(f"[red]ERROR[/] GID for {tmx_id} not found!")
-            return 0
                 
     def convert_map(self):
-        
-        # print(f"{self.tileset_map.width=} {self.maze.num_cols=}")
         margin = 3
         
         new_rows = [[0 for _ in range(self.maze.num_cols + (2 * margin))] for _ in range(margin)]
-        # for cell in self.maze.get_all_cells():
+
         for row in self.maze.cell_rows:
             new_cols = []
             for _ in range(margin):
@@ -231,13 +185,11 @@ class MazeDrawer:
                 for dir in range(4):
                     if allowed_moves[dir]:
                         index += 2**dir
-                # if (x == 0 and y == 0):
-                #     print(allowed_moves)
                 col = index % 4
                 row = index // 4
                 img_index = (row * 5) + col
                 
-                new_cols.append(self.get_gid_from_tmx_id(img_index))
+                new_cols.append(get_gid_from_tmx_id(img_index, self.tileset_map))
             
             for _ in range(margin):
                 new_cols.append(0)
@@ -248,7 +200,7 @@ class MazeDrawer:
             new_rows.append([0 for _ in range(self.maze.num_cols + (2 * margin))])
 
         self.tileset_map.get_layer_by_name("walls").data = new_rows
-        floor_id = self.get_gid_from_tmx_id(4)
+        floor_id = get_gid_from_tmx_id(4, self.tileset_map)
         floor_data = [[floor_id for _ in range(self.maze.num_cols + (2 * margin))] for _ in range(self.maze.num_rows + (2 * margin))]
         self.tileset_map.get_layer_by_name("floor").data = floor_data
         self.tileset_map.get_layer_by_name("floor").width = self.maze.num_cols
@@ -256,10 +208,9 @@ class MazeDrawer:
         self.tileset_map.get_layer_by_name("walls").width = self.maze.num_cols
         self.tileset_map.get_layer_by_name("walls").height = self.maze.num_rows
         self.tileset_map.width = self.maze.num_cols + (2 * margin)
-
         self.tileset_map.height = self.maze.num_rows + (2 * margin)
-        # walls_map[cell.y + offset_y][cell.x + offset_x] = self.get_gid_from_tmx_id(img_index, self.tileset_map)
-            #self.display_surface.blit(self.cell_images[index], (x + self.maze_offset_x, y + self.maze_offset_y))
+
+            
             
     def draw(self, select_cell: Cell | None = None, visit = True):
         if SHOW_OLD:
@@ -302,32 +253,6 @@ class MazeDrawer:
         for cell in self.maze.get_all_cells():
             # Check which cell walls need to be drawn
             
-            
-            # hasWallNorth = False
-            # hasWallSouth = False
-            # hasWallWest  = False
-            # hasWallEast  = False
-
-            # if CELL_WEST not in cell.neighbors:
-            #     hasWallWest = True
-            # elif cell.neighbors[CELL_WEST] not in cell.links:
-            #     hasWallWest = True
-
-            # if CELL_NORTH not in cell.neighbors:
-            #     hasWallNorth = True
-            # elif cell.neighbors[CELL_NORTH] not in cell.links:
-            #     hasWallNorth = True
-
-            # if CELL_EAST not in cell.neighbors:
-            #     hasWallEast = True
-            # elif cell.neighbors[CELL_EAST] not in cell.links:
-            #     hasWallEast = True
-
-            # if CELL_SOUTH not in cell.neighbors:
-            #     hasWallSouth = True
-            # elif cell.neighbors[CELL_SOUTH] not in cell.links:
-            #     hasWallSouth = True
-
             # x,y coords of the cell in pixels
             x = cell.x * CELLSIZE_SCALED
             y = cell.y * CELLSIZE_SCALED
@@ -335,10 +260,6 @@ class MazeDrawer:
             # find the correct image for the cell
             index = 0
             
-            # if hasWallEast:  index += 1
-            # if hasWallWest:  index += 2
-            # if hasWallSouth: index += 4
-            # if hasWallNorth: index += 8
             allowed_moves = cell.get_allowed_moves()
             for dir in range(4):
                 if allowed_moves[dir]:
