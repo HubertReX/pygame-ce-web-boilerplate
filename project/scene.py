@@ -103,7 +103,7 @@ class Scene(State):
             for x, y, surf in tileset_map.get_layer_by_name("walls").tiles():
                 rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, surf.get_width(), surf.get_height())
                 self.walls.append(rect)
-                self.path_finding_grid[y][x] = 1
+                self.path_finding_grid[y][x] = 100
                 # can be created as sprites if needed
         #         Wall([self.block_sprites], (x * TILE_SIZE, y * TILE_SIZE), "blocks", surf)
                         
@@ -175,7 +175,26 @@ class Scene(State):
         # add our player to the group
         self.group.add(self.shadow_sprites, layer=2)
         self.group.add(self.player)
-        self.group.add(self.NPC)        
+        self.group.add(self.NPC)
+                
+        for x, y, surf in tileset_map.layers[0].tiles():
+            
+            # rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, surf.get_width(), surf.get_height())
+            # self.walls.append(rect)        
+            if self.path_finding_grid[y][x] == 0:
+                sprites = self.group.get_sprites_at((x,y))
+                # tile_0_gid = tileset_map.get_tile_gid(x, y, 0)
+                # tile_1_gid = tileset_map.get_tile_gid(x, y, 1)
+                tile_0_gid = tileset_map.get_tile_properties(x, y, 0)
+                tile_1_gid = tileset_map.get_tile_properties(x, y, 1)
+                step_cost = 100
+                if tile_0_gid and "step_cost" in tile_0_gid.keys():
+                    step_cost = tile_0_gid["step_cost"]
+                if tile_1_gid and "step_cost" in tile_1_gid.keys():
+                    step_cost = tile_1_gid["step_cost"]
+                self.path_finding_grid[y][x] = -step_cost
+                # if x == 28 and y in [6,7]:
+                    # print(x, y, tile_0_gid, tile_1_gid, step_cost)
     
     
     def __repr__(self) -> str:
@@ -364,14 +383,11 @@ class Scene(State):
         if not SHOW_HELP_INFO:
             self.game.render_text(f"press [h] for help", (WIDTH // 2, HEIGHT - FONT_SIZE_MEDIUM * TEXT_ROW_SPACING), shadow=True, centred=True)
 
-        g_x = self.player.pos.x // TILE_SIZE
-        g_y = (self.player.pos.y - 2) // TILE_SIZE
-        
         msgs = [
             f"FPS: {self.game.clock.get_fps(): 6.1f}",
             f"vel: {self.player.vel.x: 6.1f} {self.player.vel.y: 6.1f}",
             f"x  : {self.player.pos.x: 3.0f}   y : {self.player.pos.y: 3.0f}",
-            f"g x:  {g_x: 3.0f} g y : {g_y: 3.0f}",
+            f"g x:  {self.player.tileset_coord.x: 3.0f} g y : {self.player.tileset_coord.y: 3.0f}",
             # f"up_vel: {self.player.up_vel: 3.1f} up_acc{self.player.up_acc: 3.1f}",
             f"t x:  {self.player.target.x: 3.0f} t y : {self.player.target.y: 3.0f}",
             # f"offset: {self.player.jumping_offset: 6.1f}",
@@ -389,16 +405,16 @@ class Scene(State):
             for npc in self.NPC + [self.player]:
                 texts = [
                     npc.name,
-                    f"px={npc.pos.x//1:3} y={(npc.pos.y - 4)//1:3}",
-                    f"gx={npc.pos.x//TILE_SIZE:3} y={(npc.pos.y-4)//TILE_SIZE:3}",
+                    f"px={npc.pos.x // 1:3} y={(npc.pos.y - 4) // 1:3}",
+                    f"gx={npc.tileset_coord.x:3} y={npc.tileset_coord.y:3}",
                     f"s ={npc.state} j={npc.is_flying}",
                     f"wc={npc.waypoints_cnt} wn={npc.current_waypoint_no}",
-                    f"tx={npc.target.x//TILE_SIZE:3} y={(npc.target.y-4)//TILE_SIZE:3}",
+                    f"tx={npc.get_tileset_coord(npc.target).x:3} y={npc.get_tileset_coord(npc.target).y:3}",
                 ]
                 if npc.waypoints_cnt > 0:
                     curr_wp = npc.waypoints[npc.current_waypoint_no]
                     # texts.append(f"wp ={curr_wp.x//1:3} {curr_wp.y//1:3}")
-                    texts.append(f"cw={curr_wp.x//TILE_SIZE:3} {curr_wp.y//TILE_SIZE:3}")
+                    texts.append(f"cw={npc.get_tileset_coord(curr_wp).x:3} {npc.get_tileset_coord(curr_wp).y:3}")
                     # points = [] + npc.waypoints
                     prev_point = (npc.pos.x, npc.pos.y)
                     for point in list(npc.waypoints)[npc.current_waypoint_no:]:
@@ -416,7 +432,7 @@ class Scene(State):
             # walls grid
             for y, row in enumerate(self.path_finding_grid):
                 for x, tile in enumerate(row):
-                    if tile:
+                    if tile > 0:
                         rect_w = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
                         rect_s = self.map_layer.translate_rect(rect_w)
                         img = pygame.Surface(rect_s.size, pygame.SRCALPHA)

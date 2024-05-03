@@ -75,7 +75,8 @@ def a_star(grid, start, goal):
             # Assuming uniform cost for each step
             # tentative_g = g_score[current] + 1
             # orthogonal move cost == 100 diagonal move cost == sqrt(2)
-            tentative_g = g_score[current] + 100 if not is_diagonal else g_score[current] + 141
+            # node with negative value indicates custom step cost (e.g. water = -200)
+            tentative_g = g_score[current] + abs(grid[x][y]) if not is_diagonal else g_score[current] + int(abs(-grid[x][y] * 1.41))
             # move permitted if new node is not blocked
             # move_permitted = grid[x][y] == 0
             
@@ -100,7 +101,7 @@ def a_star(grid, start, goal):
             #  G |   |
             
             if 0 <= x < len(grid) and 0 <= y < len(grid[0]):
-                move_permitted = grid[x][y] == 0 if not is_diagonal else (grid[x][y] == 0 and grid[x][current[1]] == 0 and grid[current[0]][y] == 0)
+                move_permitted = grid[x][y] <= 0 if not is_diagonal else (grid[x][y] <= 0 and grid[x][current[1]] <= 0 and grid[current[0]][y] <= 0)
                 if move_permitted:
                     if neighbor not in g_score or tentative_g < g_score[neighbor]:
                         g_score[neighbor] = tentative_g

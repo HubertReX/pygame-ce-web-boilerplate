@@ -40,6 +40,7 @@ class NPC(pygame.sprite.Sprite):
         # self.image.set_colorkey(COLORS["black"])
         self.pos: vec = vec(pos[0], pos[1])
         self.prev_pos: vec = self.pos.copy()
+        self.tileset_coord: Point = self.get_tileset_coord()
         self.rect = self.image.get_frect(midbottom = self.pos)
         # self.old_rect = pygame.Rect(self.rect)
         self.feet = pygame.Rect(0, 0, self.rect.width // 2, TILE_SIZE // 2)
@@ -63,6 +64,12 @@ class NPC(pygame.sprite.Sprite):
         self.is_jumping = False
         self.state: npc_state.NPC_State = npc_state.Idle()
         self.state.enter_time = self.scene.game.time_elapsed
+        
+    def get_tileset_coord(self, pos: vec | None = None) -> vec:
+        if not pos:
+            pos = self.pos
+            
+        return Point(int(pos.x // TILE_SIZE), int((pos.y - 4) // TILE_SIZE))
         
     def import_sprite_sheet(self, path: str):
         img = pygame.image.load(path).convert_alpha()
@@ -160,8 +167,9 @@ class NPC(pygame.sprite.Sprite):
                 # x = target.x // self.scene.map_layer._real_ratio_x - mx
                 # y = target.y // self.scene.map_layer._real_ratio_x - my 
                 self.target = self.scene.player.pos.copy()
-                start = (int((self.pos.y - 2) // TILE_SIZE), int((self.pos.x)// TILE_SIZE))
-                goal = (int((self.target.y - 4) // TILE_SIZE), int(self.target.x // TILE_SIZE))
+                start = (self.tileset_coord.y, self.tileset_coord.x) # (int((self.pos.y - 2) // TILE_SIZE), int((self.pos.x)// TILE_SIZE))
+                target = self.get_tileset_coord(self.target)
+                goal = (target.y, target.x) # (int((self.target.y - 4) // TILE_SIZE), int(self.target.x // TILE_SIZE))
                 path = a_star(start=start, goal=goal, grid=self.scene.path_finding_grid)
                 if path:
                     waypoints = []
@@ -213,8 +221,10 @@ class NPC(pygame.sprite.Sprite):
                 y = target.y // self.scene.map_layer._real_ratio_x - my 
                 self.target = vec(x, y)
                 # print(x, y)
-                start = (int((self.pos.y - 2) // TILE_SIZE), int((self.pos.x)// TILE_SIZE))
-                goal = (int((self.target.y - 4) // TILE_SIZE), int(self.target.x // TILE_SIZE))
+                start = (self.tileset_coord.y, self.tileset_coord.x) # (int((self.pos.y - 2) // TILE_SIZE), int((self.pos.x)// TILE_SIZE))
+                target = self.get_tileset_coord(self.target)
+                goal = (target.y, target.x) # (int((self.target.y - 4) // TILE_SIZE), int(self.target.x // TILE_SIZE))
+
                 path = a_star(start=start, goal=goal, grid=self.scene.path_finding_grid)
                 # print(f"{start=}")
                 # print(f"{goal=}")
@@ -279,8 +289,11 @@ class NPC(pygame.sprite.Sprite):
         # if -0.01 < self.vel.y < 0.01:
         #     self.vel.y = 0.0
         
-        if self.vel.magnitude() >= self.speed:
-            self.vel = self.vel.normalize() * self.speed
+        step_cost = abs(self.scene.path_finding_grid[self.tileset_coord.y][self.tileset_coord.x])
+        speed = (self.speed * (100 / step_cost))
+        
+        if self.vel.magnitude() >= speed:
+            self.vel = self.vel.normalize() * speed
             
         if self.is_flying:
             
@@ -393,6 +406,7 @@ class NPC(pygame.sprite.Sprite):
         self.adjust_rect()
 
     def adjust_rect(self):
+        self.tileset_coord = self.get_tileset_coord() 
         # display sprite n pixels above position so the shadow doesn't stick out from the bottom
         self.rect.midbottom = self.pos + vec(0,  -self.jumping_offset - 3)
         # 'hitbox' for collisions
