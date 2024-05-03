@@ -340,6 +340,11 @@ class Scene(State):
             menus.MainMenuScreen(self.game, "MainMenu").enter_state()
             # self.game.reset_inputs()
             INPUTS['help'] = False
+        global IS_PAUSED
+        if INPUTS['pause']:
+            IS_PAUSED = not IS_PAUSED
+            print(f"{IS_PAUSED=}")
+            INPUTS['pause'] = False
 
         if INPUTS['screenshot']:
             self.game.save_screenshot()
@@ -366,11 +371,11 @@ class Scene(State):
     def show_help(self):
         i = 1
         show_actions = [action for action in ACTIONS.values() if action["show"]]
-        rect = pygame.Rect(WIDTH - 360 - 4, -10 + FONT_SIZE_MEDIUM * TEXT_ROW_SPACING, 358, (len(show_actions) + 1) * FONT_SIZE_MEDIUM * TEXT_ROW_SPACING)
+        rect = pygame.Rect(WIDTH - 400 - 4, -10 + FONT_SIZE_MEDIUM * TEXT_ROW_SPACING, 400 - 2, (len(show_actions) + 1) * FONT_SIZE_MEDIUM * TEXT_ROW_SPACING)
         self.game.render_panel(rect, (10,10,10,150))
         # self.game.render_text(" \n"*len(show_actions), (WIDTH - 360, FONT_SIZE_MEDIUM * TEXT_ROW_SPACING), bg_color=(10,10,10,150))
         for action in show_actions:
-                self.game.render_text(f"{', '.join(action['show']):>9} - {action['msg']}", (WIDTH - 360, i * FONT_SIZE_MEDIUM * TEXT_ROW_SPACING), shadow=True) # 
+                self.game.render_text(f"{', '.join(action['show']):>11} - {action['msg']}", (WIDTH - 400, i * FONT_SIZE_MEDIUM * TEXT_ROW_SPACING), shadow=True) # 
                 i += 1
     
     def draw(self, screen: pygame.Surface, dt: float):

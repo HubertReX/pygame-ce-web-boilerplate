@@ -82,7 +82,7 @@ ACTIONS = {
     'up':         {"show": None,         "msg": "",           "keys": [pygame.K_UP,    pygame.K_w]},
     'down':       {"show": None,         "msg": "",           "keys": [pygame.K_DOWN,  pygame.K_s]},
     
-    'pause':      {"show": ["Pause"],    "msg": "pause",          "keys": [pygame.K_F8]},
+    'pause':      {"show": ["F8"],       "msg": "pause",          "keys": [pygame.K_F8]},
     
     'scroll_up':   {"show": None,            "msg": "",           "keys": []},
     'left_click':  {"show": ["Left click"],  "msg": "go to",      "keys": []},
