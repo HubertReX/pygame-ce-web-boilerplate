@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="14" height="15" tilewidth="16" tileheight="16" infinite="0" nextlayerid="8" nextobjectid="6">
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="14" height="15" tilewidth="16" tileheight="16" infinite="0" nextlayerid="10" nextobjectid="6">
  <tileset firstgid="1" source="tilesets/InteriorFloor.tsx"/>
  <tileset firstgid="375" source="tilesets/WallSimple.tsx"/>
  <tileset firstgid="485" source="tilesets/Interior.tsx"/>
@@ -111,16 +111,12 @@
  </objectgroup>
  <objectgroup id="7" name="entry_points">
   <object id="2" name="Door" x="56" y="120">
-   <properties>
-    <property name="sprite_name" value="null"/>
-   </properties>
    <point/>
   </object>
   <object id="5" name="start" x="56" y="72">
-   <properties>
-    <property name="sprite_name" value="null"/>
-   </properties>
    <point/>
   </object>
  </objectgroup>
+ <objectgroup id="9" name="waypoints"/>
+ <objectgroup id="8" name="spawn_points"/>
 </map>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="52" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="9" nextobjectid="21">
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="52" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="10" nextobjectid="26">
  <properties>
   <property name="particles" value="leafs"/>
  </properties>
@@ -201,51 +201,12 @@
  </objectgroup>
  <objectgroup id="5" name="entry_points">
   <object id="1" name="start" x="624" y="64">
-   <properties>
-    <property name="sprite_name" value="null"/>
-   </properties>
-   <point/>
-  </object>
-  <object id="2" name="Woman" x="512" y="160">
-   <properties>
-    <property name="sprite_name" value="dummy"/>
-   </properties>
-   <point/>
-  </object>
-  <object id="5" name="Villager3" x="472" y="104">
-   <properties>
-    <property name="sprite_name" value="dummy"/>
-   </properties>
-   <point/>
-  </object>
-  <object id="6" name="Villager4" x="744" y="272">
-   <properties>
-    <property name="sprite_name" value="dummy"/>
-   </properties>
-   <point/>
-  </object>
-  <object id="4" name="Villager2" x="360" y="192">
-   <properties>
-    <property name="sprite_name" value="dummy"/>
-   </properties>
-   <point/>
-  </object>
-  <object id="3" name="Villager1" x="408" y="112">
-   <properties>
-    <property name="sprite_name" value="dummy"/>
-   </properties>
    <point/>
   </object>
   <object id="14" name="Door" x="392" y="112">
-   <properties>
-    <property name="sprite_name" value="null"/>
-   </properties>
    <point/>
   </object>
   <object id="20" name="Stairs" x="620" y="48">
-   <properties>
-    <property name="sprite_name" value="null"/>
-   </properties>
    <point/>
   </object>
  </objectgroup>
@@ -264,6 +225,38 @@
   </object>
   <object id="17" name="Villager2" x="361.5" y="201.875">
    <polygon points="-1.5,-17.875 -1.5,46.125 -57.5,46.125 -169.5,-81.875 -193.5,-81.875 -161.5,-81.875 -161.5,-41.875 -161.5,-17.875 -137.5,-17.875 -65.5,62.125 -1.5,62.125"/>
+  </object>
+ </objectgroup>
+ <objectgroup id="9" name="spawn_points">
+  <object id="21" name="Woman" x="512" y="160">
+   <properties>
+    <property name="sprite_name" value="Woman"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="22" name="Villager3" x="472" y="104">
+   <properties>
+    <property name="sprite_name" value="Villager3"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="23" name="Villager4" x="744" y="272">
+   <properties>
+    <property name="sprite_name" value="Villager4"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="24" name="Villager2" x="360" y="192">
+   <properties>
+    <property name="sprite_name" value="Villager2"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="25" name="Villager1" x="408" y="112">
+   <properties>
+    <property name="sprite_name" value="Villager1"/>
+   </properties>
+   <point/>
   </object>
  </objectgroup>
 </map>

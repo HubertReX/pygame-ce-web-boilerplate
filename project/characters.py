@@ -49,7 +49,7 @@ class NPC(pygame.sprite.Sprite):
         self.waypoints_cnt: int = len(waypoints)
         self.current_waypoint_no: int = 0
         # list of targets to follow
-        self.target: vec = vec(0,0  )
+        self.target: vec = vec(0, 0)
         self.targets: list[vec] = []
         
         # basic planar (N,E, S, W) physics 

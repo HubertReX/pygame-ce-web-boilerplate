@@ -130,14 +130,24 @@ class Scene(State):
                 waypoints[obj.name] = (obj.points if hasattr(obj, "points") else obj.as_points)
         
         self.entry_points = {}
-        self.NPC : list[NPC] = []
         if "entry_points" in self.layers:
             for obj in tileset_map.get_layer_by_name("entry_points"):
                 self.entry_points[obj.name] = vec(obj.x, obj.y)
-                waypoint = waypoints.get(obj.name, ())
-                
-                if obj.sprite_name != "null":
-                    self.NPC.append(NPC(self.game, self, [self.draw_sprites], self.shadow_sprites, (obj.x, obj.y), obj.name, waypoint))
+
+        self.NPC : list[NPC] = []
+        if "spawn_points" in self.layers:
+            for obj in tileset_map.get_layer_by_name("spawn_points"):
+                waypoint = waypoints.get(obj.sprite_name, ())    
+                npc = NPC(
+                    self.game, 
+                    self, 
+                    [self.draw_sprites], 
+                    self.shadow_sprites, 
+                    (obj.x, obj.y), 
+                    obj.sprite_name, 
+                    waypoint
+                )
+                self.NPC.append(npc)
                     
         if self.is_maze:
             
