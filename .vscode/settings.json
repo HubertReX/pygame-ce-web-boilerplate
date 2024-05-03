@@ -6,6 +6,7 @@
         "centerx",
         "centery",
         "collidelist",
+        "colliderect",
         "colordict",
         "colorkey",
         "DOUBLEBUF",
