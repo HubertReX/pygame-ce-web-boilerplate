@@ -49,7 +49,8 @@ class NPC(pygame.sprite.Sprite):
         self.waypoints_cnt: int = len(waypoints)
         self.current_waypoint_no: int = 0
         # list of targets to follow
-        self.target: vec | None = vec(0,0)
+        self.target: vec = vec(0,0  )
+        self.targets: list[vec] = []
         
         # basic planar (N,E, S, W) physics 
         # speed in pixels per second
@@ -177,20 +178,13 @@ class NPC(pygame.sprite.Sprite):
         
     def movement(self):
         if not self.target == vec(0,0) or self.waypoints_cnt == 0:
-            if not self.name == "GreenNinja" and (self.waypoints_cnt == 0 or not self.target == self.scene.player.pos):
+            if (self.waypoints_cnt == 0 or not self.target == self.scene.player.pos):
                 self.target = self.scene.player.pos.copy()
                 self.find_path()
                 
-            global INPUTS
-            if INPUTS["left_click"] and self.name == "GreenNinja":
-                target = vec(pygame.mouse.get_pos())
-                mx, my = self.scene.map_layer.get_center_offset()
-                x = target.x // self.scene.map_layer._real_ratio_x - mx
-                y = target.y // self.scene.map_layer._real_ratio_x - my 
-                self.target = vec(x, y)
-                self.find_path()                        
-                INPUTS["left_click"] = False
-            
+        self.follow_waypoints()
+                            
+    def follow_waypoints(self):
         if self.waypoints_cnt > 0:
             npc_pos = self.pos
             current_way_point_vec = vec(self.waypoints[self.current_waypoint_no])
@@ -232,13 +226,16 @@ class NPC(pygame.sprite.Sprite):
                     start_index = 1
                         
             # when following Player, stop 1 step before
-            for waypoint in path_list[start_index:-1]:
+            # for waypoint in path_list[start_index:-1]:
+            for waypoint in path_list[start_index:]:
                 y, x = waypoint
                 p = Point(x * TILE_SIZE + TILE_SIZE // 2, y * TILE_SIZE + TILE_SIZE // 2)
                 waypoints.append(p)
             self.waypoints = tuple(waypoints)
             self.waypoints_cnt = len(waypoints)
             self.current_waypoint_no = 0
+            # self.acc = vec(0,0)
+            # self.vel = vec(0,0)
         else:
             print(f"{self.name}: Path not found!")
             self.waypoints = ()
@@ -391,14 +388,28 @@ class Player(NPC):
         
     def movement(self):
         global INPUTS
-        if INPUTS["left_click"] or not self.target == vec(0,0):
-            super().movement()
+        
+        if not self.target == vec(0,0):
+            self.follow_waypoints()
+            
+        if INPUTS["left_click"]: # or not self.target == vec(0,0):
+            target = vec(pygame.mouse.get_pos())
+            mx, my = self.scene.map_layer.get_center_offset()
+            # convert screen position to world position
+            x = target.x // self.scene.map_layer._real_ratio_x - mx
+            y = target.y // self.scene.map_layer._real_ratio_y - my 
+            self.target = vec(x, y + 8)
+            self.find_path()
+            INPUTS["left_click"] = False
+
+            self.follow_waypoints()
             # target = vec(pygame.mouse.get_pos())
             # mx, my = self.scene.map_layer.get_center_offset()
             # x = target.x // self.scene.map_layer._real_ratio_x - mx
             # y = target.y // self.scene.map_layer._real_ratio_x - my
             # self.target = vec(x // TILE_SIZE, y // TILE_SIZE)
             # INPUTS["left_click"] = False
+        
         if INPUTS["right_click"]:
             self.target = vec(0,0)
             self.waypoints_cnt = 0
