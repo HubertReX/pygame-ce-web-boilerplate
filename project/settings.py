@@ -68,7 +68,7 @@ ACTIONS = {
     'zoom_out':   {"show": ["-"],       "msg": "zoom out",   "keys": [pygame.K_MINUS, pygame.K_KP_MINUS]},
     # 'quit':       {"show": ["ESC", "q"], "msg": "back",       "keys": [pygame.K_ESCAPE,    pygame.K_q]},
     # 'debug':      {"show": ["`", "z  "],   "msg": "debug",      "keys": [pygame.K_BACKQUOTE, pygame.K_z]},
-    # 'run':        {"show": ["CTRL  "],     "msg": "toggle run", "keys": [pygame.K_LCTRL]},
+    # 'run':        {"show": ["CTRL  "],     "msg": "toggle run", "keys": [pygame.K_CTRL]},
     # 'jump':       {"show": ["SPACE "],    "msg": "jump",       "keys": [pygame.K_SPACE]},
     # 'select':     {"show": None,         "msg": "select",     "keys": [pygame.K_SPACE]},
     # 'accept':     {"show": None,         "msg": "accept",     "keys": [pygame.K_RETURN, pygame.K_KP_ENTER]},
@@ -82,12 +82,12 @@ ACTIONS = {
     'up':         {"show": None,         "msg": "",           "keys": [pygame.K_UP,    pygame.K_w]},
     'down':       {"show": None,         "msg": "",           "keys": [pygame.K_DOWN,  pygame.K_s]},
     
-    # 'pause':      {"show": None,        "msg": "",           "keys": []},
+    'pause':      {"show": ["Pause"],    "msg": "pause",          "keys": [pygame.K_F8]},
     
-    'scroll_up':   {"show": None,        "msg": "",           "keys": []},
-    'left_click':  {"show": None,        "msg": "",           "keys": []},
-    'right_click': {"show": None,        "msg": "",           "keys": []},
-    'scroll_click':{"show": None,        "msg": "",           "keys": []},
+    'scroll_up':   {"show": None,            "msg": "",           "keys": []},
+    'left_click':  {"show": ["Left click"],  "msg": "go to",      "keys": []},
+    'right_click': {"show": ["Right click"], "msg": "stop",       "keys": []},
+    'scroll_click':{"show": None,            "msg": "",           "keys": []},
 }
 
 INPUTS = {}

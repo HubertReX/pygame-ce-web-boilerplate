@@ -233,8 +233,10 @@ class Game:
             elif event.type == pygame.MOUSEWHEEL:
                 if event.y == 1:
                     INPUTS["scroll_up"] = True
+                    INPUTS["zoom_in"] = True
                 elif event.y == -1:
                     INPUTS["scroll_down"] = True
+                    INPUTS["zoom_out"] = True
                     
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:

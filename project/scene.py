@@ -97,7 +97,7 @@ class Scene(State):
             walls = tileset_map.get_layer_by_name("walls")
             walls_width = walls.width
             walls_height = walls.height
-            # since NPCs hitbox (feet) is half the size of TILE, for path finding it's enough to aproximate 
+            # since NPCs hitbox (feet) is half the size of TILE, for path finding it's enough to approximate 
             # the full map with only 4 squares (one quoter of the TILE size)
             self.path_finding_grid = [[0 for _ in range(walls_width)] for _ in range(walls_height)]
             
