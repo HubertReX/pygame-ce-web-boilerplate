@@ -115,7 +115,7 @@ class MainMenuScreen(MenuScreen):
         # print(f"Menu : {self.name}")
                         
         if INPUTS['quit'] and not IS_WEB:
-            self.game.running = False    
+            self.game.is_running = False    
             self.deactivate()
 
         if INPUTS['screenshot']:

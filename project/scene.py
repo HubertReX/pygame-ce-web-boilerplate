@@ -58,7 +58,8 @@ class Scene(State):
                 self.prev_state = self.game.states[-1]
             
             if not self.prev_state:
-                self.game.running = False
+                # pass
+                self.game.is_running = False
                 self.exit_state()
                 quit()
             else:
@@ -207,7 +208,7 @@ class Scene(State):
     def go_to_scene(self):
         self.transition.exiting = False
         new_scene = Scene(self.game, self.new_scene.to_map, self.new_scene.entry_point, self.new_scene.is_maze, self.new_scene.maze_cols, self.new_scene.maze_rows)
-        self.exit_state()
+        self.exit_state(quit=False)
         new_scene.enter_state()
         
     

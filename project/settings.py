@@ -1,5 +1,5 @@
 from collections import namedtuple
-from typing import Any
+from typing import Any, Sequence, Union
 from xml.etree.ElementTree import VERSION
 import pygame
 from pygame.math import Vector2 as vec
@@ -22,6 +22,8 @@ ABOUT = [
 ]
 
 Point = namedtuple("Point", ["x", "y"])
+# from pygame/_common.pyi
+ColorValue = Union[int, str, Sequence[int]]
 
 WIDTH, HEIGHT = 1600, 1024
 TILE_SIZE = 16
@@ -37,7 +39,7 @@ if __import__("sys").platform == "emscripten":
 IS_FULLSCREEN = False
 IS_PAUSED = False
 USE_ALPHA_FILTER = False
-USE_CUSTOM_CURSOR = False
+USE_CUSTOM_MOUSE_CURSOR = True
 USE_SHADERS = False
 SHOW_DEBUG_INFO = False
 SHOW_HELP_INFO = False
@@ -122,6 +124,7 @@ CHARACTERS_DIR = RESOURCES_DIR / "characters"
 PARTICLES_DIR = RESOURCES_DIR / "particles"
 
 PROGRAM_ICON = ASSETS_DIR / "icon.png"
+MOUSE_CURSOR_IMG = ASSETS_DIR / "aim.png"
 
 SPRITE_SHEET_DEFINITION = {
     "idle_down":  [(0,0)],

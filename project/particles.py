@@ -45,6 +45,9 @@ class ParticleImageBased:
         # amount of new particles per second
         self.rate = rate
         self.custom_event_id  = pygame.event.custom_type() # pygame.USEREVENT + 1
+        
+        # TODO: pygame.time.set_timer(pygame.event.Event(self.custom_event_id), int(1000 / rate))
+        # https://discord.com/channels/772505616680878080/971360806287577098/1233318274842755122
         # pygame.time.set_timer(self.custom_event_id, int(1000 / rate))
         self.interval: float = 1 / rate
         self.next_run: float = 0.0
