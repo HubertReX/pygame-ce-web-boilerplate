@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="52" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="10" nextobjectid="26">
  <properties>
-  <property name="particles" value="leafs"/>
+  <property name="particles" value="leafs,rain"/>
  </properties>
  <tileset firstgid="1" source="tilesets/Water.tsx"/>
  <tileset firstgid="477" source="tilesets/Floor.tsx"/>
- <tileset firstgid="1049" source="../../../../../Pyved_Roguelike_template/utils/NA_Field.tsx"/>
+ <tileset firstgid="1049" source="tilesets/Field.tsx"/>
  <tileset firstgid="1124" source="tilesets/Nature.tsx"/>
  <tileset firstgid="1628" source="tilesets/House.tsx"/>
  <tileset firstgid="2387" source="Element.tsx"/>

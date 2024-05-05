@@ -127,6 +127,12 @@ HUD_DIR = RESOURCES_DIR / "HUD"
 PROGRAM_ICON = ASSETS_DIR / "icon.png"
 MOUSE_CURSOR_IMG = ASSETS_DIR / "aim.png"
 
+import particles
+PARTICLES = {
+    "leafs": particles.ParticleLeafs,
+    "rain": particles.ParticleRain,
+}
+
 SPRITE_SHEET_DEFINITION = {
     "idle_down":  [(0,0)],
     "idle_up":    [(1,0)],

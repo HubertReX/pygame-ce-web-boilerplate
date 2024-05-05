@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import math
 import pygame, random
 from pygame.math import Vector2 as vec
+from settings import *
 
 #####################################################################################################################
 
@@ -44,13 +45,10 @@ class ParticleImageBased:
         
         # amount of new particles per second
         self.rate = rate
-        self.custom_event_id  = pygame.event.custom_type() # pygame.USEREVENT + 1
+        self.custom_event_id  = pygame.event.custom_type()
         
-        # TODO: pygame.time.set_timer(pygame.event.Event(self.custom_event_id), int(1000 / rate))
-        # https://discord.com/channels/772505616680878080/971360806287577098/1233318274842755122
-        # pygame.time.set_timer(self.custom_event_id, int(1000 / rate))
-        self.interval: float = 1 / rate
-        self.next_run: float = 0.0
+        self.interval: int = int(1000 / rate)
+        pygame.time.set_timer(pygame.event.Event(self.custom_event_id), self.interval)
         
         # scale_speed: 1.0 ==> from 100% to 0% size in 1 second
         self.scale_speed = scale_speed
@@ -125,3 +123,51 @@ class ParticleImageBased:
         self.particles = particle_copy
 
 
+#######################################################################################################
+# MARK: Leaf
+
+class ParticleLeafs():
+    def __init__(self, canvas: pygame.Surface) -> None:
+        spawn_rect = pygame.Rect(0, 0, WIDTH, HEIGHT // 2)
+        leaf_img = pygame.image.load(PARTICLES_DIR / "Leaf_single.png").convert_alpha()
+        self.particle = ParticleImageBased(
+            screen=canvas, 
+            img=leaf_img, 
+            rate=1, 
+            scale_speed=0.25, 
+            alpha_speed=0.1, 
+            rotation_speed=0.0, 
+            spawn_rect=spawn_rect
+        )
+        self.custom_event_id = self.particle.custom_event_id
+
+    def add(self):
+        # move 80 pixels/seconds into south-west (down-left) +/- 30 degree, enlarge 5 x, kill after 4 seconds
+        self.particle.add_particles(start_pos=pygame.mouse.get_pos(), move_speed=80, move_dir=210 + random.randint(-30, 30), scale=5, lifetime=4)
+
+    def emit(self, dt: float):
+        self.particle.emit(dt)
+
+#######################################################################################################
+# MARK: Rain
+class ParticleRain():
+    def __init__(self, canvas: pygame.Surface) -> None:
+        spawn_rect = pygame.Rect(0, 0, WIDTH, 16)
+        leaf_img = pygame.image.load(PARTICLES_DIR / "Rain.png").convert_alpha()
+        self.particle = ParticleImageBased(
+            screen=canvas, 
+            img=leaf_img, 
+            rate=1, 
+            scale_speed=0.25, 
+            alpha_speed=0.1, 
+            rotation_speed=0.0, 
+            spawn_rect=spawn_rect
+        )
+        self.custom_event_id = self.particle.custom_event_id
+
+    def add(self):
+        # move 80 pixels/seconds into south-west (down-left) +/- 30 degree, enlarge 5 x, kill after 4 seconds
+        self.particle.add_particles(start_pos=pygame.mouse.get_pos(), move_speed=1500, move_dir=210 + random.randint(-30, 30), scale=5, lifetime=0.5)
+        
+    def emit(self, dt: float):
+        self.particle.emit(dt)

@@ -3,6 +3,9 @@
  <editorsettings>
   <export format="tmx"/>
  </editorsettings>
+ <properties>
+  <property name="particles" value=""/>
+ </properties>
  <tileset firstgid="1" name="tilemap_packed" tilewidth="16" tileheight="16" tilecount="132" columns="12">
   <image source="../kenney_tinyDungeon/Tilemap/tilemap_packed.png" trans="000000" width="192" height="176"/>
  </tileset>

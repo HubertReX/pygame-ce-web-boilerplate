@@ -1,5 +1,3 @@
-import random
-from particles import ParticleImageBased
 from state import State
 from settings import *
 import pygame
@@ -28,14 +26,6 @@ class Scene(State):
         self.maze_cols = maze_cols
         self.maze_rows = maze_rows
         
-        spawn_rect = pygame.Rect(0, 0, WIDTH, HEIGHT // 2)
-        leaf_img = pygame.image.load(PARTICLES_DIR / "Leaf_single.png").convert_alpha()
-        self.particle_leafs = ParticleImageBased(screen=self.game.canvas, img=leaf_img, rate=0.5, scale_speed=0.25, alpha_speed=0.1, rotation_speed=0.0, spawn_rect=spawn_rect)
-        self.particle_leafs.next_run = self.game.time_elapsed + self.particle_leafs.interval
-        # self.game.register_custom_event(self.particle_leaf.custom_event_id, self.add_leafs)
-        # Timer(self.particle_leaf.interval, self.add_leafs).start()
-
-        
         self.shadow_sprites = pygame.sprite.Group()
         self.draw_sprites = pygame.sprite.Group()
         self.block_sprites = pygame.sprite.Group()
@@ -46,11 +36,6 @@ class Scene(State):
         # moved here to avoid circular imports
         from characters import Player, NPC
         self.player: Player = Player(self.game, self, [self.draw_sprites], self.shadow_sprites, (WIDTH / 2, HEIGHT / 2), "GreenNinja") # Woman, GreenNinja, monochrome_ninja
-
-        # self.shadow_surf = pygame.Surface((TILE_SIZE-2, 6))
-        # rect = self.shadow_surf.get_rect()
-        # self.shadow_surf.set_colorkey("black")
-        # pygame.draw.ellipse(self.shadow_surf, (10,10,10), rect)
         
         # load data from pytmx
         if self.is_maze:
@@ -91,7 +76,14 @@ class Scene(State):
         # under1 layer contains 'walls' - tiles that collide with characters
         
         # string with coma separated names of particle systems active in this map
-        self.map_particles = tileset_map.properties.get("particles", "")
+        map_particles = tileset_map.properties.get("particles", "").replace(" ", "").strip().lower().split(",")
+        # print(tileset_map.properties.get("particles", ""), self.map_particles)
+        self.particles = []
+        for particle in map_particles:
+            if particle in PARTICLES:
+                particle_class = PARTICLES[particle]
+                self.particles.append(particle_class(self.game.canvas))
+                self.game.register_custom_event(self.particles[-1].custom_event_id, self.particles[-1].add)
         
         if "walls" in self.layers:
             walls = tileset_map.get_layer_by_name("walls")
@@ -211,10 +203,7 @@ class Scene(State):
     def __repr__(self) -> str:
         return f"{__class__.__name__}: {self.current_scene}"
     
-    def add_leafs(self):
-        # move 80 pixels/seconds into south-west (down-left) +/- 30 degree, enlarge 5 x, kill after 4 seconds
-        self.particle_leafs.add_particles(start_pos=pygame.mouse.get_pos(), move_speed=80, move_dir=210 + random.randint(-30, 30), scale=5, lifetime=4)
-
+    
     def go_to_scene(self):
         self.transition.exiting = False
         new_scene = Scene(self.game, self.new_scene.to_map, self.new_scene.entry_point, self.new_scene.is_maze, self.new_scene.maze_cols, self.new_scene.maze_rows)
@@ -228,11 +217,6 @@ class Scene(State):
         self.group.update(dt)
         self.transition.update(dt)
         
-        if "leafs" in self.map_particles:
-            if self.game.time_elapsed >= self.particle_leafs.next_run:
-                self.particle_leafs.next_run = self.game.time_elapsed + self.particle_leafs.interval
-                self.add_leafs()
-
         # check if the sprite's feet are colliding with wall       
         # sprite must have a rect called feet, and move_back method,
         # otherwise this will fail
@@ -394,8 +378,8 @@ class Scene(State):
         #     screen.blit(self.shadow_surf, pos)
         
         self.group.draw(screen)
-        if "leafs" in self.map_particles:
-            self.particle_leafs.emit(dt)
+        for particle in self.particles:
+            particle.emit(dt)
         
         self.transition.draw(screen)
         
@@ -412,8 +396,6 @@ class Scene(State):
             # f"offset: {self.player.jumping_offset: 6.1f}",
             # f"col: {self.player.rect.collidelist(self.walls):06.02f}",
             # f"bored={self.player.state.enter_time: 5.1f} time_elapsed={self.game.time_elapsed: 5.1f}",
-            # f"next_run={self.particle_leaf.next_run: 5.1f} time_elapsed={self.game.time_elapsed: 5.1f}",
-            # f"interval={self.particle_leaf.interval: 5.1f}",
         ]
         # print(f"up_vel: {self.player.up_vel: 6.1f} up_acc{self.player.up_acc: 6.1f} offset: {self.player.jumping_offset: 6.1f}")
         
