@@ -435,7 +435,7 @@ class Scene(State):
                     # texts.append(f"wp ={curr_wp.x//1:3} {curr_wp.y//1:3}")
                     texts.append(f"cw={npc.get_tileset_coord(curr_wp).x:3} {npc.get_tileset_coord(curr_wp).y:3}")
                     # points = [] + npc.waypoints
-                    prev_point = (npc.pos.x, npc.pos.y)
+                    prev_point = (npc.pos.x, npc.pos.y - 4)
                     for point in list(npc.waypoints)[npc.current_waypoint_no:]:
                         from_p = self.map_layer.translate_point(vec(prev_point[0], prev_point[1]))
                         to_p = self.map_layer.translate_point(vec(point[0], point[1]))

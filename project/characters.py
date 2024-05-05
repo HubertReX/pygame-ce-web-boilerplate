@@ -434,8 +434,18 @@ class Player(NPC):
             # convert screen position to world position
             x = target.x // self.scene.map_layer._real_ratio_x - mx
             y = target.y // self.scene.map_layer._real_ratio_y - my 
+            rect = pygame.Rect(x, y, 2, 2)
+            fix_exit_target = False
+            exit_sprites = list(self.scene.exit_sprites)
+            if rect.collidelist(exit_sprites) > -1:
+                fix_exit_target = True
+                y += TILE_SIZE
             self.target = vec(x, y + 8)
             self.find_path()
+            if fix_exit_target:
+                self.waypoints = tuple(list(self.waypoints) + [Point(x, y - TILE_SIZE)])
+                self.waypoints_cnt = len(self.waypoints)
+
             INPUTS["left_click"] = False
 
             self.follow_waypoints()
