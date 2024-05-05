@@ -56,7 +56,8 @@ class Game:
         self.is_running = True
 
         # stacked game states (e.g. Scene, Menu)
-        self.states = []
+        from state import State
+        self.states: list[State] = []
         # dict of custom events with callable functions (not used for now since pygame.time.set_timer is not implemented in pygbag)
         self.custom_events: dict[int, callable] = {}
         # moved imports here to avoid circular imports

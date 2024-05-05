@@ -7,7 +7,7 @@ from settings import *
 import game
 import scene
 import npc_state
-from objects import Shadow
+from objects import HealthBar, Shadow
 
 ##########################################################################################################################
 #MARK: NPC
@@ -27,7 +27,8 @@ class NPC(pygame.sprite.Sprite):
         self.game = game
         self.scene = scene
         self.name = name # monochrome_ninja
-        self.shadow = Shadow(shadow_group, (0,0), [TILE_SIZE - 2, 6])
+        self.shadow = Shadow(shadow_group, (0, 0), [TILE_SIZE - 2, 6])
+        self.health_bar = HealthBar(shadow_group, (pos[0], pos[1] - TILE_SIZE - 4))
         self.animations: dict[str, list[pygame.surface.Surface]] = {}
         self.animation_speed = ANIMATION_SPEED
         # self.import_image(f"assets/{self.name}/")
@@ -78,6 +79,13 @@ class NPC(pygame.sprite.Sprite):
         # actual NPC state, mainly to determine type of animation and speed
         self.state: npc_state.NPC_State = npc_state.Idle()
         self.state.enter_time = self.scene.game.time_elapsed
+        
+        self.health: int = 10
+        self.max_health: int = 10
+        self.damage: int = 10
+        self.attitude: str = "friendly"
+        if self.name in ["Snake", "SpiderRed", "Spirit", "Slime"]:
+            self.attitude = "enemy"
         
     def get_tileset_coord(self, pos: vec | None = None) -> Point:
         """
@@ -195,11 +203,12 @@ class NPC(pygame.sprite.Sprite):
                 # if following target and reached goal do not start over again
                 if self.current_waypoint_no >= self.waypoints_cnt:
                     if not self.target == vec(0,0):
+                        self.target = vec(0,0)
                         self.waypoints = ()
                         self.waypoints_cnt = 0
                         self.current_waypoint_no = 0
                         self.acc = vec(0,0)
-                        self.vel = vec(0,0)
+                        # self.vel = vec(0,0)
                         return
                     else:
                         self.current_waypoint_no = 0
@@ -306,10 +315,14 @@ class NPC(pygame.sprite.Sprite):
     def check_scene_exit(self):
         for exit in self.scene.exit_sprites:
             if self.feet.colliderect(exit.rect):
-                self.scene.NPC = [npc for npc in self.scene.NPC if not npc == self]
-                self.shadow.kill()
-                self.kill()
+                self.die()
                 # TODO NPC goes to another map
+
+    def die(self):
+        self.scene.NPC = [npc for npc in self.scene.NPC if not npc == self]
+        self.shadow.kill()
+        self.health_bar.kill()
+        self.kill()
 
 
     def update(self, dt: float):
@@ -342,6 +355,25 @@ class NPC(pygame.sprite.Sprite):
         # slide is not possible, block movement
         self.move_back()
         
+    def encounter(self, oponent: "NPC"):
+        if oponent.attitude == "enemy":
+            # deal damage
+            self.health -= oponent.damage
+            oponent.health -= self.damage
+            
+            self.health = max(0, self.health)
+            oponent.health = max(0, oponent.health)
+            
+            # print(f"{self.name}: {self.health} opponent {oponent.name} {oponent.health}")
+            if self.health == 0:
+                self.die()
+            
+            if oponent.health == 0:
+                oponent.die()
+        else:
+            # push the npc
+            oponent.pos += self.pos - self.prev_pos
+            oponent.adjust_rect()
         
     def move_back(self) -> None: # start_index = 0
         """
@@ -361,6 +393,8 @@ class NPC(pygame.sprite.Sprite):
         self.feet.midbottom = self.pos
         # shadow
         self.shadow.rect.midbottom = self.pos #+ vec(0, -1)
+        self.health_bar.rect.midbottom = self.pos + vec(0, -TILE_SIZE - 4)
+        self.health_bar.set_bar(self.health / self.max_health)
             
         
     def debug(self, msgs: list[str]):
@@ -385,6 +419,8 @@ class Player(NPC):
         self.speed_run  *= 1.5
         self.speed_walk *= 1.2
         self.speed = self.speed_walk
+        self.health: int = 100
+        self.max_health: int = 100
         
     def movement(self):
         global INPUTS

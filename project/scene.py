@@ -184,7 +184,7 @@ class Scene(State):
         self.group = PyscrollGroup(map_layer=self.map_layer, default_layer=self.sprites_layer)        
         
         # add our player to the group
-        self.group.add(self.shadow_sprites, layer=2)
+        self.group.add(self.shadow_sprites, layer=self.sprites_layer - 1)
         self.group.add(self.player)
         self.group.add(self.NPC)
                 
@@ -244,14 +244,17 @@ class Scene(State):
             self.player.slide(self.walls)
 
         if not self.player.is_flying:
-            if self.player.feet.collidelist(self.NPC) > -1:
+            collided_index = self.player.feet.collidelist(self.NPC)
+            if collided_index > -1:
                 # self.player.move_back()
+                self.player.encounter(self.NPC[collided_index])
                 self.player.slide(self.NPC)
             
-        if self.player.is_flying:
-            colliders = self.walls
-        else:
-            colliders = self.walls + [self.player]
+        colliders = self.walls
+        # if self.player.is_flying:
+        #     colliders = self.walls
+        # else:
+        #     colliders = self.walls + [self.player]
             
         for npc in self.NPC:
             if npc.feet.collidelist(colliders) > -1:

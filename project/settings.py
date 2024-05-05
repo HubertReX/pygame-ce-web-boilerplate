@@ -1,4 +1,5 @@
 from collections import namedtuple
+from os import PathLike
 from typing import Any, Sequence, Union
 from xml.etree.ElementTree import VERSION
 import pygame
@@ -122,7 +123,7 @@ MAPS_DIR = RESOURCES_DIR / "maps"
 MAZE_DIR = ASSETS_DIR / "MazeTileset"
 CHARACTERS_DIR = RESOURCES_DIR / "characters"
 PARTICLES_DIR = RESOURCES_DIR / "particles"
-
+HUD_DIR = RESOURCES_DIR / "HUD"
 PROGRAM_ICON = ASSETS_DIR / "icon.png"
 MOUSE_CURSOR_IMG = ASSETS_DIR / "aim.png"
 
@@ -157,6 +158,6 @@ SPRITE_SHEET_DEFINITION = {
 }
 
 # make loading images a little easier
-def load_image(filename: str) -> Any:
+def load_image(filename: PathLike) -> Any:
     return pygame.image.load(str(RESOURCES_DIR / filename))
 
