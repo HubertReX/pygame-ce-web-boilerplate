@@ -9,6 +9,8 @@ from settings import *
 import pygame, sys
 if USE_SHADERS:
     from opengl_shader import OpenGL_shader
+if USE_SOD:
+    from second_order_dynamics import SecondOrderDynamics
 
 traceback.install(show_locals=True, width=150, )
 
@@ -78,7 +80,18 @@ class Game:
             # self.cursor_img = pygame.transform.invert(self.cursor_img)
             self.cursor_img.set_alpha(150)
             pygame.mouse.set_visible(False)
-            
+        if USE_SOD:
+            self.init_SOD()
+
+    def init_SOD(self):
+        f = 0.01
+        z = 0.3
+        r = -3.0
+        self.sod_time = 0.01
+        cursor_rect = self.cursor_img.get_frect(center=pygame.mouse.get_pos())
+        pos = vec(cursor_rect.center)
+        
+        self.SOD = SecondOrderDynamics(f, z, r, x0=pos)
     
     def render_panel(self, rect: pygame.Rect, color: str | Sequence[int]) -> None:
             """
@@ -158,8 +171,24 @@ class Game:
         """
         if not USE_CUSTOM_MOUSE_CURSOR:
             return
+        
         cursor_rect = self.cursor_img.get_frect(center=pygame.mouse.get_pos())
-        screen.blit(self.cursor_img, cursor_rect.center)
+        
+        if USE_SOD:
+            pos = vec(cursor_rect.center)
+            if self.time_elapsed - self.sod_time > 3:
+                self.sod_time = self.time_elapsed + 0.01
+                self.SOD.reset(pos)
+
+            res = self.SOD.update(self.time_elapsed - self.sod_time, pos,)
+            res[0] = max(0, res[0])
+            res[1] = max(0, res[1])
+            
+            res[0] = min(WIDTH - 8, res[0])
+            res[1] = min(HEIGHT - 8, res[1])
+            screen.blit(self.cursor_img, res)
+        else:
+            screen.blit(self.cursor_img, cursor_rect.center)
         
     def get_images(self, path: str):
         images = []
@@ -279,8 +308,10 @@ class Game:
                 self.render_text("PAUSED", (WIDTH*SCALE // 2, HEIGHT*SCALE // 2), font_size=FONT_SIZE_LARGE, centred=True, bg_color=(10,10,10,150), shadow=True)
             
             # than scale and copy on final Surface (game.screen)
-            self.screen.blit(pygame.transform.scale_by(self.canvas, SCALE), (0,0))
-            
+            if SCALE != 1:
+                self.screen.blit(pygame.transform.scale_by(self.canvas, SCALE), (0,0))
+            else:
+                self.screen.blit(self.canvas, (0,0))
             # shaders are used for postprocessing special effects
             # the whole Surface is used as texture on rect that fills to a full screen
             
