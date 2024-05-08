@@ -5,7 +5,9 @@ import characters
 #####################################################################################################################
 
 def get_new_state(current_npc_state: "NPC_State", character: "characters.NPC"):
-        if character.is_flying:
+        if character.is_stunned:
+            return (Stunned() if str(current_npc_state) != "Stunned" else None)
+        elif character.is_flying:
             return (Fly() if str(current_npc_state) != "Fly" else None)
         elif character.is_jumping:
             # return (current_npc_state if str(current_npc_state) == "Jump" else Jump())
@@ -118,4 +120,12 @@ class Fly(NPC_State):
         super().__init__()
         # no separate animation for fly - using jump
         self.action = "jump"
+
+#####################################################################################################################
+
+class Stunned(NPC_State):
+    def __init__(self):
+        super().__init__()
+        # no separate animation for stunned - using idle
+        self.action = "idle"
 

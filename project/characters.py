@@ -75,13 +75,16 @@ class NPC(pygame.sprite.Sprite):
         # flags set by key strokes - not real NPC states
         self.is_flying = False
         self.is_jumping = False
+        self.is_stunned = False
         
+        self.stunned_event_id  = pygame.event.custom_type()
+        self.game.register_custom_event(self.stunned_event_id, self.back_from_stunned)
         # actual NPC state, mainly to determine type of animation and speed
         self.state: npc_state.NPC_State = npc_state.Idle()
         self.state.enter_time = self.scene.game.time_elapsed
         
-        self.health: int = 10
-        self.max_health: int = 10
+        self.health: int = 30
+        self.max_health: int = 30
         self.damage: int = 10
         self.attitude: str = "friendly"
         if self.name in ["Snake", "SpiderRed", "Spirit", "Slime"]:
@@ -156,7 +159,7 @@ class NPC(pygame.sprite.Sprite):
                     self.animations[f"{animation}_right"].append(converted)
                     self.animations[f"{animation}_left"].append(pygame.transform.flip(converted, True, False))
         
-            
+    #MARK: animate    
     def animate(self, state, fps: float, loop=True):
         self.frame_index += fps
         
@@ -166,7 +169,12 @@ class NPC(pygame.sprite.Sprite):
             else:
                 self.frame_index = len(self.animations[state]) - 1.0
                 
-        self.image = self.animations[state][int(self.frame_index)]
+        self.image = self.animations[state][int(self.frame_index)].copy()
+        
+        if self.is_stunned:
+            red_filter = pygame.Surface(self.image.get_size(), pygame.SRCALPHA)
+            red_filter.fill((200,0,0,64))
+            self.image.blit(red_filter, (0,0))
         
     def get_direction_360(self) -> str:
         angle = self.vel.angle_to(vec(0,1))
@@ -184,7 +192,11 @@ class NPC(pygame.sprite.Sprite):
         if angle < 180: return "right"
         else: return "left"
         
+    #MARK: movement
     def movement(self):
+        if self.is_stunned:
+            return
+        
         if not self.target == vec(0,0) or self.waypoints_cnt == 0:
             if (self.waypoints_cnt == 0 or not self.target == self.scene.player.pos):
                 self.target = self.scene.player.pos.copy()
@@ -259,8 +271,11 @@ class NPC(pygame.sprite.Sprite):
         # self.up_vel = 50
         self.jumping_offset = 1
         
-        
+    #MARK: physics
     def physics(self, dt: float):
+        if self.is_stunned:
+            return
+
         self.prev_pos = self.pos.copy()
         
         self.acc.x += self.vel.x * self.friction
@@ -354,7 +369,11 @@ class NPC(pygame.sprite.Sprite):
         
         # slide is not possible, block movement
         self.move_back()
-        
+
+    def back_from_stunned(self):
+        self.is_stunned = False
+
+    #MARK: encounter        
     def encounter(self, oponent: "NPC"):
         if oponent.attitude == "enemy":
             # deal damage
@@ -370,9 +389,31 @@ class NPC(pygame.sprite.Sprite):
             
             if oponent.health == 0:
                 oponent.die()
+
+            self.is_stunned = True
+            pygame.time.set_timer(pygame.event.Event(self.stunned_event_id), 1000)
+
+            oponent.is_stunned = True
+            pygame.time.set_timer(pygame.event.Event(oponent.stunned_event_id), 1000)
+            
+            # push the npc
+            player_move = self.pos - oponent.pos
+            if not player_move == vec(0, 0):
+                self.pos += player_move.normalize() * 8
+                oponent.pos -= player_move.normalize() * 8
+                
+            # oponent_move = oponent.pos - oponent.prev_pos
+            # if not oponent_move == vec(0, 0):
+            #     oponent.pos += oponent_move.normalize() * TILE_SIZE
+            self.acc = vec(0, 0)
+            oponent.acc = vec(0, 0)
+            self.adjust_rect()
+            oponent.adjust_rect()
         else:
             # push the npc
-            oponent.pos += self.pos - self.prev_pos
+            player_move = self.pos - self.prev_pos
+            if player_move != vec(0, 0):
+                oponent.pos += player_move.normalize() * TILE_SIZE
             oponent.adjust_rect()
         
     def move_back(self) -> None: # start_index = 0
