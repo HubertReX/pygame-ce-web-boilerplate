@@ -5,7 +5,7 @@ from pygame.math import Vector2 as vec
 from settings import *
 
 #####################################################################################################################
-
+#MARK: Particle
 @dataclass
 class Particle():
     x: int = 0
@@ -20,7 +20,7 @@ class Particle():
     time_elapsed: float = 0.0
 
 #####################################################################################################################
-
+#MARK: ParticleImageBased
 class ParticleImageBased:
     def __init__(
             self,
@@ -59,6 +59,7 @@ class ParticleImageBased:
         # (optional) if provided, add_particles function will choose random start point from inside this rect
         self.spawn_rect = spawn_rect
 
+    #MARK: emit
     def emit(self, dt: float):
         
         MILI_SEC = 1.001
@@ -91,6 +92,7 @@ class ParticleImageBased:
                 surface = pygame.transform.rotate(surface, particle.rotation)
                 self.screen.blit(surface, (particle.x - int(surface.get_width()//2), particle.y - int(surface.get_height()//2)))
 
+    #MARK: add_particles
     def add_particles(
             self,
             start_pos: list[int] | None = None, 

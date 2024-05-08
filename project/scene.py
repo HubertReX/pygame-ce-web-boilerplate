@@ -11,11 +11,11 @@ from pytmx.util_pygame import load_pygame
 import pyscroll
 import pyscroll.data
 from pyscroll.group import PyscrollGroup
-import menus 
+import menus
 # from threading import Timer
 
 ##########################################################################################################################
-#MARK: State
+#MARK: Scene
 class Scene(State):
     def __init__(self, game: game.Game, current_scene: str, entry_point: str, is_maze: bool = False, maze_cols: int = 0, maze_rows: int = 0) -> None:
         super().__init__(game)
@@ -211,6 +211,7 @@ class Scene(State):
         new_scene.enter_state()
         
     
+    #MARK: update
     def update(self, dt: float, events: list[pygame.event.EventType]):
         global INPUTS
         # self.update_sprites.update(dt)
@@ -365,6 +366,7 @@ class Scene(State):
                 self.game.render_text(f"{', '.join(action['show']):>11} - {action['msg']}", (WIDTH - 400, i * FONT_SIZE_MEDIUM * TEXT_ROW_SPACING), shadow=True) # 
                 i += 1
     
+    #MARK: draw
     def draw(self, screen: pygame.Surface, dt: float):
         # screen.fill(COLORS["red"])
         self.group.center(self.player.pos)
