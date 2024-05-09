@@ -41,6 +41,7 @@ You can play an online demo [here](https://hubertrex.github.io/pygame-ce-web-boi
 * scene transitions (fade in/out, round shutter)
 * automatic screenshots saving
 
+
 ## Ideas for future
 
 Features:

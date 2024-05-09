@@ -1,0 +1,27 @@
+
+name: Test Actions scripts
+on: [workflow_dispatch]
+
+jobs:
+  test_action_scripts:
+    runs-on: ubuntu-latest
+    steps:
+        - name: character-replacement-test
+          run: |
+            REPO=${{ github.ref }}
+            echo $REPO
+            BRANCH_NAME="${REPO//refs\/heads\//}"
+        - name: Run find-and-replace to remove refs/heads/
+          uses: mad9000/actions-find-and-replace-string@5
+          id: findandreplace
+          with:
+            source: '${{ github.ref }}'
+            find: 'refs\/heads\/'
+            replace: ''
+        - name: replace str
+          id: replace_str
+          run: echo BRANCH=${GITHUB_REF//refs\/heads\//}  >> $GITHUB_OUTPUT
+        - name: replace
+          run: |
+              echo ${{ steps.findandreplace.outputs.result }}
+              echo ${{ steps.replace_str.outputs.BRANCH }}
