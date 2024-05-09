@@ -68,19 +68,18 @@ async def custom_site():
 
     import pygame
 
-    def compose():
-        # pygame.display.update()
-        pygame.display.flip()
-        window.chromakey(None, *screen.get_colorkey(), 40)
+    # def compose():
+    #     pygame.display.update()
+    #     window.chromakey(None, *screen.get_colorkey(), 40)
 
-    pygame.init()
-    pygame.font.init()
+    # pygame.init()
+    # pygame.font.init()
 
-    screen = pygame.display.set_mode([ux(.100),uy(.100)], 0, 32)
-    screen.set_colorkey( (0,0,0,0), pygame.RLEACCEL )
-    screen.fill( (0,0,0,0) )
+    # screen = pygame.display.set_mode([ux(.100),uy(.100)], 0, 32)
+    # screen.set_colorkey( (0,0,0,0), pygame.RLEACCEL )
+    # screen.fill( (0,0,0,0) )
 
-    compose()
+    # compose()
 
     platform.window.transfer.hidden = true
     platform.window.canvas.style.visibility = "visible"
@@ -111,28 +110,28 @@ async def custom_site():
 
     track = platform.window.MM.prepare(apk, json.dumps(cfg))
 
-    marginx = ux(.020) # 20%
-    marginy = uy(.045) # 45%
+    # marginx = ux(.020) # 20%
+    # marginy = uy(.045) # 45%
 
 
-    def pg_bar(pos):
-        nonlocal marginx, marginy
-        # resolution of progress bar, recalculate since it may not be know yet.
-        total = track.len or 10  # avoid div0
-        slot = ux(.060)/ total # 60%
+    # def pg_bar(pos):
+    #     nonlocal marginx, marginy
+    #     # resolution of progress bar, recalculate since it may not be know yet.
+    #     total = track.len or 10  # avoid div0
+    #     slot = ux(.060)/ total # 60%
 
-        pygame.draw.rect(screen,(10,10,10),( marginx-ux(10), marginy-uy(10), (total*slot)+ux(20), uy(110) ) )
-        pygame.draw.rect(screen,(0,0,0), ( marginx, marginy, track.pos*slot, uy(90)) )
+    #     pygame.draw.rect(screen,(10,10,10),( marginx-ux(10), marginy-uy(10), (total*slot)+ux(20), uy(110) ) )
+    #     pygame.draw.rect(screen,(0,0,0), ( marginx, marginy, track.pos*slot, uy(90)) )
 
     # wait until zip mount + overlayfs is complete
     while not track.ready:
-        pg_bar(track.pos)
-        compose()
+        # pg_bar(track.pos)
+        # compose()
         await asyncio.sleep(.1)
 
     # fill it up in case it was cached and instant download
-    pg_bar(track.len)
-    compose()
+    # pg_bar(track.len)
+    # compose()
 
 
     # preloader will change dir and prepend it to sys.path
@@ -155,27 +154,17 @@ async def custom_site():
 
 
     # now make a prompt
-    fnt = pygame.sysfont.SysFont("freesans",  uy(80) )
+    # fnt = pygame.sysfont.SysFont("freesans",  uy(80) )
 
-    def ui_callback(pkg, error=None):
-        nonlocal fnt
-        if error:
-            prompt = fnt.render(f"{error}", True, "black")
-        else:
-            prompt = fnt.render(f"Setting [{pkg}] up", True, "black")
-        pg_bar(track.len)
-        screen.blit(prompt, ( marginx+ ux(80), marginy - uy(10) ) )
-        compose()
+    def ui_callback(pkg):
+        print(f"installing {pkg}")
 
     # test/wait if user media interaction required
     if not platform.window.MM.UME:
 
         # now make a prompt
-        fnt = pygame.sysfont.SysFont("freesans",  uy(80) )
-        prompt = fnt.render("Press any key to start", True, "white")
-        pg_bar(track.len)
-        screen.blit(prompt, ( marginx+ ux(80), marginy - uy(10) ) )
-        compose()
+        print("Ready to start !")
+
         print("""
         * Waiting for media user engagement : please click/touch page *
     """)
@@ -183,8 +172,8 @@ async def custom_site():
             await asyncio.sleep(.1)
 
     # cleanup
-    screen.fill( (0,0,0,0) )
-    pygame.display.flip()
+    # screen.fill( (0,0,0,0) )
+    # pygame.display.flip()
 
     await shell.runpy(main, callback=ui_callback)
 
