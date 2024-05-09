@@ -42,7 +42,7 @@ IS_PAUSED = False
 USE_ALPHA_FILTER = False
 USE_CUSTOM_MOUSE_CURSOR = True
 USE_SOD = False
-USE_SHADERS = False
+USE_SHADERS = True
 SHOW_DEBUG_INFO = False
 SHOW_HELP_INFO = False
 
@@ -58,6 +58,8 @@ ACTIONS = {
     'quit':       {"show": ["ESC", "q"], "msg": "back",       "keys": [pygame.K_ESCAPE,    pygame.K_q]},
     'debug':      {"show": ["`", "z"],   "msg": "debug",      "keys": [pygame.K_BACKQUOTE, pygame.K_z]},
     'alpha':      {"show": ["f"],        "msg": "filter",     "keys": [pygame.K_f]},
+    'shaders_toggle':{"show": ["g"],     "msg": "shader 0/1", "keys": [pygame.K_g]},
+    'next_shader':{"show": ["h"],        "msg": "next shader","keys": [pygame.K_PERIOD]},
     'run':        {"show": ["CTRL"],     "msg": "toggle run", "keys": [pygame.K_LSHIFT, pygame.K_RSHIFT]},
     'jump':       {"show": ["SPACE"],    "msg": "jump",       "keys": [pygame.K_SPACE]},
     'fly':        {"show": ["SHIFT"],    "msg": "fly",        "keys": [pygame.K_LALT, pygame.K_RALT]},
@@ -127,6 +129,17 @@ PARTICLES_DIR = RESOURCES_DIR / "particles"
 HUD_DIR = RESOURCES_DIR / "HUD"
 PROGRAM_ICON = ASSETS_DIR / "icon.png"
 MOUSE_CURSOR_IMG = ASSETS_DIR / "aim.png"
+if IS_WEB:
+    SHADERS_DIR = Path("shaders") / "OpenGL3.0_ES"
+else:
+    SHADERS_DIR = Path("shaders") / "OpenGL3.3" 
+
+SHADERS_NAMES = [
+    "RETRO_CRT", 
+    "SATURATED",
+    "B_AND_W",
+]
+DEFAULT_SHADER = "SATURATED"
 
 import particles
 PARTICLES = {

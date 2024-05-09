@@ -284,7 +284,10 @@ class NPC(pygame.sprite.Sprite):
         self.acc.y += self.vel.y * self.friction
         self.vel.y += self.acc.y * dt
         
-        step_cost = abs(self.scene.path_finding_grid[self.tileset_coord.y][self.tileset_coord.x])
+        if self.tileset_coord.y < len(self.scene.path_finding_grid) and self.tileset_coord.x < len(self.scene.path_finding_grid[0]):
+            step_cost = abs(self.scene.path_finding_grid[self.tileset_coord.y][self.tileset_coord.x])
+        else:
+            step_cost = 1
         speed = (self.speed * (100 / step_cost))
         
         if self.vel.magnitude() >= speed:
@@ -459,7 +462,7 @@ class Player(NPC):
         # give player some super powers
         self.speed_run  *= 1.5
         self.speed_walk *= 1.2
-        self.speed = self.speed_walk
+        self.speed = self.speed_run
         self.health: int = 100
         self.max_health: int = 100
         

@@ -1,19 +1,21 @@
 from datetime import datetime
 from os import environ
 from typing import Sequence
-environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
+environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
 import asyncio
 import os
 from settings import *
 import pygame, sys
-if USE_SHADERS:
-    from opengl_shader import OpenGL_shader
+from opengl_shader import OpenGL_shader
+
 if USE_SOD:
     from second_order_dynamics import SecondOrderDynamics
 
 traceback.install(show_locals=True, width=150, )
+# os.environ["SDL_WINDOWS_DPI_AWARENESS"] = "permonitorv2"
 
+#MARK: Game
 class Game:
     def __init__(self) -> None:
         pygame.init()
@@ -32,23 +34,24 @@ class Game:
             self.flags = self.flags | pygame.FULLSCREEN
         
         if IS_WEB:
-            # for now shader works only in web mode (to be fixed)
-            if USE_SHADERS:
-                self.flags = self.flags | pygame.OPENGL | pygame.DOUBLEBUF
-            else:
-                self.flags = self.flags | pygame.DOUBLEBUF
-    
-            self.screen: pygame.Surface = pygame.display.set_mode((WIDTH*SCALE, HEIGHT*SCALE), self.flags)
+            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
+            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 0)
+            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_ES)
+            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, True)
         else:
-            self.flags = self.flags | pygame.SCALED | pygame.DOUBLEBUF # pygame.RESIZABLE
-            self.screen: pygame.Surface = pygame.display.set_mode((WIDTH*SCALE, HEIGHT*SCALE), self.flags, vsync=1)
+            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
+            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 3)
+            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_CORE)
+            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, True)
+                
+        self.flags = self.flags | pygame.OPENGL| pygame.DOUBLEBUF # pygame.RESIZABLE , | pygame.SCALED 
+        self.screen: pygame.Surface = pygame.display.set_mode((WIDTH*SCALE, HEIGHT*SCALE), self.flags, vsync=1)
             
         self.canvas: pygame.Surface = pygame.Surface((WIDTH, HEIGHT), self.flags) # , 32 .convert_alpha() # pygame.SRCALPHA
 
-        size = pygame.display.get_window_size()
-        if USE_SHADERS:
-            self.shader = OpenGL_shader(size, Path("shaders") / "fs.glsl", Path("shaders") / "vs.glsl")
-        # self.canvas.set_colorkey(COLORS["black"])
+        size = self.screen.get_size()
+        self.shader = OpenGL_shader(size, DEFAULT_SHADER)
+
         self.fonts = {}
         font_sizes = [FONT_SIZE_SMALL, FONT_SIZE_MEDIUM, FONT_SIZE_LARGE]
         for font_size in font_sizes:
@@ -67,8 +70,8 @@ class Game:
         # start_state = menus.MainMenuScreen(self, "MainMenu")
         # self.states.append(start_state)
         import scene
-        start_state = scene.Scene(self, 'Village', 'start')
-        # start_state = scene.Scene(self, 'Maze', 'start', is_maze=True, maze_cols=10, maze_rows=5)
+        start_state = scene.Scene(self, "Village", "start")
+        # start_state = scene.Scene(self, "Maze", "start", is_maze=True, maze_cols=10, maze_rows=5)
         start_state.enter_state()
         self.states.append(start_state)
         # self.states.append(start_state)
@@ -84,15 +87,16 @@ class Game:
             self.init_SOD()
 
     def init_SOD(self):
-        f = 0.01
-        z = 0.3
-        r = -3.0
+        f = 0.01 # frequency, reaction speed and oscillation
+        z = 0.3  # zeta, damping factor
+        r = -3.0 # response, immediate, overshoot, anticipation
         self.sod_time = 0.01
         cursor_rect = self.cursor_img.get_frect(center=pygame.mouse.get_pos())
         pos = vec(cursor_rect.center)
         
         self.SOD = SecondOrderDynamics(f, z, r, x0=pos)
     
+    #MARK: render
     def render_panel(self, rect: pygame.Rect, color: str | Sequence[int]) -> None:
             """
             Renders semitransparent (if alpha provided) rect using provided color on game.canvas
@@ -231,6 +235,7 @@ class Game:
     def register_custom_event(self, custom_event_id: int, handle_function: callable):
         self.custom_events[custom_event_id] = handle_function
     
+    #MARK: get_inputs
     def get_inputs(self) -> list[pygame.event.EventType]:
         events = pygame.event.get()
         for event in events:
@@ -283,13 +288,34 @@ class Game:
                     INPUTS["right_click"] = False
                 elif event.button == 4:
                     INPUTS["scroll_click"] = False
+                    
+        global USE_SHADERS
+        if INPUTS["shaders_toggle"]:
+            USE_SHADERS = not USE_SHADERS
+            INPUTS["shaders_toggle"] = False            
+        
+        elif INPUTS["next_shader"]:
+            shader_index = SHADERS_NAMES.index(self.shader.shader_name)
+            if shader_index < 0:
+                shader_index = 0
+            else:
+                shader_index += 1
+                if shader_index >= len(SHADERS_NAMES):
+                    shader_index = 0
+                    
+            self.shader.create_pipeline(SHADERS_NAMES[shader_index])
+            INPUTS["next_shader"] = False            
+                    
         return events
                     
     def reset_inputs(self):
         for key in ACTIONS.keys():
             INPUTS[key] = False
             
+    #MARK: loop
     async def loop(self):
+        self.shader.create_pipeline()
+        
         while self.is_running:
             # delta time since last frame in milliseconds
             dt = self.clock.tick(FPS_CAP) / 1000
@@ -315,10 +341,9 @@ class Game:
             # shaders are used for postprocessing special effects
             # the whole Surface is used as texture on rect that fills to a full screen
             
-            if USE_SHADERS:
-                self.shader.render(self.screen, dt)
-            else:
-                pygame.display.update()
+            self.shader.render(self.screen, dt, USE_SHADERS)
+                
+            pygame.display.flip()
             await asyncio.sleep(0)
             
             

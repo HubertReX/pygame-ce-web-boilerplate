@@ -387,9 +387,13 @@ class Scene(State):
         
         if not SHOW_HELP_INFO:
             self.game.render_text(f"press [h] for help", (WIDTH // 2, HEIGHT - FONT_SIZE_MEDIUM * TEXT_ROW_SPACING), shadow=True, centred=True)
+        
+        shader_index = SHADERS_NAMES.index(self.game.shader.shader_name)
+        if shader_index < 0:
+            shader_index = 0
 
         msgs = [
-            f"FPS: {self.game.clock.get_fps(): 6.1f}",
+            f"FPS: {self.game.clock.get_fps(): 6.1f} Shader: {SHADERS_NAMES[shader_index]}",
             f"vel: {self.player.vel.x: 6.1f} {self.player.vel.y: 6.1f}",
             f"x  : {self.player.pos.x: 3.0f}   y : {self.player.pos.y: 3.0f}",
             f"g x:  {self.player.tileset_coord.x: 3.0f} g y : {self.player.tileset_coord.y: 3.0f}",

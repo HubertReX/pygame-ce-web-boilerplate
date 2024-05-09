@@ -152,3 +152,4 @@ cython_debug/
 #.idea/
 .DS_Store
 project/assets/NinjaAdventure/NinjaAdventure.tiled-session
+zengl_examples/**
