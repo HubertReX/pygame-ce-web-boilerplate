@@ -69,13 +69,14 @@ async def custom_site():
     import pygame
 
     def compose():
-        pygame.display.update()
+        # pygame.display.update()
+        pygame.display.flip()
         window.chromakey(None, *screen.get_colorkey(), 40)
 
     pygame.init()
     pygame.font.init()
 
-    screen = pygame.display.set_mode([ux(.100),uy(.100)], pygame.SRCALPHA, 32)
+    screen = pygame.display.set_mode([ux(.100),uy(.100)], 0, 32)
     screen.set_colorkey( (0,0,0,0), pygame.RLEACCEL )
     screen.fill( (0,0,0,0) )
 
