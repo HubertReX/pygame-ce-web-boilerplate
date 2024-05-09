@@ -1,14 +1,31 @@
 #version 300 es
 precision highp float;
 
-in vec3 v_vertex;
-in vec3 v_color;
+uniform float time;
+uniform vec2 screen_size;
+uniform sampler2D Texture;
 
-layout (location = 0) out vec4 out_color;
+in vec2 vertex;
+out vec4 out_color;
+
+vec3 screen(vec2 vertex) {
+    if (abs(vertex.x) > 1.001 || abs(vertex.y) > 1.001) {
+        return vec3(0.0);
+    }
+    vec2 uv = vertex * 0.5 + 0.5;
+    vec3 color = texture(Texture, uv).rgb;
+    return color;
+}
+
+void dummy() {
+    // pretand to use uniforms
+    // without it pipeline creation fails in zengl
+    out_color = vec4(screen_size.x, screen_size.y, 0, time);
+}
 
 void main() {
-    float u = smoothstep(0.48, 0.47, abs(v_vertex.x - 0.5));
-    float v = smoothstep(0.48, 0.47, abs(v_vertex.y - 0.5));
-    out_color = vec4(v_color * (u * v), 1.0);
-    out_color.rgb = pow(out_color.rgb, vec3(1.0 / 2.2));
+    dummy();
+    // simple texture mapping - no change
+    vec3 color = screen(vertex);
+    out_color = vec4(color, 1.0);
 }

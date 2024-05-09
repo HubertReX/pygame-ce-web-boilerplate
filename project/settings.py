@@ -1,5 +1,6 @@
 from collections import namedtuple
-from typing import Any
+from os import PathLike
+from typing import Any, Sequence, Union
 from xml.etree.ElementTree import VERSION
 import pygame
 from pygame.math import Vector2 as vec
@@ -22,6 +23,8 @@ ABOUT = [
 ]
 
 Point = namedtuple("Point", ["x", "y"])
+# from pygame/_common.pyi
+ColorValue = Union[int, str, Sequence[int]]
 
 WIDTH, HEIGHT = 1600, 1024
 TILE_SIZE = 16
@@ -37,8 +40,9 @@ if __import__("sys").platform == "emscripten":
 IS_FULLSCREEN = False
 IS_PAUSED = False
 USE_ALPHA_FILTER = False
-USE_CUSTOM_CURSOR = False
-USE_SHADERS = False
+USE_CUSTOM_MOUSE_CURSOR = True
+USE_SOD = False
+USE_SHADERS = True
 SHOW_DEBUG_INFO = False
 SHOW_HELP_INFO = False
 
@@ -54,6 +58,8 @@ ACTIONS = {
     'quit':       {"show": ["ESC", "q"], "msg": "back",       "keys": [pygame.K_ESCAPE,    pygame.K_q]},
     'debug':      {"show": ["`", "z"],   "msg": "debug",      "keys": [pygame.K_BACKQUOTE, pygame.K_z]},
     'alpha':      {"show": ["f"],        "msg": "filter",     "keys": [pygame.K_f]},
+    'shaders_toggle':{"show": ["g"],     "msg": "shader 0/1", "keys": [pygame.K_g]},
+    'next_shader':{"show": ["h"],        "msg": "next shader","keys": [pygame.K_PERIOD]},
     'run':        {"show": ["CTRL"],     "msg": "toggle run", "keys": [pygame.K_LSHIFT, pygame.K_RSHIFT]},
     'jump':       {"show": ["SPACE"],    "msg": "jump",       "keys": [pygame.K_SPACE]},
     'fly':        {"show": ["SHIFT"],    "msg": "fly",        "keys": [pygame.K_LALT, pygame.K_RALT]},
@@ -66,7 +72,7 @@ ACTIONS = {
     'zoom_out':   {"show": ["-"],       "msg": "zoom out",   "keys": [pygame.K_MINUS, pygame.K_KP_MINUS]},
     # 'quit':       {"show": ["ESC", "q"], "msg": "back",       "keys": [pygame.K_ESCAPE,    pygame.K_q]},
     # 'debug':      {"show": ["`", "z  "],   "msg": "debug",      "keys": [pygame.K_BACKQUOTE, pygame.K_z]},
-    # 'run':        {"show": ["CTRL  "],     "msg": "toggle run", "keys": [pygame.K_LCTRL]},
+    # 'run':        {"show": ["CTRL  "],     "msg": "toggle run", "keys": [pygame.K_CTRL]},
     # 'jump':       {"show": ["SPACE "],    "msg": "jump",       "keys": [pygame.K_SPACE]},
     # 'select':     {"show": None,         "msg": "select",     "keys": [pygame.K_SPACE]},
     # 'accept':     {"show": None,         "msg": "accept",     "keys": [pygame.K_RETURN, pygame.K_KP_ENTER]},
@@ -80,12 +86,12 @@ ACTIONS = {
     'up':         {"show": None,         "msg": "",           "keys": [pygame.K_UP,    pygame.K_w]},
     'down':       {"show": None,         "msg": "",           "keys": [pygame.K_DOWN,  pygame.K_s]},
     
-    # 'pause':      {"show": None,        "msg": "",           "keys": []},
+    'pause':      {"show": ["F8"],       "msg": "pause",          "keys": [pygame.K_F8]},
     
-    'scroll_up':   {"show": None,        "msg": "",           "keys": []},
-    'left_click':  {"show": None,        "msg": "",           "keys": []},
-    'right_click': {"show": None,        "msg": "",           "keys": []},
-    'scroll_click':{"show": None,        "msg": "",           "keys": []},
+    'scroll_up':   {"show": None,            "msg": "",           "keys": []},
+    'left_click':  {"show": ["Left click"],  "msg": "go to",      "keys": []},
+    'right_click': {"show": ["Right click"], "msg": "stop",       "keys": []},
+    'scroll_click':{"show": None,            "msg": "",           "keys": []},
 }
 
 INPUTS = {}
@@ -117,10 +123,29 @@ TEXT_ROW_SPACING  = 1.4
 ASSET_PACK = "NinjaAdventure"
 RESOURCES_DIR = ASSETS_DIR / ASSET_PACK
 MAPS_DIR = RESOURCES_DIR / "maps"
+MAZE_DIR = ASSETS_DIR / "MazeTileset"
 CHARACTERS_DIR = RESOURCES_DIR / "characters"
 PARTICLES_DIR = RESOURCES_DIR / "particles"
-
+HUD_DIR = RESOURCES_DIR / "HUD"
 PROGRAM_ICON = ASSETS_DIR / "icon.png"
+MOUSE_CURSOR_IMG = ASSETS_DIR / "aim.png"
+if IS_WEB:
+    SHADERS_DIR = Path("shaders") / "OpenGL3.0_ES"
+else:
+    SHADERS_DIR = Path("shaders") / "OpenGL3.3" 
+
+SHADERS_NAMES = [
+    "RETRO_CRT", 
+    "SATURATED",
+    "B_AND_W",
+]
+DEFAULT_SHADER = "SATURATED"
+
+import particles
+PARTICLES = {
+    "leafs": particles.ParticleLeafs,
+    "rain": particles.ParticleRain,
+}
 
 SPRITE_SHEET_DEFINITION = {
     "idle_down":  [(0,0)],
@@ -153,6 +178,6 @@ SPRITE_SHEET_DEFINITION = {
 }
 
 # make loading images a little easier
-def load_image(filename: str) -> Any:
+def load_image(filename: PathLike) -> Any:
     return pygame.image.load(str(RESOURCES_DIR / filename))
 

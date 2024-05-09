@@ -7,8 +7,10 @@
 	"settings": {
 		"cSpell.words": [
 			"bottomright",
+			"colliderect",
 			"emscripten",
 			"opengl",
+			"pygbag",
 			"zengl"
 		]
 	}

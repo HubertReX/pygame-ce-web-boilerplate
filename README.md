@@ -20,32 +20,36 @@ You can play an online demo [here](https://hubertrex.github.io/pygame-ce-web-boi
 * runs on the web browser (itch.io and GitHub Pages) thanks to [pygbag](https://pygame-web.github.io/)
 * implemented finite state machine
 * usage of menus [pygame-menu](https://github.com/ppizarror/pygame-menu) (patched - gfxdraw not working in WEB)
-* partial mouse support (in menus)
+* mouse support (player control and in menus)
 * [Tiled](https://www.mapeditor.org/) map loading [pytmx](https://github.com/bitcraft/pytmx)
 * map live reloading, scrolling, and zooming [pyscroll](https://github.com/bitcraft/pyscroll)
-* transition between maps (Village, VillageHouse)
-* map with layers (occlusion, collision, player start, exits)
-* semi-transparent panels and text background (alpha blending)
+* configurable transition between maps (custom properties in Tiled maps)
+* map with layers (walls, markers for start and exits)
+* procedurally generated mazes with randomly places decors
+* semi-transparent panels and text with background (alpha blending)
 * full-screen color filter (alpha blending, e.g.: warm sunny light, dark blue at night)
-* particle system (falling leaves, more to come) - currently not working in WEB
+* particle system (falling leaves, more to come)
+* postprocessing OpenGL/WebGL shaders ([zengl](https://github.com/szabolcsdombi/zengl)): saturated, black&white, retro CRT monitor
 * game auto pause (if the game window is out of focus)
 * pixel style monospace font
 * a custom mouse cursor
-* animated sprites with shadows and different moving states (Idle, Walk, Run, Jump, Fly)
-* characters follow individual lists of waypoints
+* animated sprites with shadows and different
+* NPCs states (Idle, Bored, Walk, Run, Jump, Fly)
+* NPCs path finding with different step cost depending on surface type (road speeds up, water slows down)
+* NPCs follow individual lists of waypoints or moving target (e.g. Player)
 * separation of key bindings from actions
 * scene transitions (fade in/out, round shutter)
-* automatic screenshots
-* experimental use of OpenGL/WebGL shaders ([zengl](https://github.com/szabolcsdombi/zengl)) for postprocessing effects - for now, works only in the Web version
+* automatic screenshots saving
+
 
 ## Ideas for future
 
 Features:
 
-* ~~list key bindings~~ ✅
-* create global config json with schema
-* add UI (health bar, stats)
-* ~~add particles system~~ ✅ (~~leafs~~ ✅, ~~wind~~ ✅, rain, footsteps, smoke) - WIP ⏳🔄
+* ~~list key bindings~~ - ✅ done
+* create global config json with schema - ⏳ WIP
+* add UI (~~health bar~~ ✅, stats)
+* ~~add particles system~~ ✅ (~~leafs~~ ✅, ~~wind~~ ✅, rain, footsteps, smoke) - ⏳ WIP
 * add day/night cycle and weather (rain)
 * add fog of war and/or line of sight
 * add light sources (camp fire, torch, houses)
@@ -53,7 +57,8 @@ Features:
 * add movable objects
 * add object destruction
 * add item drop/pickup and inventory system
-* add fighting system
+* add procedurally generated animations/movements (using Second Order Dynamics) - ⏳ WIP
+* add fighting system - ⏳ WIP
 * add dialog system
 * add merchants
 * add cutscenes
@@ -62,8 +67,8 @@ Features:
 * add game achievements
 * add music and sfx
 * add better menus
-* add dungeons (generated procedurally)
-* add path finding algorithm
+* ~~add dungeons (generated procedurally)~~ - ✅ done
+* ~~add path finding algorithm~~ - ✅ done
 * make more maps
 
 Bugs:

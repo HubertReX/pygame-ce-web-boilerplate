@@ -22,6 +22,9 @@ class MenuScreen(State):
     # def debug(self, msgs: list[str]):
     #     return super().debug(msgs)
         
+    def __repr__(self) -> str:
+        return f"{__class__.__name__}: {self.name}"
+        
     def create_menu() -> pygame_menu.Menu:
         raise NotImplementedError("Subclasses should implement this!")
     
@@ -112,7 +115,7 @@ class MainMenuScreen(MenuScreen):
         # print(f"Menu : {self.name}")
                         
         if INPUTS['quit'] and not IS_WEB:
-            self.game.running = False    
+            self.game.is_running = False    
             self.deactivate()
 
         if INPUTS['screenshot']:

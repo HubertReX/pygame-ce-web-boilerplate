@@ -22,6 +22,9 @@
 import asyncio
 from game import Game
 
-if __name__ == "__main__":
+def main():
     game = Game()    
     asyncio.run(game.loop())
+
+if __name__ == "__main__":
+    main()

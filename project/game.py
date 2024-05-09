@@ -1,16 +1,21 @@
 from datetime import datetime
 from os import environ
-environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
+from typing import Sequence
+environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
 import asyncio
 import os
 from settings import *
 import pygame, sys
-if USE_SHADERS:
-    from opengl_shader import OpenGL_shader
+from opengl_shader import OpenGL_shader
 
-traceback.install(show_locals=True, width=150, )  
+if USE_SOD:
+    from second_order_dynamics import SecondOrderDynamics
 
+traceback.install(show_locals=True, width=150, )
+# os.environ["SDL_WINDOWS_DPI_AWARENESS"] = "permonitorv2"
+
+#MARK: Game
 class Game:
     def __init__(self) -> None:
         pygame.init()
@@ -29,55 +34,85 @@ class Game:
             self.flags = self.flags | pygame.FULLSCREEN
         
         if IS_WEB:
-            if USE_SHADERS:
-                self.flags = self.flags | pygame.OPENGL | pygame.DOUBLEBUF
-            else:
-                self.flags = self.flags | pygame.DOUBLEBUF
-    
-            self.screen: pygame.Surface = pygame.display.set_mode((WIDTH*SCALE, HEIGHT*SCALE), self.flags)
+            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
+            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 0)
+            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_ES)
+            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, True)
         else:
-            self.flags = self.flags | pygame.SCALED | pygame.DOUBLEBUF # pygame.RESIZABLE
-            self.screen: pygame.Surface = pygame.display.set_mode((WIDTH*SCALE, HEIGHT*SCALE), self.flags, vsync=1)
+            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
+            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 3)
+            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_CORE)
+            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, True)
+                
+        self.flags = self.flags | pygame.OPENGL| pygame.DOUBLEBUF # pygame.RESIZABLE , | pygame.SCALED 
+        self.screen: pygame.Surface = pygame.display.set_mode((WIDTH*SCALE, HEIGHT*SCALE), self.flags, vsync=1)
             
         self.canvas: pygame.Surface = pygame.Surface((WIDTH, HEIGHT), self.flags) # , 32 .convert_alpha() # pygame.SRCALPHA
 
-        size = pygame.display.get_window_size()
-        if USE_SHADERS:
-            self.shader = OpenGL_shader(size, Path("shaders") / "fs.glsl", Path("shaders") / "vs.glsl")
-        # self.canvas.set_colorkey(COLORS["black"])
+        size = self.screen.get_size()
+        self.shader = OpenGL_shader(size, DEFAULT_SHADER)
+
         self.fonts = {}
         font_sizes = [FONT_SIZE_SMALL, FONT_SIZE_MEDIUM, FONT_SIZE_LARGE]
         for font_size in font_sizes:
             self.fonts[font_size] = pygame.font.Font(MAIN_FONT, font_size)
         
         self.font = self.fonts[FONT_SIZE_MEDIUM]
-        self.running = True
+        self.is_running = True
 
-        self.states = []
-        self.custom_events = {}
-        # moved here to avoid circular imports
+        # stacked game states (e.g. Scene, Menu)
+        from state import State
+        self.states: list[State] = []
+        # dict of custom events with callable functions (not used for now since pygame.time.set_timer is not implemented in pygbag)
+        self.custom_events: dict[int, callable] = {}
+        # moved imports here to avoid circular imports
         # import menus
         # start_state = menus.MainMenuScreen(self, "MainMenu")
         # self.states.append(start_state)
         import scene
-        start_state = scene.Scene(self, 'Village', 'start')
-        # start_state.enter_state()
+        start_state = scene.Scene(self, "Village", "start")
+        # start_state = scene.Scene(self, "Maze", "start", is_maze=True, maze_cols=10, maze_rows=5)
+        start_state.enter_state()
         self.states.append(start_state)
-        self.states.append(start_state)
-        if USE_CUSTOM_CURSOR:
-            self.cursor_img = pygame.transform.scale(pygame.image.load("assets/aim.png"), (32,32)).convert_alpha()
-            self.cursor_img = pygame.transform.invert(self.cursor_img)
+        # self.states.append(start_state)
+        
+        if USE_CUSTOM_MOUSE_CURSOR:
+            cursor_img = pygame.image.load(MOUSE_CURSOR_IMG)
+            scale = cursor_img.get_width() // (TILE_SIZE)
+            self.cursor_img = pygame.transform.scale(cursor_img, (scale, scale)).convert_alpha()
+            # self.cursor_img = pygame.transform.invert(self.cursor_img)
             self.cursor_img.set_alpha(150)
             pygame.mouse.set_visible(False)
-            
+        if USE_SOD:
+            self.init_SOD()
+
+    def init_SOD(self):
+        f = 0.01 # frequency, reaction speed and oscillation
+        z = 0.3  # zeta, damping factor
+        r = -3.0 # response, immediate, overshoot, anticipation
+        self.sod_time = 0.01
+        cursor_rect = self.cursor_img.get_frect(center=pygame.mouse.get_pos())
+        pos = vec(cursor_rect.center)
+        
+        self.SOD = SecondOrderDynamics(f, z, r, x0=pos)
     
-    def render_panel(self, rect: pygame.Rect, color: str):
+    #MARK: render
+    def render_panel(self, rect: pygame.Rect, color: str | Sequence[int]) -> None:
+            """
+            Renders semitransparent (if alpha provided) rect using provided color on game.canvas
+
+                Parameters:
+                        rect (Rect): Size and position of rect
+                        color (str|Sequence[int]): color to fill in the rect (with alpha)
+            """        
             surf = pygame.Surface(rect.size, pygame.SRCALPHA)
             pygame.draw.rect(surf, color, surf.get_rect())
             self.canvas.blit(surf, rect)        
         
-    def render_text(
-            self, text: str, 
+        
+    def render_texts(            
+            self, 
+            texts: list[str], 
             pos: list[int], 
             color: str="white", 
             bg_color: list[int] | None = None, 
@@ -85,6 +120,29 @@ class Game:
             font_size: int=0, 
             centred=False
         ):
+        """
+        Blit several lines of text on game.canvas, one under other, 
+        """
+        for line_no, text in enumerate(texts):
+            if font_size == 0:
+                font_size = FONT_SIZE_SMALL
+            new_pos = [pos[0], pos[1] + line_no * font_size * TEXT_ROW_SPACING]
+            self.render_text(text, new_pos, color, bg_color, shadow, font_size, centred)
+
+        
+    def render_text(
+            self, 
+            text: str, 
+            pos: list[int], 
+            color: str="white", 
+            bg_color: list[int] | None = None, 
+            shadow: bool=True, 
+            font_size: int=0, 
+            centred=False
+        ):
+        """
+        Blit line of text on game.canvas
+        """
         selected_font = self.font
         if self.fonts.get(font_size, False):
             selected_font = self.fonts[font_size]
@@ -92,7 +150,8 @@ class Game:
         surf: pygame.surface.Surface = selected_font.render(text, False, color)
         rect: pygame.Rect = surf.get_rect(center = pos) if centred else surf.get_rect(topleft = pos)
 
-        # alpha blend semitransparent rect in background 8 pixels bigger than rect       
+        # alpha blend semitransparent rect in background 8 pixels bigger than rect
+        # works well for single line of text
         if bg_color:
             bg_rect: pygame.Rect = rect.copy().inflate(18, 18).move(-4, -4)
             bg_surf = pygame.Surface(bg_rect.size, pygame.SRCALPHA) #, pygame.SRCALPHA)
@@ -107,20 +166,33 @@ class Game:
             self.canvas.blit(surf_shadow, (rect.x+offset, rect.y))
             self.canvas.blit(surf_shadow, (rect.x, rect.y-offset))
             self.canvas.blit(surf_shadow, (rect.x, rect.y+offset))
-            # self.canvas.blit(pygame.transform.scale_by(surf_shadow, 1.2), (rect.x-2, rect.y-2))
-            
-            # rect_shadow = rect.copy()
-            # rect_shadow[0] += 3
-            # rect_shadow[1] += 3
-            # self.canvas.blit(surf_shadow, rect_shadow)
             
         self.canvas.blit(surf, rect)
         
     def custom_cursor(self, screen: pygame.Surface):
-        if not USE_CUSTOM_CURSOR:
+        """
+        blit custom cursor in mouse current position if USE_CUSTOM_MOUSE_CURSOR is enabled
+        """
+        if not USE_CUSTOM_MOUSE_CURSOR:
             return
+        
         cursor_rect = self.cursor_img.get_frect(center=pygame.mouse.get_pos())
-        screen.blit(self.cursor_img, cursor_rect.center)
+        
+        if USE_SOD:
+            pos = vec(cursor_rect.center)
+            if self.time_elapsed - self.sod_time > 3:
+                self.sod_time = self.time_elapsed + 0.01
+                self.SOD.reset(pos)
+
+            res = self.SOD.update(self.time_elapsed - self.sod_time, pos,)
+            res[0] = max(0, res[0])
+            res[1] = max(0, res[1])
+            
+            res[0] = min(WIDTH - 8, res[0])
+            res[1] = min(HEIGHT - 8, res[1])
+            screen.blit(self.cursor_img, res)
+        else:
+            screen.blit(self.cursor_img, cursor_rect.center)
         
     def get_images(self, path: str):
         images = []
@@ -131,7 +203,14 @@ class Game:
             images.append(img)
         return images
     
-    def get_animations(self, path: str):
+    def get_animations(self, path: str) -> dict[str, Any]:
+        """
+        read sprite animations from given folder
+
+        :param path: folder containing folders with animations names that contain frames as separate files
+        :type path: str
+        :return: dictionary with animation name (subfolder) as keys
+        """
         animations = {}
         for file in os.listdir(path):
             if os.path.isdir(os.path.join(path, file)):
@@ -139,8 +218,9 @@ class Game:
         return animations
 
     def save_screenshot(self):
-        # save current screen to SCREENSHOT_FOLDER as PNG with timestamp in name
-        
+        """
+        save current screen to SCREENSHOT_FOLDER as PNG with timestamp in name
+        """
         time_str = datetime.now().strftime("%Y%m%d_%H%M%S")
         file_name = SCREENSHOTS_DIR / f"screenshot_{time_str}.png"
         pygame.image.save(self.screen, file_name)
@@ -155,11 +235,12 @@ class Game:
     def register_custom_event(self, custom_event_id: int, handle_function: callable):
         self.custom_events[custom_event_id] = handle_function
     
+    #MARK: get_inputs
     def get_inputs(self) -> list[pygame.event.EventType]:
         events = pygame.event.get()
         for event in events:
             if event.type == pygame.QUIT:
-                self.running = False
+                self.is_running = False
                 pygame.quit()
                 sys.exit()
                 
@@ -187,8 +268,10 @@ class Game:
             elif event.type == pygame.MOUSEWHEEL:
                 if event.y == 1:
                     INPUTS["scroll_up"] = True
+                    INPUTS["zoom_in"] = True
                 elif event.y == -1:
                     INPUTS["scroll_down"] = True
+                    INPUTS["zoom_out"] = True
                     
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
@@ -205,21 +288,41 @@ class Game:
                     INPUTS["right_click"] = False
                 elif event.button == 4:
                     INPUTS["scroll_click"] = False
+                    
+        global USE_SHADERS
+        if INPUTS["shaders_toggle"]:
+            USE_SHADERS = not USE_SHADERS
+            INPUTS["shaders_toggle"] = False            
+        
+        elif INPUTS["next_shader"]:
+            shader_index = SHADERS_NAMES.index(self.shader.shader_name)
+            if shader_index < 0:
+                shader_index = 0
+            else:
+                shader_index += 1
+                if shader_index >= len(SHADERS_NAMES):
+                    shader_index = 0
+                    
+            self.shader.create_pipeline(SHADERS_NAMES[shader_index])
+            INPUTS["next_shader"] = False            
+                    
         return events
                     
     def reset_inputs(self):
         for key in ACTIONS.keys():
             INPUTS[key] = False
             
+    #MARK: loop
     async def loop(self):
-        while self.running:
+        self.shader.create_pipeline()
+        
+        while self.is_running:
             # delta time since last frame in milliseconds
             dt = self.clock.tick(FPS_CAP) / 1000
             events = []
-            # if self.states[-1].__class__.__name__ != "MenuScreen":
-            #     self.get_inputs()
             events = self.get_inputs()
-            # print(f"loop {IS_PAUSED=}")
+
+            # first draw on separate Surface (game.canvas)
             if not IS_PAUSED:
                 self.time_elapsed += dt
                 self.states[-1].update(dt, events)
@@ -230,11 +333,17 @@ class Game:
             if IS_PAUSED:
                 self.render_text("PAUSED", (WIDTH*SCALE // 2, HEIGHT*SCALE // 2), font_size=FONT_SIZE_LARGE, centred=True, bg_color=(10,10,10,150), shadow=True)
             
-            self.screen.blit(pygame.transform.scale_by(self.canvas, SCALE), (0,0))
-            if USE_SHADERS:
-                self.shader.render(self.screen, dt)
+            # than scale and copy on final Surface (game.screen)
+            if SCALE != 1:
+                self.screen.blit(pygame.transform.scale_by(self.canvas, SCALE), (0,0))
             else:
-                pygame.display.update()
+                self.screen.blit(self.canvas, (0,0))
+            # shaders are used for postprocessing special effects
+            # the whole Surface is used as texture on rect that fills to a full screen
+            
+            self.shader.render(self.screen, dt, USE_SHADERS)
+                
+            pygame.display.flip()
             await asyncio.sleep(0)
             
             

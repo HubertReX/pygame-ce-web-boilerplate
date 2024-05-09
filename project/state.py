@@ -14,16 +14,16 @@ class State:
             self.prev_state = self.game.states[-1]
         self.game.states.append(self)
         
-    def exit_state(self):
+    def exit_state(self, quit: bool = True):
         if len(self.game.states) > 1:
             self.game.states.pop()
         else:
-            if not IS_WEB:
-                self.game.running = False
+            if not IS_WEB and quit:
+                self.game.is_running = False
             
     def update(self, dt: float, events: list[pygame.event.EventType]):
         if INPUTS['quit'] and not IS_WEB:
-            self.game.running = False
+            self.game.is_running = False
             
         global SHOW_DEBUG_INFO
         if INPUTS['debug']:
