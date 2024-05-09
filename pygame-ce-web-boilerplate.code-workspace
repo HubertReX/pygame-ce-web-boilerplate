@@ -6,7 +6,12 @@
 	],
 	"settings": {
 		"cSpell.words": [
-			"emscripten"
+			"bottomright",
+			"colliderect",
+			"emscripten",
+			"opengl",
+			"pygbag",
+			"zengl"
 		]
 	}
 }

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
+  <script>
+    (async () => {
+      const pyodide = await loadPyodide();
+      pyodide.canvas.setCanvas3D(document.getElementById("canvas"));
+      // 'zengl-2.4.1-cp311-abi3-emscripten_3_1_46_wasm32.whl',
+      await pyodide.loadPackage(['zengl']); 
+      const main = await fetch('main.py');
+      pyodide.runPython(await main.text());
+      window.pyodide = pyodide;
+    })();
+  </script>
+</body>
+</html>
