@@ -1,0 +1,30 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"cSpell.words": [
+			"bottomright",
+			"colliderect",
+			"emscripten",
+			"opengl",
+			"pygbag",
+			"zengl"
+		]
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"name": "Run game",
+				"type": "python",
+				"request": "launch",
+				"cwd": "${workspaceFolder}/project",
+				"program": "${workspaceFolder}/project/main.py",
+				"console": "integratedTerminal"
+			},
+		]
+	}
+}

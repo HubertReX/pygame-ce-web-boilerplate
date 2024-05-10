@@ -6,7 +6,7 @@
     "configurations": [
         {
             "name": "Run game",
-            "type": "debugpy",
+            "type": "python",
             "request": "launch",
             "cwd": "${workspaceFolder}/project",
             "program": "${workspaceFolder}/project/main.py",
