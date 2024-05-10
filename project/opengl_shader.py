@@ -9,28 +9,6 @@ zengl.init()
 
 import _zengl
 
-"""
-def compile_error(shader: bytes, shader_type: int, log: bytes):
-    name = {0x8B31: "Vertex Shader", 0x8B30: "Fragment Shader"}[shader_type]
-    log = log.rstrip(b"\x00").decode()
-    raise ValueError(f"{name} Error\n\n{log}")
-
-"""
-
-"""
-
-Traceback (most recent call last):
-  File "/data/data/project/assets/game.py", line 307, in loop
-    self.shader.create_pipeline()
-  File "/data/data/project/assets/opengl_shader.py", line 100, in create_pipeline
-    self.pipeline = self.ctx.pipeline(
-                    ^^^^^^^^^^^^^^^^^^
-  File "/data/data/org.python/assets/build/env/_zengl.py", line 652, in uniforms
-    raise KeyError(f'Uniform "{name}" does not exist')
-KeyError: 'Uniform "time" does not exist'
-
-"""        
-
 
 try: 
     CSI("test")
@@ -49,8 +27,8 @@ class OpenGL_shader():
 
                 log = log.rstrip(b"\x00").decode()
                 shader = shader.rstrip(b"\x00").decode()
-                _, pos, msg  = log.split(': ',2)
-                c,l = map( int, pos.split(':',1) )
+                _, pos, msg  = log.split(": ",2)
+                c,l = map( int, pos.split(":",1) )
                 #print( l,c,msg  )
                 spacer = ""
                 for ln,line in enumerate(shader.split("\n")):
@@ -92,25 +70,25 @@ class OpenGL_shader():
         
         layout =[
             {
-                    'name': 'Texture',
-                    'binding': 0,
+                    "name": "Texture",
+                    "binding": 0,
             },
         ]
         
         uniforms = {
-                'time': 0.0,
-                'screen_size': (self.size[0], self.size[1]),
+                "time": 0.0,
+                "screen_size": (self.size[0], self.size[1]),
         }
         
         resources = [
                 {
-                    'type': 'sampler',
-                    'binding': 0,
-                    'image': self.image,
-                    'min_filter': 'nearest',
-                    'mag_filter': 'nearest',
-                    'wrap_x': 'clamp_to_edge',
-                    'wrap_y': 'clamp_to_edge',
+                    "type": "sampler",
+                    "binding": 0,
+                    "image": self.image,
+                    "min_filter": "nearest",
+                    "mag_filter": "nearest",
+                    "wrap_x": "clamp_to_edge",
+                    "wrap_y": "clamp_to_edge",
                 },
         ]
         
@@ -146,7 +124,7 @@ class OpenGL_shader():
     def render(self, surface, dt: float = 0.0, use_shaders: bool = True):
         self.ctx.new_frame()
         self.image.clear()
-        self.image.write(pygame.image.tobytes(surface, 'RGBA', flipped=True))
+        self.image.write(pygame.image.tobytes(surface, "RGBA", flipped=True))
         self.timestamp += dt
         self.pipeline.uniforms["time"][:] = struct.pack("f", self.timestamp / 100.0)
         if use_shaders:

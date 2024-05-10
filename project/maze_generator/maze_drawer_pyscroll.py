@@ -4,7 +4,7 @@ from pathlib import Path
 import pygame
 import hunt_and_kill_maze
 from maze import Maze
-from maze_utils import get_gid_from_tmx_id, get_pyscroll_from_maze
+from maze_utils import get_gid_from_tmx_id, build_tileset_map_from_maze
 from cell import *
 
 from pytmx.util_pygame import load_pygame
@@ -122,7 +122,7 @@ class MazeDrawer:
         
         # clean_tileset_name = "MazeTileset_clean"
         self.tileset_map = load_pygame(MAPS_DIR / f"MazeTileset_clean.tmx")
-        get_pyscroll_from_maze(self.tileset_map, self.maze)
+        build_tileset_map_from_maze(self.tileset_map, self.maze)
         # self.convert_map()
                 
         # create new renderer (camera)
@@ -148,7 +148,7 @@ class MazeDrawer:
         self.maze.generate()
         # self.convert_map()
         self.tileset_map = load_pygame(MAPS_DIR / f"MazeTileset_clean.tmx")
-        get_pyscroll_from_maze(self.tileset_map, self.maze)
+        build_tileset_map_from_maze(self.tileset_map, self.maze)
         
         # create new renderer (camera)
         self.map_layer = pyscroll.BufferedRenderer(

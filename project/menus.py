@@ -31,7 +31,7 @@ class MenuScreen(State):
     def deactivate(self):
         # self.menu.disable()
         
-        # Scene(self.game, 'grasslands', 'start').enter_state()
+        # Scene(self.game, "grasslands", "start").enter_state()
         self.game.reset_inputs()
         self.exit_state()
         
@@ -45,14 +45,14 @@ class MenuScreen(State):
                 self.game.reset_inputs()
 
         global SHOW_DEBUG_INFO
-        if INPUTS['debug']:
+        if INPUTS["debug"]:
             SHOW_DEBUG_INFO = not SHOW_DEBUG_INFO
             self.game.reset_inputs()
 
-        # if INPUTS['select']:
+        # if INPUTS["select"]:
         #     self.deactivate()
             
-        # if INPUTS['quit']:
+        # if INPUTS["quit"]:
         #     self.deactivate()
             
     def draw(self, screen: pygame.Surface, dt: float):
@@ -85,26 +85,26 @@ class MainMenuScreen(MenuScreen):
             width=WIDTH * 0.6,
             height=HEIGHT * 0.6,
             theme=main_theme,
-            title='Main Menu',
+            title="Main Menu",
         )
 
         # am = AboutMenuScreen(self.game, "AboutMenu")
         # am.create_menu()
 
-        # main_menu.add.button('Play', Scene(self.game, 'grasslands', 'start').enter_state)
-        main_menu.add.button('Play', scene.Scene(self.game, 'Village', 'start').enter_state)
-        main_menu.add.button('Settings', splash_screen.SplashScreen(self.game, "Settings").enter_state)
-        main_menu.add.button('About', AboutMenuScreen(self.game, "AboutMenu").enter_state)
-        # main_menu.add.button('Close menu', self.deactivate)
+        # main_menu.add.button("Play", Scene(self.game, "grasslands", "start").enter_state)
+        main_menu.add.button("Play", scene.Scene(self.game, "Village", "start").enter_state)
+        main_menu.add.button("Settings", splash_screen.SplashScreen(self.game, "Settings").enter_state)
+        main_menu.add.button("About", AboutMenuScreen(self.game, "AboutMenu").enter_state)
+        # main_menu.add.button("Close menu", self.deactivate)
         if not IS_WEB:
-            main_menu.add.button('Quit', pygame_menu.events.EXIT)
+            main_menu.add.button("Quit", pygame_menu.events.EXIT)
     
         return main_menu
 
     def update(self, dt: float, events: list[pygame.event.EventType]):
         super().update(dt, events)
 
-        if INPUTS['select']:
+        if INPUTS["select"]:
             # self.game.reset_inputs()
             widget = self.menu.get_current().get_selected_widget()
             if widget:
@@ -114,11 +114,11 @@ class MainMenuScreen(MenuScreen):
         # menu = self.menu.get_current()
         # print(f"Menu : {self.name}")
                         
-        if INPUTS['quit'] and not IS_WEB:
+        if INPUTS["quit"] and not IS_WEB:
             self.game.is_running = False    
             self.deactivate()
 
-        if INPUTS['screenshot']:
+        if INPUTS["screenshot"]:
             self.game.save_screenshot()
     
     # def draw(self, screen: pygame.Surface):
@@ -143,47 +143,47 @@ class AboutMenuScreen(MenuScreen):
             width = WIDTH * 0.6,
             height = HEIGHT * 0.6,
             theme = about_theme,
-            title = 'About',
+            title = "About",
         )
 
         for m in ABOUT:
             about_menu.add.label(m, align=pygame_menu.locals.ALIGN_LEFT, font_size=20)
         about_menu.add.vertical_margin(30)
-        about_menu.add.button('Back', self.deactivate)
-        # about_menu.add.button('Close menu', pygame_menu.events.BACK)
+        about_menu.add.button("Back", self.deactivate)
+        # about_menu.add.button("Close menu", pygame_menu.events.BACK)
         return about_menu
 
     def update(self, dt: float, events: list[pygame.event.EventType]):
         super().update(dt, events)
 
-        if INPUTS['left_click']:
+        if INPUTS["left_click"]:
             # self.exit_state()
             # self.game.reset_inputs()
             self.deactivate()
             
-        if INPUTS['right_click']:
+        if INPUTS["right_click"]:
             # self.exit_state()
             # self.game.reset_inputs()
             self.deactivate()
         
 
-        if INPUTS['quit']:
+        if INPUTS["quit"]:
             # self.menu.reset(1)
             self.deactivate()
             # self.exit_state()
 
-        if INPUTS['select']:
+        if INPUTS["select"]:
             # self.exit_state()
             self.deactivate()
 
-        if INPUTS['accept']:
+        if INPUTS["accept"]:
             # self.exit_state()
             self.deactivate()
 
-        if INPUTS['screenshot']:
+        if INPUTS["screenshot"]:
             self.game.save_screenshot()
 
-        # if INPUTS['help']:
+        # if INPUTS["help"]:
         #     self.deactivate()            
         
     # def draw(self, screen: pygame.Surface):

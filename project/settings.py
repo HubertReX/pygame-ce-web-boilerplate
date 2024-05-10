@@ -17,9 +17,9 @@ pretty.install()
 VERSION = 0.1
 GAME_NAME = "THE GAME"
 ABOUT = [
-    f'Version: {VERSION}',
-    f'Author: Hubert Nafalski',
-    f'WWW: https://hubertnafalski.itch.io/'
+    f"Version: {VERSION}",
+    f"Author: Hubert Nafalski",
+    f"WWW: https://hubertnafalski.itch.io/"
 ]
 
 Point = namedtuple("Point", ["x", "y"])
@@ -55,43 +55,32 @@ BORED_TIME: float = 4.0
 
 
 ACTIONS = {
-    'quit':       {"show": ["ESC", "q"], "msg": "back",       "keys": [pygame.K_ESCAPE,    pygame.K_q]},
-    'debug':      {"show": ["`", "z"],   "msg": "debug",      "keys": [pygame.K_BACKQUOTE, pygame.K_z]},
-    'alpha':      {"show": ["f"],        "msg": "filter",     "keys": [pygame.K_f]},
-    'shaders_toggle':{"show": ["g"],     "msg": "shader 0/1", "keys": [pygame.K_g]},
-    'next_shader':{"show": ["h"],        "msg": "next shader","keys": [pygame.K_PERIOD]},
-    'run':        {"show": ["CTRL"],     "msg": "toggle run", "keys": [pygame.K_LSHIFT, pygame.K_RSHIFT]},
-    'jump':       {"show": ["SPACE"],    "msg": "jump",       "keys": [pygame.K_SPACE]},
-    'fly':        {"show": ["SHIFT"],    "msg": "fly",        "keys": [pygame.K_LALT, pygame.K_RALT]},
-    'select':     {"show": None,         "msg": "select",     "keys": [pygame.K_SPACE]},
-    'accept':     {"show": None,         "msg": "accept",     "keys": [pygame.K_RETURN, pygame.K_KP_ENTER]},
-    'help':       {"show": ["F1", 'h'],  "msg": "help",       "keys": [pygame.K_F1,    pygame.K_h]},
-    'screenshot': {"show": ["F12"],      "msg": "screenshot", "keys": [pygame.K_F12]},
-    'reload':     {"show": ([] if IS_WEB else ["r"]),       "msg": "reload map", "keys": [pygame.K_r]},
-    'zoom_in':    {"show": ["+"],       "msg": "zoom in",    "keys": [pygame.K_EQUALS, pygame.K_KP_PLUS]},
-    'zoom_out':   {"show": ["-"],       "msg": "zoom out",   "keys": [pygame.K_MINUS, pygame.K_KP_MINUS]},
-    # 'quit':       {"show": ["ESC", "q"], "msg": "back",       "keys": [pygame.K_ESCAPE,    pygame.K_q]},
-    # 'debug':      {"show": ["`", "z  "],   "msg": "debug",      "keys": [pygame.K_BACKQUOTE, pygame.K_z]},
-    # 'run':        {"show": ["CTRL  "],     "msg": "toggle run", "keys": [pygame.K_CTRL]},
-    # 'jump':       {"show": ["SPACE "],    "msg": "jump",       "keys": [pygame.K_SPACE]},
-    # 'select':     {"show": None,         "msg": "select",     "keys": [pygame.K_SPACE]},
-    # 'accept':     {"show": None,         "msg": "accept",     "keys": [pygame.K_RETURN, pygame.K_KP_ENTER]},
-    # 'help':       {"show": ["F1", 'h '],  "msg": "help",       "keys": [pygame.K_F1,    pygame.K_h]},
-    # 'screenshot': {"show": ["F12   "],      "msg": "screenshot", "keys": [pygame.K_F12]},
-    # 'reload':     {"show": ([] if IS_WEB else ["r     "]),       "msg": "reload map", "keys": [pygame.K_r]},
-    # 'zoom_in':    {"show": ["+     "],       "msg": "zoom in",    "keys": [pygame.K_EQUALS, pygame.K_KP_PLUS]},
-    # 'zoom_out':   {"show": ["-     "],       "msg": "zoom out",   "keys": [pygame.K_MINUS, pygame.K_KP_MINUS]},
-    'left':       {"show": None,         "msg": "",           "keys": [pygame.K_LEFT,  pygame.K_a]},
-    'right':      {"show": None,         "msg": "",           "keys": [pygame.K_RIGHT, pygame.K_d]},
-    'up':         {"show": None,         "msg": "",           "keys": [pygame.K_UP,    pygame.K_w]},
-    'down':       {"show": None,         "msg": "",           "keys": [pygame.K_DOWN,  pygame.K_s]},
+    "quit":           {"show": ["ESC", "q"], "msg": "back",       "keys": [pygame.K_ESCAPE,    pygame.K_q]},
+    "debug":          {"show": ["`", "z"],   "msg": "debug",      "keys": [pygame.K_BACKQUOTE, pygame.K_z]},
+    "alpha":          {"show": ["f"],        "msg": "filter",     "keys": [pygame.K_f]},
+    "shaders_toggle": {"show": ["g"],        "msg": "shader 0/1", "keys": [pygame.K_g]},
+    "next_shader":    {"show": ["h"],        "msg": "next shader","keys": [pygame.K_PERIOD]},
+    "run":            {"show": ["CTRL"],     "msg": "toggle run", "keys": [pygame.K_LSHIFT, pygame.K_RSHIFT]},
+    "jump":           {"show": ["SPACE"],    "msg": "jump",       "keys": [pygame.K_SPACE]},
+    "fly":            {"show": ["SHIFT"],    "msg": "fly",        "keys": [pygame.K_LALT, pygame.K_RALT]},
+    "select":         {"show": None,         "msg": "select",     "keys": [pygame.K_SPACE]},
+    "accept":         {"show": None,         "msg": "accept",     "keys": [pygame.K_RETURN, pygame.K_KP_ENTER]},
+    "help":           {"show": ["F1", "h"],  "msg": "help",       "keys": [pygame.K_F1,    pygame.K_h]},
+    "screenshot":     {"show": ["F12"],      "msg": "screenshot", "keys": [pygame.K_F12]},
+    "reload":         {"show": ([] if IS_WEB else ["r"]), "msg": "reload map", "keys": [pygame.K_r]},
+    "zoom_in":        {"show": ["+"],        "msg": "zoom in",    "keys": [pygame.K_EQUALS, pygame.K_KP_PLUS]},
+    "zoom_out":       {"show": ["-"],        "msg": "zoom out",   "keys": [pygame.K_MINUS, pygame.K_KP_MINUS]},
+    "left":           {"show": None,         "msg": "",           "keys": [pygame.K_LEFT,  pygame.K_a]},
+    "right":          {"show": None,         "msg": "",           "keys": [pygame.K_RIGHT, pygame.K_d]},
+    "up":             {"show": None,         "msg": "",           "keys": [pygame.K_UP,    pygame.K_w]},
+    "down":           {"show": None,         "msg": "",           "keys": [pygame.K_DOWN,  pygame.K_s]},
     
-    'pause':      {"show": ["F8"],       "msg": "pause",          "keys": [pygame.K_F8]},
+    "pause":          {"show": ["F8"],       "msg": "pause",      "keys": [pygame.K_F8]},
     
-    'scroll_up':   {"show": None,            "msg": "",           "keys": []},
-    'left_click':  {"show": ["Left click"],  "msg": "go to",      "keys": []},
-    'right_click': {"show": ["Right click"], "msg": "stop",       "keys": []},
-    'scroll_click':{"show": None,            "msg": "",           "keys": []},
+    "scroll_up":      {"show": None,            "msg": "",        "keys": []},
+    "left_click":     {"show": ["Left click"],  "msg": "go to",   "keys": []},
+    "right_click":    {"show": ["Right click"], "msg": "stop",    "keys": []},
+    "scroll_click":   {"show": None,            "msg": "",        "keys": []},
 }
 
 INPUTS = {}

@@ -177,7 +177,7 @@ def make_layer(layer, maze: Maze, new_cols_cnt: int, new_rows_cnt: int):
     # layer.height = new_rows_cnt
     
     
-def get_pyscroll_from_maze(clean_tileset_map: pytmx.TiledMap, maze: Maze, to_map: str, entry_point: str) -> dict[int, list[list[int]]]:
+def build_tileset_map_from_maze(clean_tileset_map: pytmx.TiledMap, maze: Maze, to_map: str, entry_point: str) -> None:
     
     # if "entry_points" in self.layers:
     #     for obj in tileset_map.get_layer_by_name("entry_points"):

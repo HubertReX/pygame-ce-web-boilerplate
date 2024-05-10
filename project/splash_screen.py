@@ -12,24 +12,24 @@ class SplashScreen(State):
         return f"{__class__.__name__}: {self.name}"
         
     def update(self, dt: float, events: list[pygame.event.EventType]):
-        if INPUTS['left_click']:
+        if INPUTS["left_click"]:
             self.game.reset_inputs()
             self.exit_state()
             
-        if INPUTS['right_click']:
+        if INPUTS["right_click"]:
             self.game.reset_inputs()
             self.exit_state()
             
-        if INPUTS['quit']:
+        if INPUTS["quit"]:
             self.game.reset_inputs()
             self.exit_state()
             
-        if INPUTS['accept']:
+        if INPUTS["accept"]:
             self.game.reset_inputs()
             self.exit_state()
             
-        if INPUTS['select']:
-            # Scene(self.game, 'grasslands', 'start').enter_state()
+        if INPUTS["select"]:
+            # Scene(self.game, "grasslands", "start").enter_state()
             self.game.reset_inputs()
             self.exit_state()
             

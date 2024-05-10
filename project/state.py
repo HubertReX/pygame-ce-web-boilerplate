@@ -22,16 +22,16 @@ class State:
                 self.game.is_running = False
             
     def update(self, dt: float, events: list[pygame.event.EventType]):
-        if INPUTS['quit'] and not IS_WEB:
+        if INPUTS["quit"] and not IS_WEB:
             self.game.is_running = False
             
         global SHOW_DEBUG_INFO
-        if INPUTS['debug']:
+        if INPUTS["debug"]:
             SHOW_DEBUG_INFO = not SHOW_DEBUG_INFO
             self.game.reset_inputs()
             
         global SHOW_HELP_INFO
-        if INPUTS['help']:
+        if INPUTS["help"]:
             SHOW_HELP_INFO = not SHOW_HELP_INFO
             self.game.reset_inputs()
             
