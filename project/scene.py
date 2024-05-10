@@ -1,3 +1,4 @@
+import random
 from state import State
 from settings import *
 import pygame
@@ -50,8 +51,8 @@ class Scene(State):
             [self.draw_sprites], 
             self.shadow_sprites, 
             (WIDTH / 2, HEIGHT / 2), 
-            "GreenNinja"
-        ) # Woman, GreenNinja, monochrome_ninja
+            "Player"
+        )
         
         if self.is_maze:
             # check from which scene we came here
@@ -138,25 +139,31 @@ class Scene(State):
         # layer of invisible objects being single points determining where NPCs will spawn
         if "spawn_points" in self.layers:
             for obj in tileset_map.get_layer_by_name("spawn_points"):
-                # list of waypoints attached by NPCs sprite_name
-                waypoint = waypoints.get(obj.sprite_name, ())    
+                # list of waypoints attached by NPCs name
+                waypoint = waypoints.get(obj.name, ())    
                 npc = NPC(
                     self.game, 
                     self, 
                     [self.draw_sprites], 
                     self.shadow_sprites, 
                     (obj.x, obj.y), 
-                    obj.sprite_name, 
+                    obj.name, 
                     waypoint
                 )
                 self.NPC.append(npc)
                     
         if self.is_maze:
-            # spawning 4 NPCs in upper right, lower right, lower left corners and in the map middle (TODO: remove HARDCODED positions)
-            self.NPC.append(NPC(self.game, self, [self.draw_sprites], self.shadow_sprites, ( (5 + ((self.maze_cols - 1) * 6)) * TILE_SIZE + 2, ((7 + (self.maze_rows - 1) *6)) * TILE_SIZE + 2), "Snake", () ))
-            self.NPC.append(NPC(self.game, self, [self.draw_sprites], self.shadow_sprites, ( (5                             ) * TILE_SIZE + 2, ((7 + (self.maze_rows - 1) *6)) * TILE_SIZE + 2), "SpiderRed", () ))
-            self.NPC.append(NPC(self.game, self, [self.draw_sprites], self.shadow_sprites, ( (5 + ((self.maze_cols - 1) * 6)) * TILE_SIZE + 2, ((7                          )) * TILE_SIZE + 2), "Spirit", () ))
-            self.NPC.append(NPC(self.game, self, [self.draw_sprites], self.shadow_sprites, ( (5 + ((self.maze_cols //2) * 6)) * TILE_SIZE + 2, ((7 + (self.maze_rows //2) *6)) * TILE_SIZE + 2), "Slime", () ))
+            # spawning 4 random NPCs in upper right, lower right, lower left corners and in the middle of the map 
+            spawn_positions = [
+                ( (5 + ((self.maze_cols - 1) * 6)) * TILE_SIZE + 2, ((7 + (self.maze_rows - 1) *6)) * TILE_SIZE + 2),
+                ( (5                             ) * TILE_SIZE + 2, ((7 + (self.maze_rows - 1) *6)) * TILE_SIZE + 2),
+                ( (5 + ((self.maze_cols - 1) * 6)) * TILE_SIZE + 2, ((7                          )) * TILE_SIZE + 2),
+                ( (5 + ((self.maze_cols //2) * 6)) * TILE_SIZE + 2, ((7 + (self.maze_rows //2) *6)) * TILE_SIZE + 2),
+            ]
+            for pos in spawn_positions:
+                monster_name = random.choice(["Snake_01", "Spider_01", "Spirit_01", "Slime_01",])
+                npc = NPC(self.game, self, [self.draw_sprites], self.shadow_sprites, pos, monster_name, ())
+                self.NPC.append(npc)
             
         if self.entry_point in self.entry_points:
             # set first start position for the Player

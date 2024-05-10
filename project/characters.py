@@ -3,6 +3,7 @@ import random
 import pygame
 from pygame.math import Vector2 as vec
 from maze_generator.maze_utils import a_star
+from config_model.config import AttitudeEnum, Character
 from settings import *
 import game
 import scene
@@ -23,16 +24,18 @@ class NPC(pygame.sprite.Sprite):
             name: str, 
             waypoints: tuple[Point] = ()
         ):
+        
         super().__init__(groups)
         self.game = game
         self.scene = scene
         self.name = name # monochrome_ninja
+        self.model: Character = game.conf.characters[name]
         self.shadow = Shadow(shadow_group, (0, 0), [TILE_SIZE - 2, 6])
-        self.health_bar = HealthBar(shadow_group, (pos[0], pos[1] - TILE_SIZE - 4))
+        self.health_bar = HealthBar(self.model.name, shadow_group, pos)
         self.animations: dict[str, list[pygame.surface.Surface]] = {}
         self.animation_speed = ANIMATION_SPEED
         # self.import_image(f"assets/{self.name}/")
-        self.import_sprite_sheet(CHARACTERS_DIR / self.name / "SpriteSheet.png")
+        self.import_sprite_sheet(CHARACTERS_DIR / self.model.sprite / "SpriteSheet.png")
         self.frame_index: float = 0.0
         # self.image = self.animations["idle"][int(self.frame_index)].convert_alpha()
         self.image = self.animations["idle_down"][int(self.frame_index)]
@@ -82,13 +85,6 @@ class NPC(pygame.sprite.Sprite):
         # actual NPC state, mainly to determine type of animation and speed
         self.state: npc_state.NPC_State = npc_state.Idle()
         self.state.enter_time = self.scene.game.time_elapsed
-        
-        self.health: int = 30
-        self.max_health: int = 30
-        self.damage: int = 10
-        self.attitude: str = "friendly"
-        if self.name in ["Snake", "SpiderRed", "Spirit", "Slime"]:
-            self.attitude = "enemy"
         
     def get_tileset_coord(self, pos: vec | None = None) -> Point:
         """
@@ -378,19 +374,19 @@ class NPC(pygame.sprite.Sprite):
 
     #MARK: encounter        
     def encounter(self, oponent: "NPC"):
-        if oponent.attitude == "enemy":
+        if oponent.model.attitude == AttitudeEnum.enemy:
             # deal damage
-            self.health -= oponent.damage
-            oponent.health -= self.damage
+            self.model.health -= oponent.model.damage
+            oponent.model.health -= self.model.damage
             
-            self.health = max(0, self.health)
-            oponent.health = max(0, oponent.health)
+            self.model.health = max(0, self.model.health)
+            oponent.model.health = max(0, oponent.model.health)
             
-            # print(f"{self.name}: {self.health} opponent {oponent.name} {oponent.health}")
-            if self.health == 0:
+            # print(f"{self.name}: {self.model.health} opponent {oponent.name} {oponent.model.health}")
+            if self.model.health == 0:
                 self.die()
             
-            if oponent.health == 0:
+            if oponent.model.health == 0:
                 oponent.die()
 
             self.is_stunned = True
@@ -437,8 +433,8 @@ class NPC(pygame.sprite.Sprite):
         self.feet.midbottom = self.pos
         # shadow
         self.shadow.rect.midbottom = self.pos #+ vec(0, -1)
-        self.health_bar.rect.midbottom = self.pos + vec(0, -TILE_SIZE - 4)
-        self.health_bar.set_bar(self.health / self.max_health)
+        self.health_bar.rect.midtop = self.pos #+ vec(0, -TILE_SIZE - 4)
+        self.health_bar.set_bar(self.model.health / self.model.max_health, self.game)
             
         
     def debug(self, msgs: list[str]):
@@ -463,8 +459,6 @@ class Player(NPC):
         self.speed_run  *= 1.5
         self.speed_walk *= 1.2
         self.speed = self.speed_run
-        self.health: int = 100
-        self.max_health: int = 100
         
     def movement(self):
         global INPUTS

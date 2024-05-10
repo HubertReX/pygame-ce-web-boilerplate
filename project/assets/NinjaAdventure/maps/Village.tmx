@@ -211,50 +211,50 @@
   </object>
  </objectgroup>
  <objectgroup id="8" name="waypoints">
-  <object id="8" name="Villager3" x="472" y="104">
-   <polygon points="0,0 0,192 240,192 240,-32 160,-32 160,-32 160,-32 160,0"/>
-  </object>
-  <object id="9" name="Villager1" x="409.053" y="102.066">
-   <polygon points="-1.053,1.934 222.947,1.934 222.947,-30.066 334.947,-30.066 334.947,-62.066 366.947,-62.066 366.947,-30.066 366.947,-62.066 334.947,-62.066 334.947,-30.066 222.947,-30.066 222.947,1.934 -17.053,1.934 -17.053,-14.066"/>
-  </object>
-  <object id="12" name="Villager4" x="744" y="264">
+  <object id="12" name="Rob" x="744" y="264">
    <polyline points="0.106,0.181 0.106,-47.819 0.106,0.181"/>
   </object>
-  <object id="16" name="Woman" x="511" y="174.75">
-   <polygon points="1,-6.75 81,-6.75 81,-22.75 81,-6.75 1,-6.75 1,-22.75"/>
+  <object id="8" name="Bart" x="472" y="104">
+   <polygon points="0,0 0,192 240,192 240,-32 160,-32 160,-32 160,-32 160,0"/>
   </object>
-  <object id="17" name="Villager2" x="361.5" y="201.875">
+  <object id="17" name="Fred" x="361.5" y="201.875">
    <polygon points="-1.5,-17.875 -1.5,46.125 -57.5,46.125 -169.5,-81.875 -193.5,-81.875 -161.5,-81.875 -161.5,-41.875 -161.5,-17.875 -137.5,-17.875 -65.5,62.125 -1.5,62.125"/>
+  </object>
+  <object id="9" name="Johny" x="409.053" y="102.066">
+   <polygon points="-1.053,1.934 222.947,1.934 222.947,-30.066 334.947,-30.066 334.947,-62.066 366.947,-62.066 366.947,-30.066 366.947,-62.066 334.947,-62.066 334.947,-30.066 222.947,-30.066 222.947,1.934 -17.053,1.934 -17.053,-14.066"/>
+  </object>
+  <object id="16" name="Marry" x="511" y="174.75">
+   <polygon points="1,-6.75 81,-6.75 81,-22.75 81,-6.75 1,-6.75 1,-22.75"/>
   </object>
  </objectgroup>
  <objectgroup id="9" name="spawn_points">
-  <object id="21" name="Woman" x="512" y="160">
-   <properties>
-    <property name="sprite_name" value="Woman"/>
-   </properties>
-   <point/>
-  </object>
-  <object id="22" name="Villager3" x="472" y="104">
-   <properties>
-    <property name="sprite_name" value="Villager3"/>
-   </properties>
-   <point/>
-  </object>
-  <object id="23" name="Villager4" x="744" y="272">
+  <object id="23" name="Rob" x="744" y="272">
    <properties>
     <property name="sprite_name" value="Villager4"/>
    </properties>
    <point/>
   </object>
-  <object id="24" name="Villager2" x="360" y="192">
+  <object id="22" name="Bart" x="472" y="104">
+   <properties>
+    <property name="sprite_name" value="Villager3"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="24" name="Fred" x="360" y="192">
    <properties>
     <property name="sprite_name" value="Villager2"/>
    </properties>
    <point/>
   </object>
-  <object id="25" name="Villager1" x="408" y="112">
+  <object id="25" name="Johny" x="408" y="112">
    <properties>
     <property name="sprite_name" value="Villager1"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="21" name="Marry" x="512" y="160">
+   <properties>
+    <property name="sprite_name" value="Woman"/>
    </properties>
    <point/>
   </object>

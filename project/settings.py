@@ -90,6 +90,7 @@ for key in ACTIONS.keys():
 
 # define configuration variables here
 CURRENT_DIR = Path(__file__).parent
+CONFIG_FILE = CURRENT_DIR / "config_model" / "config.json"
 if IS_WEB:
     SCREENSHOTS_DIR = CURRENT_DIR 
 else:
@@ -101,12 +102,13 @@ font_name = "font_pixel"
 MAIN_FONT = ASSETS_DIR / "fonts" / f"{font_name}.ttf" # homespun
 
 FONT_SIZES_DICT = {
-    "font":       [24, 38, 55],
-    "font_pixel": [12, 16, 155],
+    "font":       [8, 24, 38, 55],
+    "font_pixel": [8, 12, 16, 155],
 }
-FONT_SIZE_SMALL  = FONT_SIZES_DICT[font_name][0]
-FONT_SIZE_MEDIUM = FONT_SIZES_DICT[font_name][1]
-FONT_SIZE_LARGE  = FONT_SIZES_DICT[font_name][2]
+FONT_SIZE_TINY   = FONT_SIZES_DICT[font_name][0]
+FONT_SIZE_SMALL  = FONT_SIZES_DICT[font_name][1]
+FONT_SIZE_MEDIUM = FONT_SIZES_DICT[font_name][2]
+FONT_SIZE_LARGE  = FONT_SIZES_DICT[font_name][3]
 TEXT_ROW_SPACING  = 1.4 
 
 ASSET_PACK = "NinjaAdventure"

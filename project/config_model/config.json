@@ -1,0 +1,105 @@
+{
+    "$schema": "./config_schema.json",
+    "characters": {
+        "Player": {
+            "name": "Player",
+            "sprite": "GreenNinja",
+            "race": "humanoid",
+            "attitude": "friendly",
+            "health": 100,
+            "max_health": 100,
+            "money": 20
+        },
+        "Johny": {
+            "name": "Johny",
+            "sprite": "Villager1",
+            "race": "humanoid",
+            "attitude": "friendly",
+            "money": 20
+        },
+        "Fred": {
+            "name": "Fred",
+            "sprite": "Villager2",
+            "race": "humanoid",
+            "attitude": "friendly",
+            "money": 20
+        },
+        "Bart": {
+            "name": "Bart",
+            "sprite": "Villager3",
+            "race": "humanoid",
+            "attitude": "friendly",
+            "money": 20
+        },
+        "Rob": {
+            "name": "Rob",
+            "sprite": "Villager4",
+            "race": "humanoid",
+            "attitude": "friendly",
+            "money": 20
+        },
+        "Marry": {
+            "name": "Marry",
+            "sprite": "Woman",
+            "race": "humanoid",
+            "attitude": "friendly",
+            "health": 120,
+            "max_health": 120,
+            "money": 25
+        },
+        "Cat1": {
+            "name": "Cat1",
+            "sprite": "Cat",
+            "race": "animal",
+            "attitude": "friendly",
+            "money": 0
+        },
+        "Frog1": {
+            "name": "Frog",
+            "sprite": "Frog",
+            "race": "animal",
+            "attitude": "afraid",
+            "money": 0
+        },
+        "Snake_01": {
+            "name": "Snake",
+            "sprite": "Snake",
+            "race": "monster",
+            "attitude": "enemy",
+            "health": 50,
+            "max_health": 50,
+            "damage": 20,
+            "money": 0
+        },
+        "Spirit_01": {
+            "name": "Spirit",
+            "sprite": "Spirit",
+            "race": "monster",
+            "attitude": "enemy",
+            "health": 30,
+            "max_health": 30,
+            "damage": 10,
+            "money": 0
+        },
+        "Slime_01": {
+            "name": "Slime",
+            "sprite": "Slime",
+            "race": "monster",
+            "attitude": "enemy",
+            "health": 20,
+            "max_health": 20,
+            "damage": 10,
+            "money": 0
+        },
+        "Spider_01": {
+            "name": "Spider",
+            "sprite": "SpiderRed",
+            "race": "monster",
+            "attitude": "enemy",
+            "health": 40,
+            "max_health": 40,
+            "damage": 20,
+            "money": 0
+        }
+    }
+}

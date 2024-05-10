@@ -1,0 +1,105 @@
+{
+    "$defs": {
+        "AttitudeEnum": {
+            "enum": [
+                "friendly",
+                "afraid",
+                "enemy"
+            ],
+            "title": "AttitudeEnum",
+            "type": "string"
+        },
+        "Character": {
+            "properties": {
+                "name": {
+                    "description": "Unique character name",
+                    "minLength": 3,
+                    "rozen": true,
+                    "title": "Name",
+                    "type": "string"
+                },
+                "sprite": {
+                    "description": "Must be valid asset folder name (assets/[ASSET_PACK]/characters/[sprite])",
+                    "minLength": 3,
+                    "title": "Sprite",
+                    "type": "string"
+                },
+                "race": {
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/RaceEnum"
+                        }
+                    ],
+                    "description": "Base character race (e.g. humanoid, animal)"
+                },
+                "attitude": {
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/AttitudeEnum"
+                        }
+                    ],
+                    "description": "Attitude towards the player"
+                },
+                "health": {
+                    "default": 30,
+                    "description": "initial health value",
+                    "minimum": 0,
+                    "title": "Health",
+                    "type": "integer"
+                },
+                "max_health": {
+                    "default": 30,
+                    "description": "maximal health value",
+                    "minimum": 0,
+                    "title": "Max Health",
+                    "type": "integer"
+                },
+                "money": {
+                    "default": 0,
+                    "description": "initial amount of possessed money",
+                    "minimum": 0,
+                    "title": "Money",
+                    "type": "integer"
+                },
+                "damage": {
+                    "default": 10,
+                    "description": "amount of damage delt to others",
+                    "minimum": 0,
+                    "title": "Damage",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "name",
+                "sprite",
+                "race",
+                "attitude"
+            ],
+            "title": "Character",
+            "type": "object"
+        },
+        "RaceEnum": {
+            "enum": [
+                "humanoid",
+                "animal",
+                "monster"
+            ],
+            "title": "RaceEnum",
+            "type": "string"
+        }
+    },
+    "properties": {
+        "characters": {
+            "additionalProperties": {
+                "$ref": "#/$defs/Character"
+            },
+            "title": "Characters",
+            "type": "object"
+        }
+    },
+    "required": [
+        "characters"
+    ],
+    "title": "Config",
+    "type": "object"
+}

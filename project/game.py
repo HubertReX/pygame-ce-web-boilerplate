@@ -5,6 +5,7 @@ environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
 import asyncio
 import os
+from config_model.config import load_config
 from settings import *
 import pygame, sys
 from opengl_shader import OpenGL_shader
@@ -18,7 +19,8 @@ traceback.install(show_locals=True, width=150, )
 #MARK: Game
 class Game:
     def __init__(self) -> None:
-        pygame.init()
+        self.conf = load_config(CONFIG_FILE)
+        pygame.init()        
         self.clock: pygame.time.Clock = pygame.time.Clock()
         # time elapsed in seconds (milliseconds as fraction) without pause time
         self.time_elapsed: float = 0.0
@@ -53,7 +55,7 @@ class Game:
         self.shader = OpenGL_shader(size, DEFAULT_SHADER)
 
         self.fonts = {}
-        font_sizes = [FONT_SIZE_SMALL, FONT_SIZE_MEDIUM, FONT_SIZE_LARGE]
+        font_sizes = [FONT_SIZE_TINY, FONT_SIZE_SMALL, FONT_SIZE_MEDIUM, FONT_SIZE_LARGE]
         for font_size in font_sizes:
             self.fonts[font_size] = pygame.font.Font(MAIN_FONT, font_size)
         
@@ -86,6 +88,7 @@ class Game:
         if USE_SOD:
             self.init_SOD()
 
+
     def init_SOD(self):
         f = 0.01 # frequency, reaction speed and oscillation
         z = 0.3  # zeta, damping factor
@@ -96,53 +99,62 @@ class Game:
         
         self.SOD = SecondOrderDynamics(f, z, r, x0=pos)
     
+    
     #MARK: render
-    def render_panel(self, rect: pygame.Rect, color: str | Sequence[int]) -> None:
-            """
-            Renders semitransparent (if alpha provided) rect using provided color on game.canvas
+    def render_panel(self, rect: pygame.Rect, color: str | Sequence[int], surface: pygame.Surface = None) -> None:
+        """
+        Renders semitransparent (if alpha provided) rect using provided color on game.canvas
 
-                Parameters:
-                        rect (Rect): Size and position of rect
-                        color (str|Sequence[int]): color to fill in the rect (with alpha)
-            """        
-            surf = pygame.Surface(rect.size, pygame.SRCALPHA)
-            pygame.draw.rect(surf, color, surf.get_rect())
-            self.canvas.blit(surf, rect)        
+            Parameters:
+                    rect (Rect): Size and position of rect
+                    color (str|Sequence[int]): color to fill in the rect (with alpha)
+        """        
+        if not surface:
+            surface = self.canvas
+            
+        surf = pygame.Surface(rect.size, pygame.SRCALPHA)
+        pygame.draw.rect(surf, color, surf.get_rect())
+        surface.blit(surf, rect)        
         
         
     def render_texts(            
             self, 
-            texts: list[str], 
-            pos: list[int], 
-            color: str="white", 
-            bg_color: list[int] | None = None, 
-            shadow: bool=True, 
-            font_size: int=0, 
-            centred=False
+            texts:     list[str], 
+            pos:       list[int], 
+            color:     str = "white", 
+            bg_color:  list[int] | None = None, 
+            shadow:    bool = True, 
+            font_size: int = 0, 
+            centred:   bool = False,
+            surface:   pygame.Surface = None
         ):
         """
-        Blit several lines of text on game.canvas, one under other, 
+        Blit several lines of text on surface or on game.canvas if surface is not provided, one under other, 
         """
         for line_no, text in enumerate(texts):
             if font_size == 0:
                 font_size = FONT_SIZE_SMALL
             new_pos = [pos[0], pos[1] + line_no * font_size * TEXT_ROW_SPACING]
-            self.render_text(text, new_pos, color, bg_color, shadow, font_size, centred)
+            self.render_text(text, new_pos, color, bg_color, shadow, font_size, centred, surface)
 
         
     def render_text(
             self, 
-            text: str, 
-            pos: list[int], 
-            color: str="white", 
-            bg_color: list[int] | None = None, 
-            shadow: bool=True, 
-            font_size: int=0, 
-            centred=False
+            text:      str, 
+            pos:       list[int], 
+            color:     str = "white",
+            bg_color:  list[int] | None = None, 
+            shadow:    list[int] = (10,10,10,255), 
+            font_size: int = 0, 
+            centred:   bool = False,
+            surface:   pygame.Surface = None
         ):
         """
-        Blit line of text on game.canvas
+        Blit line of text on surface or on game.canvas if surface is not provided
         """
+        if not surface:
+            surface = self.canvas
+            
         selected_font = self.font
         if self.fonts.get(font_size, False):
             selected_font = self.fonts[font_size]
@@ -156,18 +168,19 @@ class Game:
             bg_rect: pygame.Rect = rect.copy().inflate(18, 18).move(-4, -4)
             bg_surf = pygame.Surface(bg_rect.size, pygame.SRCALPHA) #, pygame.SRCALPHA)
             pygame.draw.rect(bg_surf, bg_color, bg_surf.get_rect())
-            self.canvas.blit(bg_surf, bg_rect)        
+            surface.blit(bg_surf, bg_rect)        
 
         # add black outline (render black text moved by offset to all 4 directions)
         if shadow:
             surf_shadow: pygame.surface.Surface = selected_font.render(text, False, (0,0,0,0))
             offset = 2
-            self.canvas.blit(surf_shadow, (rect.x-offset, rect.y))
-            self.canvas.blit(surf_shadow, (rect.x+offset, rect.y))
-            self.canvas.blit(surf_shadow, (rect.x, rect.y-offset))
-            self.canvas.blit(surf_shadow, (rect.x, rect.y+offset))
+            surface.blit(surf_shadow, (rect.x-offset, rect.y))
+            surface.blit(surf_shadow, (rect.x+offset, rect.y))
+            surface.blit(surf_shadow, (rect.x,        rect.y-offset))
+            surface.blit(surf_shadow, (rect.x,        rect.y+offset))
             
-        self.canvas.blit(surf, rect)
+        surface.blit(surf, rect)
+        
         
     def custom_cursor(self, screen: pygame.Surface):
         """
@@ -203,6 +216,7 @@ class Game:
             images.append(img)
         return images
     
+    
     def get_animations(self, path: str) -> dict[str, Any]:
         """
         read sprite animations from given folder
@@ -216,6 +230,7 @@ class Game:
             if os.path.isdir(os.path.join(path, file)):
                 animations.update({file: []})
         return animations
+
 
     def save_screenshot(self):
         """
@@ -234,6 +249,7 @@ class Game:
             
     def register_custom_event(self, custom_event_id: int, handle_function: callable):
         self.custom_events[custom_event_id] = handle_function
+    
     
     #MARK: get_inputs
     def get_inputs(self) -> list[pygame.event.EventType]:
@@ -308,9 +324,11 @@ class Game:
                     
         return events
                     
+                    
     def reset_inputs(self):
         for key in ACTIONS.keys():
             INPUTS[key] = False
+            
             
     #MARK: loop
     async def loop(self):
@@ -331,7 +349,7 @@ class Game:
             self.custom_cursor(self.canvas)
             
             if IS_PAUSED:
-                self.render_text("PAUSED", (WIDTH*SCALE // 2, HEIGHT*SCALE // 2), font_size=FONT_SIZE_LARGE, centred=True, bg_color=(10,10,10,150), shadow=True)
+                self.render_text("PAUSED", (WIDTH*SCALE // 2, HEIGHT*SCALE // 2), font_size=FONT_SIZE_LARGE, centred=True, bg_color=(10,10,10,150))
             
             # than scale and copy on final Surface (game.screen)
             if SCALE != 1:
