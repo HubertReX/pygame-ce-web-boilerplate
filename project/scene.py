@@ -162,7 +162,15 @@ class Scene(State):
             ]
             for pos in spawn_positions:
                 monster_name = random.choice(["Snake_01", "Spider_01", "Spirit_01", "Slime_01",])
-                npc = NPC(self.game, self, [self.draw_sprites], self.shadow_sprites, pos, monster_name, ())
+                npc = NPC(
+                    self.game, 
+                    self, 
+                    [self.draw_sprites], 
+                    self.shadow_sprites, 
+                    pos, 
+                    monster_name, 
+                    ()
+                )
                 self.NPC.append(npc)
             
         if self.entry_point in self.entry_points:

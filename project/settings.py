@@ -22,6 +22,7 @@ ABOUT = [
     f"WWW: https://hubertnafalski.itch.io/"
 ]
 
+# custom type definition
 Point = namedtuple("Point", ["x", "y"])
 # from pygame/_common.pyi
 ColorValue = Union[int, str, Sequence[int]]

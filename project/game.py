@@ -101,13 +101,17 @@ class Game:
     
     
     #MARK: render
-    def render_panel(self, rect: pygame.Rect, color: str | Sequence[int], surface: pygame.Surface = None) -> None:
+    def render_panel(self, rect: pygame.Rect, color: ColorValue, surface: pygame.Surface = None) -> None:
         """
-        Renders semitransparent (if alpha provided) rect using provided color on game.canvas
+        Renders semitransparent (if `alpha` provided) rect using provided color on `game.canvas`
 
-            Parameters:
-                    rect (Rect): Size and position of rect
-                    color (str|Sequence[int]): color to fill in the rect (with alpha)
+        Args:
+            rect (pygame.Rect): Size and position of panel
+            color (ColorValue): color to fill in the panel (with alpha)
+            surface (pygame.Surface): surface to blit on. Defaults to None
+
+        Returns:
+            None
         """        
         if not surface:
             surface = self.canvas
@@ -129,7 +133,17 @@ class Game:
             surface:   pygame.Surface = None
         ):
         """
-        Blit several lines of text on surface or on game.canvas if surface is not provided, one under other, 
+        Blit several lines of text on surface or on `game.canvas` if surface is not provided, one under other, 
+
+        Args:
+            texts (list[str]): list of strings to render
+            pos (list[int]): position of first row
+            color (str, optional): text color. Defaults to `"white"`.
+            bg_color (list[int] | None, optional): draw background panel. Defaults to `None`.
+            shadow (bool, optional): draw outline of text with black color. Defaults to `True`.
+            font_size (int, optional): font size from predefined list `FONT_SIZES_DICT`. Defaults to `0`.
+            centred (bool, optional): shell the text be centered at `pos`. Defaults to `False`.
+            surface (pygame.Surface, optional): surface to blit on, if `None` user `game.canvas`. Defaults to `None`.
         """
         for line_no, text in enumerate(texts):
             if font_size == 0:
