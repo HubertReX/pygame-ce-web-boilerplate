@@ -59,7 +59,7 @@ class Game:
         for font_size in font_sizes:
             self.fonts[font_size] = pygame.font.Font(MAIN_FONT, font_size)
         
-        self.font = self.fonts[FONT_SIZE_MEDIUM]
+        self.font = self.fonts[FONT_SIZE_DEFAULT]
         self.is_running = True
 
         # stacked game states (e.g. Scene, Menu)
@@ -125,9 +125,9 @@ class Game:
             self, 
             texts:     list[str], 
             pos:       list[int], 
-            color:     str = "white", 
-            bg_color:  list[int] | None = None, 
-            shadow:    bool = True, 
+            color:     ColorValue = "white", 
+            bg_color:  ColorValue = 0, 
+            shadow:    ColorValue = (10,10,10,255), 
             font_size: int = 0, 
             centred:   bool = False,
             surface:   pygame.Surface = None
@@ -138,10 +138,10 @@ class Game:
         Args:
             texts (list[str]): list of strings to render
             pos (list[int]): position of first row
-            color (str, optional): text color. Defaults to `"white"`.
-            bg_color (list[int] | None, optional): draw background panel. Defaults to `None`.
-            shadow (bool, optional): draw outline of text with black color. Defaults to `True`.
-            font_size (int, optional): font size from predefined list `FONT_SIZES_DICT`. Defaults to `0`.
+            color (ColorValue, optional): text color. Defaults to `"white"`.
+            bg_color (ColorValue, optional): draw background panel. Defaults to `0` == no bg.
+            shadow (ColorValue, optional): draw outline of text with black color. Defaults to `(10,10,10,255)`.
+            font_size (int, optional): font size from predefined list `FONT_SIZES_DICT`. Defaults to `0` == `FONT_SIZE_DEFAULT`.
             centred (bool, optional): shell the text be centered at `pos`. Defaults to `False`.
             surface (pygame.Surface, optional): surface to blit on, if `None` user `game.canvas`. Defaults to `None`.
         """
@@ -156,16 +156,28 @@ class Game:
             self, 
             text:      str, 
             pos:       list[int], 
-            color:     str = "white",
-            bg_color:  list[int] | None = None, 
-            shadow:    list[int] = (10,10,10,255), 
+            color:     ColorValue = "white",
+            bg_color:  ColorValue = 0, 
+            shadow:    ColorValue = (10,10,10,255), 
             font_size: int = 0, 
             centred:   bool = False,
             surface:   pygame.Surface = None
         ):
         """
-        Blit line of text on surface or on game.canvas if surface is not provided
+        Blit line of text on `surface` or on `game.canvas` if `surface` is not provided
+
+        Args:
+            text (str): _description_
+            pos (list[int]): _description_
+            color (ColorValue, optional): _description_. Defaults to `"white"`.
+            bg_color (ColorValue, optional): _description_. Defaults to `0` == no bg.
+            shadow (ColorValue, optional): _description_. Defaults to `(10,10,10,255)`.
+            font_size (int, optional): _description_. Defaults to `0` == `FONT_SIZE_DEFAULT`.
+            centred (bool, optional): _description_. Defaults to `False`.
+            surface (pygame.Surface, optional): _description_. Defaults to `None`.
         """
+        
+        
         if not surface:
             surface = self.canvas
             
@@ -186,8 +198,8 @@ class Game:
 
         # add black outline (render black text moved by offset to all 4 directions)
         if shadow:
-            surf_shadow: pygame.surface.Surface = selected_font.render(text, False, (0,0,0,0))
-            offset = 2
+            surf_shadow: pygame.surface.Surface = selected_font.render(text, False, shadow)
+            offset = 1
             surface.blit(surf_shadow, (rect.x-offset, rect.y))
             surface.blit(surf_shadow, (rect.x+offset, rect.y))
             surface.blit(surf_shadow, (rect.x,        rect.y-offset))
@@ -285,7 +297,7 @@ class Game:
                 # print(f"{IS_PAUSED=}")
             elif event.type in self.custom_events:
                 handler = self.custom_events[event.type]
-                handler()
+                handler(**event.dict)
             elif event.type == pygame.KEYDOWN:
                 for action, definition in ACTIONS.items():
                     if event.key in definition["keys"]:

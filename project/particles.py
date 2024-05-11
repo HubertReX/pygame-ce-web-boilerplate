@@ -143,7 +143,7 @@ class ParticleLeafs():
         )
         self.custom_event_id = self.particle.custom_event_id
 
-    def add(self):
+    def add(self, **kwargs):
         # move 80 pixels/seconds into south-west (down-left) +/- 30 degree, enlarge 5 x, kill after 4 seconds
         self.particle.add_particles(start_pos=pygame.mouse.get_pos(), move_speed=80, move_dir=210 + random.randint(-30, 30), scale=5, lifetime=4)
 
@@ -167,7 +167,7 @@ class ParticleRain():
         )
         self.custom_event_id = self.particle.custom_event_id
 
-    def add(self):
+    def add(self, **kwargs):
         # move 80 pixels/seconds into south-west (down-left) +/- 30 degree, enlarge 5 x, kill after 4 seconds
         self.particle.add_particles(start_pos=pygame.mouse.get_pos(), move_speed=1500, move_dir=210 + random.randint(-30, 30), scale=5, lifetime=0.5)
         

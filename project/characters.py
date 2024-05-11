@@ -1,3 +1,4 @@
+from enum import StrEnum, auto
 import os
 import random
 import pygame
@@ -11,8 +12,14 @@ import npc_state
 from objects import HealthBar, Shadow
 
 ##########################################################################################################################
-#MARK: NPC
+class NPCEventActionEnum(StrEnum):
+    stunned  = auto()
+    pushed   = auto()
+    standard = auto()
 
+
+###################################################################################################################
+#MARK: NPC
 class NPC(pygame.sprite.Sprite):
     def __init__(
             self, 
@@ -20,6 +27,7 @@ class NPC(pygame.sprite.Sprite):
             scene: scene.Scene, 
             groups: list[pygame.sprite.Group], 
             shadow_group: pygame.sprite.Group,
+            label_group: pygame.sprite.Group,
             pos: list[int], 
             name: str, 
             waypoints: tuple[Point] = ()
@@ -31,15 +39,15 @@ class NPC(pygame.sprite.Sprite):
         self.name = name # monochrome_ninja
         self.model: Character = game.conf.characters[name]
         self.shadow = Shadow(shadow_group, (0, 0), [TILE_SIZE - 2, 6])
-        self.health_bar = HealthBar(self.model.name, shadow_group, pos)
+        self.health_bar = HealthBar(self.model, label_group, pos)
+        # hide health bar at start (negative value makes it transparent)
+        self.health_bar.set_bar(-1.0, self.game)
+        
         self.animations: dict[str, list[pygame.surface.Surface]] = {}
         self.animation_speed = ANIMATION_SPEED
-        # self.import_image(f"assets/{self.name}/")
         self.import_sprite_sheet(CHARACTERS_DIR / self.model.sprite / "SpriteSheet.png")
         self.frame_index: float = 0.0
-        # self.image = self.animations["idle"][int(self.frame_index)].convert_alpha()
         self.image = self.animations["idle_down"][int(self.frame_index)]
-        # self.image.set_colorkey(COLORS["black"])
         self.pos: vec = vec(pos[0], pos[1])
         self.prev_pos: vec = self.pos.copy()
         self.tileset_coord: Point = self.get_tileset_coord()
@@ -80,8 +88,10 @@ class NPC(pygame.sprite.Sprite):
         self.is_jumping = False
         self.is_stunned = False
         
-        self.stunned_event_id  = pygame.event.custom_type()
-        self.game.register_custom_event(self.stunned_event_id, self.back_from_stunned)
+        # general purpose custom event, action is defined by the payload passed to event
+        self.custom_event_id  = pygame.event.custom_type()
+        self.game.register_custom_event(self.custom_event_id, self.process_custom_event)
+        
         # actual NPC state, mainly to determine type of animation and speed
         self.state: npc_state.NPC_State = npc_state.Idle()
         self.state.enter_time = self.scene.game.time_elapsed
@@ -200,6 +210,7 @@ class NPC(pygame.sprite.Sprite):
                 
         self.follow_waypoints()
                             
+            
     def follow_waypoints(self):
         if self.waypoints_cnt > 0:
             npc_pos = self.pos
@@ -337,6 +348,7 @@ class NPC(pygame.sprite.Sprite):
         self.shadow.kill()
         self.health_bar.kill()
         self.kill()
+        # TODO: add GAME OVER
 
 
     def update(self, dt: float):
@@ -369,8 +381,21 @@ class NPC(pygame.sprite.Sprite):
         # slide is not possible, block movement
         self.move_back()
 
-    def back_from_stunned(self):
-        self.is_stunned = False
+    #MARK: process_custom_event
+    def process_custom_event(self, **kwargs):
+        # print(self.model.name, kwargs)
+        
+        if kwargs.get("action", "") == NPCEventActionEnum.pushed.value:
+            # pushed state is invalidated
+            # show health bar
+            self.health_bar.set_bar(-1.0, self.game)
+        elif kwargs.get("action", "") ==  NPCEventActionEnum.stunned.value:
+            # stunned state is invalidated
+            # show health bar
+            self.health_bar.set_bar(-1.0, self.game)
+            self.is_stunned = False
+        else:
+            print("unknown action", self.model.name, kwargs)
 
     #MARK: encounter        
     def encounter(self, oponent: "NPC"):
@@ -390,11 +415,15 @@ class NPC(pygame.sprite.Sprite):
                 oponent.die()
 
             self.is_stunned = True
-            pygame.time.set_timer(pygame.event.Event(self.stunned_event_id), 1000)
+            self.set_event_timer(self, NPCEventActionEnum.stunned, STUNNED_TIME, 1)
 
             oponent.is_stunned = True
-            pygame.time.set_timer(pygame.event.Event(oponent.stunned_event_id), 1000)
+            self.set_event_timer(oponent, NPCEventActionEnum.stunned, STUNNED_TIME, 1)
             
+            # show health bar (for STUNNED_TIME ms)
+            self.health_bar.set_bar(self.model.health / self.model.max_health, self.game)
+            oponent.health_bar.set_bar(oponent.model.health / oponent.model.max_health, self.game)
+                        
             # push the npc
             player_move = self.pos - oponent.pos
             if not player_move == vec(0, 0):
@@ -414,6 +443,19 @@ class NPC(pygame.sprite.Sprite):
             if player_move != vec(0, 0):
                 oponent.pos += player_move.normalize() * TILE_SIZE
             oponent.adjust_rect()
+            
+            self.set_event_timer(self,    NPCEventActionEnum.pushed, PUSHED_TIME, 1)
+            self.set_event_timer(oponent, NPCEventActionEnum.pushed, PUSHED_TIME, 1)
+            
+            # show health bar (for PUSHED_TIME ms)
+            self.health_bar.set_bar(self.model.health / self.model.max_health, self.game)
+            oponent.health_bar.set_bar(oponent.model.health / oponent.model.max_health, self.game)
+        
+        
+    def set_event_timer(self, npc: "NPC", action: NPCEventActionEnum, interval: int, repeat: int) -> None:
+        event = pygame.event.Event(npc.custom_event_id, action=action.value)
+        pygame.time.set_timer(event, interval, repeat)
+        
         
     def move_back(self) -> None: # start_index = 0
         """
@@ -434,8 +476,7 @@ class NPC(pygame.sprite.Sprite):
         # shadow
         self.shadow.rect.midbottom = self.pos #+ vec(0, -1)
         self.health_bar.rect.midtop = self.pos #+ vec(0, -TILE_SIZE - 4)
-        self.health_bar.set_bar(self.model.health / self.model.max_health, self.game)
-            
+        
         
     def debug(self, msgs: list[str]):
         if SHOW_DEBUG_INFO:
@@ -451,10 +492,11 @@ class Player(NPC):
             scene: scene.Scene, 
             groups: list[pygame.sprite.Group],
             shadow_group: pygame.sprite.Group,
+            label_group: pygame.sprite.Group,
             pos: list[int], 
             name: str
         ):
-        super().__init__(game, scene, groups, shadow_group, pos, name)
+        super().__init__(game, scene, groups, shadow_group, label_group, pos, name)
         # give player some super powers
         self.speed_run  *= 1.5
         self.speed_walk *= 1.2

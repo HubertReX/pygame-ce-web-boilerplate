@@ -53,7 +53,10 @@ ANIMATION_SPEED = 10 # frames per second
 RUN_SPEED: float = 39.0
 # after how many seconds of Idle state player changes state to Bored
 BORED_TIME: float = 4.0
-
+# how long is NPC in stunned state [ms]
+STUNNED_TIME: int = 1000
+# how long is NPC in pushed state [ms]
+PUSHED_TIME: int = 1000
 
 ACTIONS = {
     "quit":           {"show": ["ESC", "q"], "msg": "back",       "keys": [pygame.K_ESCAPE,    pygame.K_q]},
@@ -110,6 +113,7 @@ FONT_SIZE_TINY   = FONT_SIZES_DICT[font_name][0]
 FONT_SIZE_SMALL  = FONT_SIZES_DICT[font_name][1]
 FONT_SIZE_MEDIUM = FONT_SIZES_DICT[font_name][2]
 FONT_SIZE_LARGE  = FONT_SIZES_DICT[font_name][3]
+FONT_SIZE_DEFAULT = FONT_SIZE_MEDIUM
 TEXT_ROW_SPACING  = 1.4 
 
 ASSET_PACK = "NinjaAdventure"

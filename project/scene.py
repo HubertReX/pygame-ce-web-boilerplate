@@ -35,6 +35,7 @@ class Scene(State):
         self.maze_cols = maze_cols
         self.maze_rows = maze_rows
         
+        self.label_sprites = pygame.sprite.Group()
         self.shadow_sprites = pygame.sprite.Group()
         self.draw_sprites = pygame.sprite.Group()
         self.block_sprites = pygame.sprite.Group()
@@ -50,6 +51,7 @@ class Scene(State):
             self, 
             [self.draw_sprites], 
             self.shadow_sprites, 
+            self.label_sprites, 
             (WIDTH / 2, HEIGHT / 2), 
             "Player"
         )
@@ -92,7 +94,7 @@ class Scene(State):
         for particle in map_particles:
             if particle in PARTICLES:
                 particle_class = PARTICLES[particle]
-                self.particles.append(particle_class(self.game.canvas))
+                self.particles.append(particle_class(self.game.canvas))                
                 self.game.register_custom_event(self.particles[-1].custom_event_id, self.particles[-1].add)
         
         self.walls = []
@@ -135,6 +137,7 @@ class Scene(State):
             for obj in tileset_map.get_layer_by_name("entry_points"):
                 self.entry_points[obj.name] = vec(obj.x, obj.y)
 
+        # self.notify_npc_event_id  = pygame.event.custom_type()
         self.NPC : list[NPC] = []
         # layer of invisible objects being single points determining where NPCs will spawn
         if "spawn_points" in self.layers:
@@ -145,7 +148,8 @@ class Scene(State):
                     self.game, 
                     self, 
                     [self.draw_sprites], 
-                    self.shadow_sprites, 
+                    self.shadow_sprites,
+                    self.label_sprites, 
                     (obj.x, obj.y), 
                     obj.name, 
                     waypoint
@@ -166,7 +170,8 @@ class Scene(State):
                     self.game, 
                     self, 
                     [self.draw_sprites], 
-                    self.shadow_sprites, 
+                    self.shadow_sprites,
+                    self.label_sprites, 
                     pos, 
                     monster_name, 
                     ()
@@ -201,6 +206,7 @@ class Scene(State):
         
         # add our player to the group
         self.group.add(self.shadow_sprites, layer = self.sprites_layer - 1)
+        self.group.add(self.label_sprites,  layer = self.sprites_layer + 1)
         self.group.add(self.player)
         self.group.add(self.NPC)
                 

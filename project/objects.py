@@ -1,4 +1,5 @@
 import pygame
+from config_model.config import AttitudeEnum, Character
 from settings import *
 
 ##########################################################################################################################
@@ -27,20 +28,33 @@ class Shadow(pygame.sprite.Sprite):
 
 ##########################################################################################################################
 class HealthBar(pygame.sprite.Sprite):
-    def __init__(self, name: str, groups: list[pygame.sprite.Group], pos: list[int]):
+    def __init__(self, model: Character, groups: list[pygame.sprite.Group], pos: list[int]):
         super().__init__(groups)
         self.image: pygame.Surface = pygame.Surface((70, 16)).convert_alpha()
-        self.name = name
+        self.model = model
         self.image_full: pygame.Surface = load_image(HUD_DIR / "LifeBarMiniProgress.png").convert_alpha()
         self.image_empty: pygame.Surface = load_image(HUD_DIR / "LifeBarMiniUnder.png").convert_alpha()
         self.rect: pygame.FRect = self.image.get_frect(midtop = pos)
         self.rect_full: pygame.FRect = self.image_full.get_frect()
         self.rect_full.x = self.rect.width // 2 - self.rect_full.width // 2
         self.rect_full.y += 1
-
+        if self.model.attitude == AttitudeEnum.enemy:
+            self.color = "red"
+        elif self.model.attitude == AttitudeEnum.friendly:
+            self.color = "blue"
+        elif self.model.attitude == AttitudeEnum.afraid:
+            self.color = "green"
+        else:
+            self.color = "pink"
+        
         
     def set_bar(self, percentage: float, game):
         self.image.fill((0,0,0,0))
+        
+        # leave image fully transparent (hide labels)
+        if percentage < 0.0:
+            return
+        
         self.image.blit(self.image_full, self.rect_full.topleft)
 
         percentage = min(1.0, percentage)
@@ -50,8 +64,16 @@ class HealthBar(pygame.sprite.Sprite):
         tmp_img = self.image_empty.subsurface(rect)
 
         self.image.blit(tmp_img, (self.rect_full.left + width, 1))
-
-        game.render_text(self.name, (self.rect.width // 2, 10), "blue", font_size=FONT_SIZE_TINY, shadow=False, centred=True, surface=self.image)
+        
+        game.render_text(
+            self.model.name, 
+            (self.rect.width // 2, 10), 
+            self.color, 
+            font_size=FONT_SIZE_TINY, 
+            shadow=True, 
+            centred=True, 
+            surface=self.image
+        )
         
 ##########################################################################################################################
 class Object(pygame.sprite.Sprite):
