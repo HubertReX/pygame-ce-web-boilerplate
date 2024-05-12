@@ -1,4 +1,7 @@
+from dataclasses import dataclass, field
 import random
+
+from animation import animator
 from state import State
 from settings import *
 import pygame
@@ -14,6 +17,23 @@ import pyscroll.data
 from pyscroll.group import PyscrollGroup
 import menus
 
+@dataclass
+class Camera():
+    target: vec = field(default_factory=lambda: vec(0, 0))
+    _zoom: float = ZOOM_LEVEL
+    scene: "Scene" = None
+    
+    @property
+    def zoom(self) -> float:
+        return self._zoom
+    
+    @zoom.setter
+    def zoom(self, value: float) -> None:
+        self._zoom = value
+        if self.scene.map_view:
+            self.scene.map_view.zoom = self._zoom
+        
+    
 ##########################################################################################################################
 #MARK: Scene
 class Scene(State):
@@ -40,6 +60,7 @@ class Scene(State):
         self.draw_sprites = pygame.sprite.Group()
         self.block_sprites = pygame.sprite.Group()
         self.exit_sprites = pygame.sprite.Group()
+        self.animations = pygame.sprite.Group()
         
         # self.transition = Transition(self)
         self.transition = TransitionCircle(self)
@@ -55,6 +76,21 @@ class Scene(State):
             (WIDTH / 2, HEIGHT / 2), 
             "Player"
         )
+        # view target for camera
+        self.camera = Camera()
+        self.camera.scene = self
+        # self.camera.target = vec(1 * TILE_SIZE, 1 * TILE_SIZE)
+        # self.camera.zoom   = ZOOM_LEVEL
+        # self.map_view.zoom = self.camera.zoom
+        
+        # percentage of black bars shown during cutscene
+        self.cutscene_framing: float = 0.0
+        # it's high noon
+        self.hour: int = INITIAL_HOUR
+        self.minute: int = 0
+        self.minute_f: float = 0.0
+        # are we outdoors? shell there be night and day cycle?
+        self.outdoor: bool = False
         
         if self.is_maze:
             # check from which scene we came here
@@ -86,7 +122,10 @@ class Scene(State):
         self.layers = []
         for layer in tileset_map.layers:
             self.layers.append(layer.name)
-            
+        
+        self.outdoor = tileset_map.properties.get("outdoor", False)
+        self.circle_gradient: pygame.Surface = load_image(CIRCLE_GRADIENT).convert_alpha()
+        
         # string with coma separated names of particle systems active in this map
         map_particles = tileset_map.properties.get("particles", "").replace(" ", "").strip().lower().split(",")
         self.particles = []
@@ -125,11 +164,11 @@ class Scene(State):
                     getattr(obj, "return_entry_point", ""), 
                 )
                 
-        waypoints = {}
+        self.waypoints = {}
         # layer of invisible objects consisting of points that layout a list waypoints to follow by NPCs
         if "waypoints" in self.layers:
             for obj in tileset_map.get_layer_by_name("waypoints"):
-                waypoints[obj.name] = (obj.points if hasattr(obj, "points") else obj.as_points)
+                self.waypoints[obj.name] = (obj.points if hasattr(obj, "points") else obj.as_points)
         
         self.entry_points = {}
         # layer of invisible objects being single points on map where NPCs show up coming from linked map
@@ -143,7 +182,7 @@ class Scene(State):
         if "spawn_points" in self.layers:
             for obj in tileset_map.get_layer_by_name("spawn_points"):
                 # list of waypoints attached by NPCs name
-                waypoint = waypoints.get(obj.name, ())    
+                waypoint = self.waypoints.get(obj.name, ())    
                 npc = NPC(
                     self.game, 
                     self, 
@@ -178,6 +217,15 @@ class Scene(State):
                 )
                 self.NPC.append(npc)
             
+        # create new renderer (camera)
+        self.map_view = pyscroll.BufferedRenderer(
+            data = pyscroll.data.TiledMapData(tileset_map),
+            size = self.game.screen.get_size(),
+            clamp_camera = True, # camera stops at map borders (no black area around), player blocked to be stopped separately
+        )
+        # TODO fix zoom
+        # self.map_view.zoom = self.camera.zoom
+        
         if self.entry_point in self.entry_points:
             # set first start position for the Player
             ep = self.entry_points[self.entry_point]
@@ -186,15 +234,8 @@ class Scene(State):
         else:
             print("[red]no entry point found!")
             # fallback - put the player in the center of the map
-            self.player.pos = self.map_layer.map_rect.center
+            self.player.pos = self.map_view.map_rect.center
             
-        # create new renderer (camera)
-        self.map_layer = pyscroll.BufferedRenderer(
-            data = pyscroll.data.TiledMapData(tileset_map),
-            size = self.game.screen.get_size(),
-            clamp_camera = True, # camera stops at map borders (no black area around), player blocked to be stopped separately
-        )
-        self.map_layer.zoom = ZOOM_LEVEL
         
 
         # Pyscroll supports layered rendering. 
@@ -202,7 +243,7 @@ class Scene(State):
         # Sprites (NPCs) are always drawn over the tiles of the layer they are on.
         self.sprites_layer = self.layers.index("sprites")
         # main SpritesGroup holding whole tiled map with all layers and NPCs
-        self.group = PyscrollGroup(map_layer = self.map_layer, default_layer = self.sprites_layer)        
+        self.group = PyscrollGroup(map_layer = self.map_view, default_layer = self.sprites_layer)        
         
         # add our player to the group
         self.group.add(self.shadow_sprites, layer = self.sprites_layer - 1)
@@ -226,10 +267,200 @@ class Scene(State):
                 if tile_1_gid and "step_cost" in tile_1_gid.keys():
                     step_cost = tile_1_gid["step_cost"]
                 self.path_finding_grid[y][x] = -step_cost
-    
-    
+        
+        self.set_camera_on_player()
+        
+        
+    #MARK: __repr__    
     def __repr__(self) -> str:
         return f"{__class__.__name__}: {self.current_scene}"
+    
+    
+    #MARK: start_intro
+    def start_intro(self):
+        self.set_camera_free()
+        ZOOM_ORG     = ZOOM_LEVEL
+        ZOOM_WIDE    = 3.10
+        ZOOM_CLOSEUP = 3.9
+        CAMERA_TRANSITION = "out_sine" # in_out_quad out_sine # in_out_elastic - anticipate and overshoot # in_out_back - anticipate # in_out_bounce - well, bouncy
+        
+        waypoints = self.waypoints["intro"]
+        
+        self.intro_cutscene = {
+            "steps": [
+                ########### INITIAL SETUP #######################
+                {
+                    "name": "step_01",
+                    "description": "move camera the big tree",
+                    "type": "animation",
+                    "target": self.camera.target, 
+                    "args": {"x":waypoints[0].x,  "y":waypoints[0].y}, 
+                    "duration": 0.1, 
+                    "transition": CAMERA_TRANSITION, 
+                    "from": "<root>", 
+                    "trigger": "<begin>"
+                },
+                {
+                    "name": "step_01a",
+                    "description": "night time",
+                    "type": "animation",
+                    "target": self, 
+                    "args": {"hour":3},
+                    "round_values": True,
+                    "duration": 0.1,
+                    "transition": "linear",
+                    "from": "step_01", 
+                    "trigger": "on finish"
+                },
+                {
+                    "name": "step_02",
+                    "description": "show cutscene bars",
+                    "type": "animation",
+                    "target": self, 
+                    "args": {"cutscene_framing":1.00}, 
+                    "duration": 2.0,
+                    "transition": "linear",
+                    "from": "step_01", 
+                    "trigger": "on finish"
+                },                
+                {
+                    "name": "step_03",
+                    "description": "camera zoom out",
+                    "type": "animation",
+                    "target": self.camera, 
+                    "args": {"zoom":ZOOM_WIDE}, 
+                    "duration": 2.0,
+                    "transition": "linear", 
+                    "from": "step_01", 
+                    "trigger": "on finish"
+                },
+                ################## START #################
+                {
+                    "name": "step_04",
+                    "description": "move camera to waypoint 1",
+                    "type": "animation",
+                    "target": self.camera.target, 
+                    "args": {"x":waypoints[1].x,  "y":waypoints[1].y}, 
+                    "duration": 2.0, 
+                    "transition": CAMERA_TRANSITION, 
+                    "from": "step_03", 
+                    "trigger": "on finish"
+                },
+                {
+                    "name": "step_05",
+                    "description": "move camera to waypoint 3",
+                    "type": "animation",
+                    "target": self.camera.target, 
+                    "args": {"x":waypoints[3].x,  "y":waypoints[3].y}, 
+                    "duration": 2.5,
+                    "transition": CAMERA_TRANSITION, 
+                    "from": "step_04", 
+                    "trigger": "on finish"
+                },
+                {
+                    "name": "step_05a",
+                    "description": "move camera to waypoint 7",
+                    "type": "animation",
+                    "target": self.camera.target, 
+                    "args": {"x":waypoints[7].x,  "y":waypoints[7].y}, 
+                    "duration": 2.5,
+                    "transition": CAMERA_TRANSITION, 
+                    "from": "step_05", 
+                    "trigger": "on finish"
+                },
+                {
+                    "name": "step_05b",
+                    "description": "move camera to waypoint 10 (house)",
+                    "type": "animation",
+                    "target": self.camera.target, 
+                    "args": {"x":waypoints[10].x,  "y":waypoints[10].y}, 
+                    "duration": 2.5,
+                    "transition": CAMERA_TRANSITION, 
+                    "from": "step_05a", 
+                    "trigger": "on finish"
+                },
+                {
+                    "name": "step_06",
+                    "description": "camera zoom in on village house",
+                    "type": "animation",
+                    "target": self.camera, 
+                    "args": {"zoom":ZOOM_CLOSEUP}, 
+                    "duration": 3.0,
+                    "transition": "linear", 
+                    "from": "step_05b", 
+                    "trigger": "on finish"
+                },
+                {
+                    "name": "step_07",
+                    "description": "steady take",
+                    "type": "animation",
+                    "target": self.camera.target,
+                    "args": {"x":self.camera.target.x,  "y":self.camera.target.y}, 
+                    "duration": 1.0,
+                    "transition": CAMERA_TRANSITION, 
+                    "from": "step_06", 
+                    "trigger": "on finish"
+                },
+                ############## CLEAN UP ############################
+                {
+                    "name": "step_08",
+                    "description": "move camera back to player pos",
+                    "type": "animation",
+                    "target": self.camera.target, 
+                    "args": {"x": self.player.pos.x,  "y":self.player.pos.y}, 
+                    "duration": 1.0,
+                    "transition": CAMERA_TRANSITION, 
+                    "from": "step_07", 
+                    "trigger": "on finish"
+                },                
+                {
+                    "name": "step_08a",
+                    "description": "day time",
+                    "type": "animation",
+                    "target": self, 
+                    "args": {"hour":12},
+                    "round_values": True,
+                    "duration": .250,
+                    "transition": "linear",
+                    "from": "step_07", 
+                    "trigger": "on finish"
+                },
+                {
+                    "name": "step_09",
+                    "description": "revert camera target to the player",
+                    "type": "task",
+                    "target": self.set_camera_on_player, 
+                    "args": {}, 
+                    "interval": 0.1,
+                    "times": 1, 
+                    "from": "step_08",
+                    "trigger": "on finish"
+                },
+                {
+                    "name": "step_10",
+                    "description": "hide cutscene framing",
+                    "type": "animation",
+                    "target": self, 
+                    "args": {"cutscene_framing":0.0}, 
+                    "duration": 3.0,
+                    "transition": "out_quad", 
+                    "from": "step_08", 
+                    "trigger": "on finish"
+                },
+            ]
+        }        
+        animator(self.intro_cutscene, self.animations)
+    
+    
+    def set_camera_on_player(self):
+        self.camera.target = self.player.pos
+        self.camera.zoom = ZOOM_LEVEL
+        # TODO fix zoom
+        # self.map_view.zoom = self.camera.zoom
+
+    def set_camera_free(self):
+        # release reference to self.player.pos by coping only value
+        self.camera.target = self.camera.target.copy()
     
     
     def go_to_scene(self):
@@ -251,7 +482,22 @@ class Scene(State):
         global INPUTS
         
         self.group.update(dt)
+        self.animations.update(dt)
         self.transition.update(dt)
+        
+        # absolute time calculation 
+        # self.hour   = int((self.game.time_elapsed + INITIAL_HOUR) % 24)
+        # self.minute = int((self.game.time_elapsed + INITIAL_HOUR) % 1 * 60)
+        
+        # relative time calculation
+        self.minute_f += dt * 60 * GAME_TIME_SPEED
+        self.minute = int(self.minute_f)
+        if self.minute >= 60:
+            self.hour   += 1
+            self.minute  = 0
+            self.minute_f  -= 60.0
+            if self.hour >= 24:
+                self.hour = 0
         
         # check if the sprite's feet are colliding with wall       
         # sprite must have a rect called feet, and slide and move_back methods,
@@ -296,6 +542,10 @@ class Scene(State):
         if INPUTS["alpha"]:
             USE_ALPHA_FILTER = not USE_ALPHA_FILTER
             INPUTS["alpha"] = False            
+
+        if INPUTS["intro"]:
+            self.start_intro()
+            INPUTS["intro"] = False            
 
         global SHOW_HELP_INFO
         if INPUTS["help"]:
@@ -357,18 +607,20 @@ class Scene(State):
             
         # live reload map
         if INPUTS["reload"]:
-            self.map_layer.reload()
+            self.map_view.reload()
             INPUTS["reload"] = False
             
         # camera zoom in/out
         if INPUTS["zoom_in"]:
-            self.map_layer.zoom += 0.25
+            self.camera.zoom += 0.25
+            # self.map_view.zoom = self.camera.zoom
             INPUTS["zoom_in"] = False
             
         if INPUTS["zoom_out"]:
-            value = self.map_layer.zoom - 0.25
-            if value > 0:
-                self.map_layer.zoom = value
+            self.camera.zoom -= 0.25
+            if self.camera.zoom < 0.25:
+                self.camera.zoom = 0.25
+            # self.map_view.zoom = self.camera.zoom
             INPUTS["zoom_out"] = False
             
     def show_help(self):
@@ -393,7 +645,10 @@ class Scene(State):
     #MARK: draw
     def draw(self, screen: pygame.Surface, dt: float):
         # center map on player
-        self.group.center(self.player.pos)
+        # self.group.center(self.player.pos)
+        # self.map_view.center(self.camera.target)
+        # self.map_view.zoom = self.camera.zoom
+        self.group.center(self.camera.target)
         
         self.group.draw(screen)
         
@@ -417,10 +672,68 @@ class Scene(State):
             
         # alpha filter demo
         if USE_ALPHA_FILTER: 
-            self.apply_alpha_filter(screen) 
+            self.apply_alpha_filter(screen)
+        else:
+            self.apply_time_of_day_filter(screen)
 
+        # draw black bars at the top and bottom when during cutscene
+        self.apply_cutscene_framing(screen, self.cutscene_framing)
 
-    def apply_alpha_filter(self, screen):
+    #MARK: apply_time_of_day_filter
+    def apply_time_of_day_filter(self, screen: pygame.Surface):
+        # do not apply night and day filter indoors
+        if not self.outdoor and not self.is_maze:
+            return
+        
+        filter_surf = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)   
+        
+        filter: ColorValue = [0, 0, 0, 0]
+        hour: float = self.hour + (self.minute / 60)
+        
+        if hour < 6 or hour >= 20:
+            filter = NIGHT_FILTER
+        elif 6 <= hour < 9:
+            weight = (hour - 6) / (9 - 6)
+            for i in range(4):
+                filter[i] = pygame.math.lerp(NIGHT_FILTER[i], DAY_FILTER[i], weight)
+        elif 9 <= hour < 17:
+            filter = DAY_FILTER
+        elif 17 <= hour < 20:
+            weight = (hour - 17) / (20 - 17)
+            for i in range(4):
+                filter[i] = pygame.math.lerp(DAY_FILTER[i], NIGHT_FILTER[i], weight)
+
+        if self.is_maze:
+            filter_surf.fill(NIGHT_FILTER)
+        else:
+            filter_surf.fill(filter)
+        # f = [222, 222, 50, 120]
+        if filter == NIGHT_FILTER or self.is_maze:
+            for npc in self.NPC + [self.player]:
+                pos = self.map_view.translate_point(npc.pos + vec(0, -8))
+                pygame.draw.circle(filter_surf, DAY_FILTER, pos, 196)
+            if "intro" in self.waypoints:
+                vilage_pos = self.waypoints["intro"][0]
+                pos = self.map_view.translate_point(vilage_pos + vec(0, 0))
+                pygame.draw.circle(filter_surf, DAY_FILTER, pos, 256)
+                
+                vilage_pos = self.waypoints["intro"][-1]
+                pos = self.map_view.translate_point(vilage_pos + vec(0, 0))
+                pygame.draw.circle(filter_surf, DAY_FILTER, pos, 256)
+        # rect = self.circle_gradient.get_frect(center = pos)
+        
+        # light_surf = pygame.Surface(rect.size, pygame.SRCALPHA)
+        # light_surf.fill(f)
+        # self.circle_gradient.set_alpha(128)
+        # light_surf.blit(self.circle_gradient, (0,0))
+        # filter_surf.blit(self.circle_gradient, rect)
+        screen.blit(filter_surf, (0, 0))    
+        # screen.blit(self.circle_gradient, rect)    
+        # screen.blit(light_surf, rect)    
+            
+
+    #MARK: apply_alpha_filter
+    def apply_alpha_filter(self, screen: pygame.Surface):
         h = HEIGHT // 2
         self.game.render_text("Day",   (0, h - FONT_SIZE_MEDIUM * TEXT_ROW_SPACING))
         self.game.render_text("Night", (0, h +                    TEXT_ROW_SPACING))
@@ -433,6 +746,21 @@ class Scene(State):
             # cold, dark and bluish light at night
         half_screen.fill((0, 0, 102, 120))
         screen.blit(half_screen, (0, h))   
+
+    #MARK: apply_cutscene_framing
+    def apply_cutscene_framing(self, screen: pygame.Surface, percentage: float):
+        if percentage <= 0.001:
+            return
+        
+        surface_h = HEIGHT // 2
+        framing_h = int(HEIGHT * 0.1)
+        framing_offset = int(framing_h * percentage)
+        half_screen = pygame.Surface((WIDTH, surface_h), pygame.SRCALPHA)   
+        half_screen.fill((10, 10, 10, 255))
+        # blit a black rect at the top of the screen
+        screen.blit(half_screen, (0, -surface_h + framing_offset))    
+        # blit a black rect at the bottom of the screen
+        screen.blit(half_screen, (0, HEIGHT - framing_offset))    
 
 
     #MARK: show_debug
@@ -449,6 +777,8 @@ class Scene(State):
             # prepare debug messages displayed in upper left corner
             msgs = [
                 f"FPS: {self.game.clock.get_fps(): 6.1f} Shader: {shader_name}",
+                f"Eye: x:{self.camera.target.x:6.2f} y:{self.camera.target.y:6.2f}",
+                f"Time: {self.hour}:{self.minute:02}",
                 # f"vel: {self.player.vel.x: 6.1f} {self.player.vel.y: 6.1f}",
                 f"x  : {self.player.pos.x: 3.0f}   y : {self.player.pos.y: 3.0f}",
                 f"g x:  {self.player.tileset_coord.x: 3.0f} g y : {self.player.tileset_coord.y: 3.0f}",
@@ -478,16 +808,16 @@ class Scene(State):
                     texts.append(f"cw={npc.get_tileset_coord(curr_wp).x:3} {npc.get_tileset_coord(curr_wp).y:3}")
                     prev_point = (npc.pos.x, npc.pos.y - 4)
                     for point in list(npc.waypoints)[npc.current_waypoint_no:]:
-                        from_p = self.map_layer.translate_point(vec(prev_point[0], prev_point[1]))
-                        to_p = self.map_layer.translate_point(vec(point[0], point[1]))
+                        from_p = self.map_view.translate_point(vec(prev_point[0], prev_point[1]))
+                        to_p = self.map_view.translate_point(vec(point[0], point[1]))
                         pygame.draw.line(self.game.canvas, (0,0,128, 32), from_p, to_p, width=2)
                         prev_point = point
                 
-                pos = self.map_layer.translate_point(npc.pos)
+                pos = self.map_view.translate_point(npc.pos)
                 self.game.render_texts(texts, pos, font_size=FONT_SIZE_MEDIUM, centred=True)
                 
                 # render red square indicating hitbox
-                rect = self.map_layer.translate_rect(npc.feet)
+                rect = self.map_view.translate_rect(npc.feet)
                 pygame.draw.rect(self.game.canvas, "red", rect, width=2)
                 
             # draw walls (colliders)
@@ -495,7 +825,7 @@ class Scene(State):
                 for x, tile in enumerate(row):
                     if tile > 0:
                         rect_w = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
-                        rect_s = self.map_layer.translate_rect(rect_w)
+                        rect_s = self.map_view.translate_rect(rect_w)
                         img = pygame.Surface(rect_s.size, pygame.SRCALPHA)
                         pygame.draw.rect(img, (0,0,200,64), img.get_rect())
                         self.game.canvas.blit(img, rect_s)

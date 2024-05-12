@@ -19,6 +19,7 @@
         "KEYDOWN",
         "KEYUP",
         "LALT",
+        "lerp",
         "midbottom",
         "midtop",
         "MOUSEBUTTONDOWN",

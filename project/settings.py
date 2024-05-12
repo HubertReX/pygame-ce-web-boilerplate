@@ -58,6 +58,16 @@ STUNNED_TIME: int = 1000
 # how long is NPC in pushed state [ms]
 PUSHED_TIME: int = 1000
 
+# initial game time hour
+INITIAL_HOUR = 4
+# game time speed (N game hours / 1 real time second)
+GAME_TIME_SPEED = 0.25
+
+# cold, dark and bluish light at night
+NIGHT_FILTER: ColorValue = [0, 0, 30, 220]
+# sunny, warm yellow light during daytime
+DAY_FILTER: ColorValue = [152, 152, 0, 20]
+
 ACTIONS = {
     "quit":           {"show": ["ESC", "q"], "msg": "back",       "keys": [pygame.K_ESCAPE,    pygame.K_q]},
     "debug":          {"show": ["`", "z"],   "msg": "debug",      "keys": [pygame.K_BACKQUOTE, pygame.K_z]},
@@ -71,6 +81,7 @@ ACTIONS = {
     "accept":         {"show": None,         "msg": "accept",     "keys": [pygame.K_RETURN, pygame.K_KP_ENTER]},
     "help":           {"show": ["F1", "h"],  "msg": "help",       "keys": [pygame.K_F1,    pygame.K_h]},
     "screenshot":     {"show": ["F12"],      "msg": "screenshot", "keys": [pygame.K_F12]},
+    "intro":          {"show": ["F4"],       "msg": "intro",      "keys": [pygame.K_F4]},
     "reload":         {"show": ([] if IS_WEB else ["r"]), "msg": "reload map", "keys": [pygame.K_r]},
     "zoom_in":        {"show": ["+"],        "msg": "zoom in",    "keys": [pygame.K_EQUALS, pygame.K_KP_PLUS]},
     "zoom_out":       {"show": ["-"],        "msg": "zoom out",   "keys": [pygame.K_MINUS, pygame.K_KP_MINUS]},
@@ -125,6 +136,7 @@ PARTICLES_DIR = RESOURCES_DIR / "particles"
 HUD_DIR = RESOURCES_DIR / "HUD"
 PROGRAM_ICON = ASSETS_DIR / "icon.png"
 MOUSE_CURSOR_IMG = ASSETS_DIR / "aim.png"
+CIRCLE_GRADIENT = HUD_DIR / "circle_gradient_big.png"
 if IS_WEB:
     SHADERS_DIR = Path("shaders") / "OpenGL3.0_ES"
 else:

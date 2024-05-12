@@ -10,6 +10,7 @@ import game
 import scene
 import npc_state
 from objects import HealthBar, Shadow
+import splash_screen
 
 ##########################################################################################################################
 class NPCEventActionEnum(StrEnum):
@@ -347,6 +348,9 @@ class NPC(pygame.sprite.Sprite):
         self.scene.NPC = [npc for npc in self.scene.NPC if not npc == self]
         self.shadow.kill()
         self.health_bar.kill()
+        if self.model.health <= 0:
+            self.scene.exit_state()
+            splash_screen.SplashScreen(self.game, "GAME OVER").enter_state()
         self.kill()
         # TODO: add GAME OVER
 
@@ -510,10 +514,10 @@ class Player(NPC):
             
         if INPUTS["left_click"]: # or not self.target == vec(0,0):
             target = vec(pygame.mouse.get_pos())
-            mx, my = self.scene.map_layer.get_center_offset()
+            mx, my = self.scene.map_view.get_center_offset()
             # convert screen position to world position
-            x = target.x // self.scene.map_layer._real_ratio_x - mx
-            y = target.y // self.scene.map_layer._real_ratio_y - my 
+            x = target.x // self.scene.map_view._real_ratio_x - mx
+            y = target.y // self.scene.map_view._real_ratio_y - my 
             rect = pygame.Rect(x, y, 2, 2)
             fix_exit_target = False
             exit_sprites = list(self.scene.exit_sprites)
@@ -530,9 +534,9 @@ class Player(NPC):
 
             self.follow_waypoints()
             # target = vec(pygame.mouse.get_pos())
-            # mx, my = self.scene.map_layer.get_center_offset()
-            # x = target.x // self.scene.map_layer._real_ratio_x - mx
-            # y = target.y // self.scene.map_layer._real_ratio_x - my
+            # mx, my = self.scene.map_view.get_center_offset()
+            # x = target.x // self.scene.map_view._real_ratio_x - mx
+            # y = target.y // self.scene.map_view._real_ratio_x - my
             # self.target = vec(x // TILE_SIZE, y // TILE_SIZE)
             # INPUTS["left_click"] = False
         

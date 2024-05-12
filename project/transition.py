@@ -21,7 +21,7 @@ class Transition():
         else:
             self.alpha = max(0, self.alpha - int(self.fade_in_speed * dt))
         # self.radius = (WIDTH//2) -  (WIDTH//2) * (self.alpha/255)
-        self.radius = (WIDTH*1.7) -  (WIDTH*1.7) * (self.alpha/255)
+        self.radius = (WIDTH*2.7) -  (WIDTH*2.7) * (self.alpha/255)
             
     def draw(self, screen: pygame.Surface):
         self.fade_surf.fill(COLORS["black"])
@@ -34,9 +34,9 @@ class TransitionCircle(Transition):
     def draw(self, screen: pygame.Surface):
         self.fade_surf.fill((1,1,1))
         # pos = self.scene.player.pos
-        # offset_x, offset_y = self.scene.map_layer.get_center_offset()
-        # zoom = self.scene.map_layer.zoom
-        pos = self.scene.map_layer.translate_point(self.scene.player.pos)
+        # offset_x, offset_y = self.scene.map_view.get_center_offset()
+        # zoom = self.scene.map_view.zoom
+        pos = self.scene.map_view.translate_point(self.scene.player.pos)
         # pygame.draw.circle(self.fade_surf, (0,0,0), (WIDTH//2, HEIGHT//2), self.radius)
         pygame.draw.circle(self.fade_surf, (0,0,0), pos, self.radius)
         # self.fade_surf.set_alpha(self.alpha)

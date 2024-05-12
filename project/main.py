@@ -16,6 +16,8 @@
 #  "zengl",
 #  "struct",
 #  "pathlib",
+#  "pydantic_core>=2.18.2",
+#  "pydantic>=2.7.1",
 # ]
 # ///
 

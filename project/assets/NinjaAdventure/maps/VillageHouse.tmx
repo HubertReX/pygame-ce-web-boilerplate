@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="14" height="15" tilewidth="16" tileheight="16" infinite="0" nextlayerid="10" nextobjectid="6">
+ <properties>
+  <property name="outdoor" type="bool" value="false"/>
+ </properties>
  <tileset firstgid="1" source="tilesets/InteriorFloor.tsx"/>
  <tileset firstgid="375" source="tilesets/WallSimple.tsx"/>
  <tileset firstgid="485" source="tilesets/Interior.tsx"/>

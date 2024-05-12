@@ -35,5 +35,5 @@ class SplashScreen(State):
             
     def draw(self, screen: pygame.Surface, dt: float):
         screen.fill(COLORS["blue"])
-        self.game.render_text(f"{self.__class__.__name__}-{self.name}", (WIDTH / 2, HEIGHT / 2), centred=True)
-        self.game.render_text(f"press space to continue", (WIDTH / 2, HEIGHT / 2 + TILE_SIZE + 10), centred=True)
+        self.game.render_text(f"{self.name}", (WIDTH / 2, HEIGHT / 2), font_size=FONT_SIZE_LARGE, centred=True)
+        self.game.render_text(f"press space to continue", (WIDTH / 2, HEIGHT - (FONT_SIZE_DEFAULT * TEXT_ROW_SPACING)), centred=True)

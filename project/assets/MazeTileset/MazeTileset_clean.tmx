@@ -4,6 +4,7 @@
   <export format="tmx"/>
  </editorsettings>
  <properties>
+  <property name="outdoor" type="bool" value="false"/>
   <property name="particles" value="n/a"/>
  </properties>
  <tileset firstgid="1" name="tilemap_packed" tilewidth="16" tileheight="16" tilecount="132" columns="12">
