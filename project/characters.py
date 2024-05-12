@@ -403,7 +403,7 @@ class NPC(pygame.sprite.Sprite):
 
     #MARK: encounter        
     def encounter(self, oponent: "NPC"):
-        if oponent.model.attitude == AttitudeEnum.enemy:
+        if oponent.model.attitude == AttitudeEnum.enemy.value:
             # deal damage
             self.model.health -= oponent.model.damage
             oponent.model.health -= self.model.damage

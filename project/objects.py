@@ -38,11 +38,11 @@ class HealthBar(pygame.sprite.Sprite):
         self.rect_full: pygame.FRect = self.image_full.get_frect()
         self.rect_full.x = self.rect.width // 2 - self.rect_full.width // 2
         self.rect_full.y += 1
-        if self.model.attitude == AttitudeEnum.enemy:
+        if self.model.attitude == AttitudeEnum.enemy.value:
             self.color = "red"
-        elif self.model.attitude == AttitudeEnum.friendly:
+        elif self.model.attitude == AttitudeEnum.friendly.value:
             self.color = "blue"
-        elif self.model.attitude == AttitudeEnum.afraid:
+        elif self.model.attitude == AttitudeEnum.afraid.value:
             self.color = "green"
         else:
             self.color = "pink"
