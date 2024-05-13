@@ -9,6 +9,11 @@ from config_model.config import load_config
 from settings import *
 import pygame, sys
 from opengl_shader import OpenGL_shader
+if not IS_WEB:
+    from pygame_screen_record import ScreenRecorder, add_codec
+
+    # add_codec("mp4", "mpv4")
+    # add_codec("webm", "vp90")
 
 if USE_SOD:
     from second_order_dynamics import SecondOrderDynamics
@@ -61,6 +66,7 @@ class Game:
         
         self.font = self.fonts[FONT_SIZE_DEFAULT]
         self.is_running = True
+        self.is_paused = False
 
         # stacked game states (e.g. Scene, Menu)
         from state import State
@@ -283,18 +289,18 @@ class Game:
         for event in events:
             if event.type == pygame.QUIT:
                 self.is_running = False
-                pygame.quit()
-                sys.exit()
+                # pygame.quit()
+                # sys.exit()
                 
-            global IS_PAUSED
+            # global IS_PAUSED
             
             if event.type in [pygame.WINDOWHIDDEN, pygame.WINDOWMINIMIZED, pygame.WINDOWFOCUSLOST]:
-                IS_PAUSED = True
-                print(f"{IS_PAUSED=}")
+                self.is_paused = True
+                print(f"{self.is_paused=}")
                 
             elif event.type in [pygame.WINDOWSHOWN, pygame.WINDOWMAXIMIZED, pygame.WINDOWRESTORED, pygame.WINDOWFOCUSGAINED]:
-                IS_PAUSED = False
-                # print(f"{IS_PAUSED=}")
+                self.is_paused = False
+                # print(f"{self.is_paused=}")
             elif event.type in self.custom_events:
                 handler = self.custom_events[event.type]
                 handler(**event.dict)
@@ -332,11 +338,31 @@ class Game:
                     INPUTS["scroll_click"] = False
                     
         global USE_SHADERS
+        # global IS_PAUSED
+        if INPUTS["pause"]:
+            # IS_PAUSED = not IS_PAUSED
+            self.is_paused = not self.is_paused
+            print(f"{self.is_paused=}")
+            INPUTS["pause"] = False
+        
+        if INPUTS["record"]:
+            if not IS_WEB:
+                if self.recorder.running_thread is None:
+                    self.recorder.start_rec()
+                    time_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    file_name = f"recording_{time_str}.mp4"
+                    self.recordings_names.append(file_name)
+                    print("Recording started")
+                else:
+                    self.recorder.stop_rec()
+                    print("Recording stopped")
+            INPUTS["record"] = False            
+        
         if INPUTS["shaders_toggle"]:
             USE_SHADERS = not USE_SHADERS
             INPUTS["shaders_toggle"] = False            
         
-        elif INPUTS["next_shader"]:
+        if INPUTS["next_shader"]:
             shader_index = SHADERS_NAMES.index(self.shader.shader_name)
             if shader_index < 0:
                 shader_index = 0
@@ -360,34 +386,60 @@ class Game:
     async def loop(self):
         self.shader.create_pipeline()
         
-        while self.is_running:
-            # delta time since last frame in milliseconds
-            dt = self.clock.tick(FPS_CAP) / 1000
-            events = []
-            events = self.get_inputs()
+        if not IS_WEB:
+            # encoder is determined by recording file extension (see save_recordings below)
+            self.recorder = ScreenRecorder(RECORDING_FPS, compress=0)
+            self.recordings_names = []
+        
+        try:
+            while self.is_running:
+                # delta time since last frame in milliseconds
+                dt = self.clock.tick(FPS_CAP) / 1000
+                events = []
+                events = self.get_inputs()
 
-            # first draw on separate Surface (game.canvas)
-            if not IS_PAUSED:
-                self.time_elapsed += dt
-                self.states[-1].update(dt, events)
-            self.canvas.fill((0,0,0,0))
-            self.states[-1].draw(self.canvas, dt)
-            self.custom_cursor(self.canvas)
-            
-            if IS_PAUSED:
-                self.render_text("PAUSED", (WIDTH*SCALE // 2, HEIGHT*SCALE // 2), font_size=FONT_SIZE_LARGE, centred=True, bg_color=(10,10,10,150))
-            
-            # than scale and copy on final Surface (game.screen)
-            if SCALE != 1:
-                self.screen.blit(pygame.transform.scale_by(self.canvas, SCALE), (0,0))
-            else:
-                self.screen.blit(self.canvas, (0,0))
-            # shaders are used for postprocessing special effects
-            # the whole Surface is used as texture on rect that fills to a full screen
-            
-            self.shader.render(self.screen, dt, USE_SHADERS)
+                # first draw on separate Surface (game.canvas)
+                if not self.is_paused:
+                    self.time_elapsed += dt
+                    self.states[-1].update(dt, events)
+                self.canvas.fill((0,0,0,0))
+                self.states[-1].draw(self.canvas, dt)
+                self.custom_cursor(self.canvas)
                 
-            pygame.display.flip()
-            await asyncio.sleep(0)
+                if self.is_paused:
+                    self.render_text("PAUSED", (WIDTH*SCALE // 2, HEIGHT*SCALE // 2), font_size=FONT_SIZE_LARGE, centred=True, bg_color=(10,10,10,150))
+                
+                # than scale and copy on final Surface (game.screen)
+                if SCALE != 1:
+                    self.screen.blit(pygame.transform.scale_by(self.canvas, SCALE), (0,0))
+                else:
+                    self.screen.blit(self.canvas, (0,0))
+                # shaders are used for postprocessing special effects
+                # the whole Surface is used as texture on rect that fills to a full screen
+                
+                self.shader.render(self.screen, dt, USE_SHADERS)
+                    
+                pygame.display.flip()
+                await asyncio.sleep(0)
+        finally:
             
-            
+            if not IS_WEB:
+                # first stop if there is ongoing recording
+                if self.recorder.running_thread is not None:
+                    self.recorder.stop_rec()
+                
+                if len(self.recorder.recordings) > 0:
+                    print("saving recordings - this can take a while...")
+                    self.render_text("SAVING...", (WIDTH*SCALE // 2, HEIGHT*SCALE // 2), font_size=FONT_SIZE_LARGE, centred=True, bg_color=(10,10,10,150), surface=self.screen)
+                    self.shader.render(self.screen, dt, False)
+                    pygame.display.flip()
+                # save only the last recording
+                # self.recorder.save_recording(SCREENSHOTS_DIR / "intro.mp4")
+                
+                # save all recordings in provided folder
+                # mp4 extension defaults to h264/AVC1
+                self.recorder.save_recordings(self.recordings_names, SCREENSHOTS_DIR)
+                # save all recordings with default file naming (recording_{N}.mp4)
+                # self.recorder.save_recordings("mp4", SCREENSHOTS_DIR)
+            pygame.quit()
+        

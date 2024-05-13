@@ -154,3 +154,6 @@ cython_debug/
 project/assets/NinjaAdventure/NinjaAdventure.tiled-session
 zengl_examples/**
 utils/recording.mp4
+screenshots/recording_*.mp4
+screenshots/intro_*.mp4
+screenshots/intro_*.webm

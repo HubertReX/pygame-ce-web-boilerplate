@@ -47,7 +47,11 @@ USE_SHADERS = True
 SHOW_DEBUG_INFO = False
 SHOW_HELP_INFO = False
 
+# game render fps cap
 FPS_CAP = 30
+# gameplay recording fps (doesn't need to be the same as FPS_CAP)
+RECORDING_FPS = 30
+
 ANIMATION_SPEED = 10 # frames per second
 # when character speed is grater than this value, it's state changes to Run
 RUN_SPEED: float = 39.0
@@ -73,16 +77,17 @@ ACTIONS = {
     "debug":          {"show": ["`", "z"],   "msg": "debug",      "keys": [pygame.K_BACKQUOTE, pygame.K_z]},
     "alpha":          {"show": ["f"],        "msg": "filter",     "keys": [pygame.K_f]},
     "shaders_toggle": {"show": ["g"],        "msg": "shader 0/1", "keys": [pygame.K_g]},
-    "next_shader":    {"show": ["h"],        "msg": "next shader","keys": [pygame.K_PERIOD]},
+    "next_shader":    {"show": [".", ">"],   "msg": "next shader","keys": [pygame.K_PERIOD]},
     "run":            {"show": ["CTRL"],     "msg": "toggle run", "keys": [pygame.K_LSHIFT, pygame.K_RSHIFT]},
     "jump":           {"show": ["SPACE"],    "msg": "jump",       "keys": [pygame.K_SPACE]},
-    "fly":            {"show": ["SHIFT"],    "msg": "fly",        "keys": [pygame.K_LALT, pygame.K_RALT]},
+    "fly":            {"show": ["SHIFT"],    "msg": "toggle fly", "keys": [pygame.K_LALT, pygame.K_RALT]},
     "select":         {"show": None,         "msg": "select",     "keys": [pygame.K_SPACE]},
     "accept":         {"show": None,         "msg": "accept",     "keys": [pygame.K_RETURN, pygame.K_KP_ENTER]},
     "help":           {"show": ["F1", "h"],  "msg": "help",       "keys": [pygame.K_F1,    pygame.K_h]},
     "screenshot":     {"show": ["F12"],      "msg": "screenshot", "keys": [pygame.K_F12]},
     "intro":          {"show": ["F4"],       "msg": "intro",      "keys": [pygame.K_F4]},
-    "reload":         {"show": ([] if IS_WEB else ["r"]), "msg": "reload map", "keys": [pygame.K_r]},
+    "record":         {"show": ([] if IS_WEB else ["F3"]), "msg": "record mp4", "keys": [pygame.K_F3]},
+    "reload":         {"show": ([] if IS_WEB else ["r"]), "msg":  "reload map", "keys": [pygame.K_r]},
     "zoom_in":        {"show": ["+"],        "msg": "zoom in",    "keys": [pygame.K_EQUALS, pygame.K_KP_PLUS]},
     "zoom_out":       {"show": ["-"],        "msg": "zoom out",   "keys": [pygame.K_MINUS, pygame.K_KP_MINUS]},
     "left":           {"show": None,         "msg": "",           "keys": [pygame.K_LEFT,  pygame.K_a]},

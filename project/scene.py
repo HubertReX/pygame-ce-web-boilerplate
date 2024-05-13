@@ -595,12 +595,6 @@ class Scene(State):
             # self.game.reset_inputs()
             INPUTS["help"] = False
         
-        global IS_PAUSED
-        if INPUTS["pause"]:
-            IS_PAUSED = not IS_PAUSED
-            print(f"{IS_PAUSED=}")
-            INPUTS["pause"] = False
-
         if INPUTS["screenshot"]:
             self.game.save_screenshot()
             INPUTS["screenshot"] = False
@@ -657,6 +651,16 @@ class Scene(State):
         
         self.transition.draw(screen)
         
+            
+        # alpha filter demo
+        if USE_ALPHA_FILTER: 
+            self.apply_alpha_filter(screen)
+        else:
+            self.apply_time_of_day_filter(screen)
+
+        # draw black bars at the top and bottom when during cutscene
+        self.apply_cutscene_framing(screen, self.cutscene_framing)
+
         if SHOW_DEBUG_INFO:
             self.show_debug()
         
@@ -669,15 +673,6 @@ class Scene(State):
                 shadow = True, 
                 centred = True
             )
-            
-        # alpha filter demo
-        if USE_ALPHA_FILTER: 
-            self.apply_alpha_filter(screen)
-        else:
-            self.apply_time_of_day_filter(screen)
-
-        # draw black bars at the top and bottom when during cutscene
-        self.apply_cutscene_framing(screen, self.cutscene_framing)
 
     #MARK: apply_time_of_day_filter
     def apply_time_of_day_filter(self, screen: pygame.Surface):
@@ -740,11 +735,11 @@ class Scene(State):
             
             # sunny, warm yellow light during daytime
         half_screen = pygame.Surface((WIDTH, h), pygame.SRCALPHA)   
-        half_screen.fill((152, 152, 0, 70))
+        half_screen.fill(DAY_FILTER)
         screen.blit(half_screen, (0, 0))    
             
             # cold, dark and bluish light at night
-        half_screen.fill((0, 0, 102, 120))
+        half_screen.fill(NIGHT_FILTER)
         screen.blit(half_screen, (0, h))   
 
     #MARK: apply_cutscene_framing

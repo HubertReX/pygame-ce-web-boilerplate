@@ -76,7 +76,7 @@ class Config():
     def build(cls, data):
         chrs = {}
         for name, chr in data["characters"].items():
-            print(name, chr)
+            # print(name, chr)
             character = Character.from_dict(chr)
             chrs[name] = character
             
@@ -125,7 +125,7 @@ def load_config(file_name: PathLike) -> "Config":
     # except Exception as e:
     #     print(e.errors())
     # finally:
-    print(config.characters)
+    # print(config.characters)
     return config
     
 ###################################################################################################################

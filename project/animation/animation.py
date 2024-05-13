@@ -563,7 +563,7 @@ def animator(cutscene_def: dict[str, Any], group: pygame.sprite.Group) -> Animat
     animations: dict[str, Animation] = {}
     first_step_name = cutscene_def["steps"][0]["name"]
     for step in cutscene_def["steps"]:
-        print(step["name"], "create")
+        # print(step["name"], "create")
         if step["type"] == "animation":
             # create animation step
             anim = Animation(**step["args"], duration=step["duration"], transition=step.get("transition", "linear"), round_values=step.get("round_values", False), _name=step["name"], _description=step["description"])
@@ -571,7 +571,7 @@ def animator(cutscene_def: dict[str, Any], group: pygame.sprite.Group) -> Animat
             if step["from"] != "<root>":
                 # calculate sum of delays (durations) of previous steps all the way to the start ("<root>")
                 delay = sum_delays(cutscene_def, step["from"]) * 1.0
-                print(f"{delay=}")
+                # print(f"{delay=}")
                 # create subtask and add it to group
                 subtask = partial(create_subtask, step["target"], args=step["args"], interval=step["interval"] * 1.0, times=step["times"], _name=step["name"], _description=step["description"], group=group)
                 # create delaying task so the subtask starts afters finishing "from" step
