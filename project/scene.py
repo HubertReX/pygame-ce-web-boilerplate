@@ -655,8 +655,8 @@ class Scene(State):
         # alpha filter demo
         if USE_ALPHA_FILTER: 
             self.apply_alpha_filter(screen)
-        else:
-            self.apply_time_of_day_filter(screen)
+        # else:
+        #     self.apply_time_of_day_filter(screen)
 
         # draw black bars at the top and bottom when during cutscene
         self.apply_cutscene_framing(screen, self.cutscene_framing)

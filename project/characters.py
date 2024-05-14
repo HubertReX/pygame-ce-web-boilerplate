@@ -204,8 +204,13 @@ class NPC(pygame.sprite.Sprite):
         if self.is_stunned:
             return
         
+        # if character has a set target (and needs to follow it) or there are no waypoints to follow any more
         if not self.target == vec(0,0) or self.waypoints_cnt == 0:
-            if (self.waypoints_cnt == 0 or not self.target == self.scene.player.pos):
+            # if (no more waypoints or the player has moved) and (character is a monster chasing player)
+            # not self.target == self.scene.player.pos) 
+            distance_player_moved = (self.target - self.scene.player.pos).magnitude_squared()
+            if (self.waypoints_cnt == 0 or distance_player_moved > 32**2) and self.model.attitude == AttitudeEnum.enemy.value:
+            # if (self.waypoints_cnt == 0 or not self.target == self.scene.player.pos) and self.model.attitude == AttitudeEnum.enemy.value:
                 self.target = self.scene.player.pos.copy()
                 self.find_path()
                 
