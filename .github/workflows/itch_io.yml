@@ -1,0 +1,30 @@
+
+name: ich_io_deploy
+on: [workflow_dispatch]
+permissions:
+  contents: write
+
+jobs:
+  build-pygbag:
+    name: Build pygbag and delpoy
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+            ref: ${{ github.ref }}
+    - name: Checkout
+      run: |
+            python -m pip install pygbag
+            python -m pygbag --ume_block 0 --template utils/black.tmpl --icon project/assets/icon.png --no_opt --build $GITHUB_WORKSPACE/project/main.py            
+    - name: replace str
+      id: replace_str
+      run: echo BRANCH=${GITHUB_REF//refs\/heads\//}  >> $GITHUB_OUTPUT
+    - name: "Deploy to itch.io"
+      uses: josephbmanley/butler-publish-itchio-action@v1.0.3
+      env:
+        BUTLER_CREDENTIALS: ${{ secrets.ITCH_IO_API_KEY }}
+        CHANNEL: HTML
+        ITCH_GAME: top-down-rpg
+        ITCH_USER: hubertnafalski
+        PACKAGE: project/build/web 
