@@ -4,6 +4,7 @@ from typing import Any, Sequence, Union
 from xml.etree.ElementTree import VERSION
 import pygame
 from pygame.math import Vector2 as vec
+from pygame.math import Vector3 as vec3
 from pygame.colordict import THECOLORS as COLORS
 from pathlib import Path
 
@@ -51,7 +52,9 @@ SHOW_HELP_INFO = False
 FPS_CAP = 30
 # gameplay recording fps (doesn't need to be the same as FPS_CAP)
 RECORDING_FPS = 30
-
+# path from monster will be recalculated
+# only if player moved by more then N pixels
+RECALCULATE_PATH_DISTANCE = 16
 ANIMATION_SPEED = 10 # frames per second
 # when character speed is grater than this value, it's state changes to Run
 RUN_SPEED: float = 39.0
@@ -63,7 +66,7 @@ STUNNED_TIME: int = 1000
 PUSHED_TIME: int = 1000
 
 # initial game time hour
-INITIAL_HOUR = 4
+INITIAL_HOUR = 1
 # game time speed (N game hours / 1 real time second)
 GAME_TIME_SPEED = 0.25
 
@@ -71,6 +74,8 @@ GAME_TIME_SPEED = 0.25
 NIGHT_FILTER: ColorValue = [0, 0, 30, 220]
 # sunny, warm yellow light during daytime
 DAY_FILTER: ColorValue = [152, 152, 0, 20]
+# amount of light sources passed to shader
+MAX_LIGHTS_COUNT: int = 16
 
 ACTIONS = {
     "quit":           {"show": ["ESC", "q"], "msg": "back",       "keys": [pygame.K_ESCAPE,    pygame.K_q]},
@@ -84,6 +89,7 @@ ACTIONS = {
     "select":         {"show": None,         "msg": "select",     "keys": [pygame.K_SPACE]},
     "accept":         {"show": None,         "msg": "accept",     "keys": [pygame.K_RETURN, pygame.K_KP_ENTER]},
     "help":           {"show": ["F1", "h"],  "msg": "help",       "keys": [pygame.K_F1,    pygame.K_h]},
+    "menu":           {"show": ["F2"],       "msg": "menu",       "keys": [pygame.K_F2]},
     "screenshot":     {"show": ["F12"],      "msg": "screenshot", "keys": [pygame.K_F12]},
     "intro":          {"show": ["F4"],       "msg": "intro",      "keys": [pygame.K_F4]},
     "record":         {"show": ([] if IS_WEB else ["F3"]), "msg": "record mp4", "keys": [pygame.K_F3]},
@@ -151,8 +157,9 @@ SHADERS_NAMES = [
     "RETRO_CRT", 
     "SATURATED",
     "B_AND_W",
+    "LIGHTING",
 ]
-DEFAULT_SHADER = "SATURATED"
+DEFAULT_SHADER = "LIGHTING"
 
 import particles
 PARTICLES = {

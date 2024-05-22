@@ -3,7 +3,7 @@ import os
 import random
 import pygame
 from pygame.math import Vector2 as vec
-from maze_generator.maze_utils import a_star
+from maze_generator.maze_utils import a_star, a_star_cached
 from config_model.config import AttitudeEnum, Character
 from settings import *
 import game
@@ -96,7 +96,11 @@ class NPC(pygame.sprite.Sprite):
         # actual NPC state, mainly to determine type of animation and speed
         self.state: npc_state.NPC_State = npc_state.Idle()
         self.state.enter_time = self.scene.game.time_elapsed
+
         
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.name})"
+
     def get_tileset_coord(self, pos: vec | None = None) -> Point:
         """
         map position in world coordinates to tileset grid 
@@ -209,7 +213,8 @@ class NPC(pygame.sprite.Sprite):
             # if (no more waypoints or the player has moved) and (character is a monster chasing player)
             # not self.target == self.scene.player.pos) 
             distance_player_moved = (self.target - self.scene.player.pos).magnitude_squared()
-            if (self.waypoints_cnt == 0 or distance_player_moved > 32**2) and self.model.attitude == AttitudeEnum.enemy.value:
+            
+            if (self.waypoints_cnt == 0 or distance_player_moved > RECALCULATE_PATH_DISTANCE**2) and self.model.attitude == AttitudeEnum.enemy.value:
             # if (self.waypoints_cnt == 0 or not self.target == self.scene.player.pos) and self.model.attitude == AttitudeEnum.enemy.value:
                 self.target = self.scene.player.pos.copy()
                 self.find_path()
@@ -243,12 +248,13 @@ class NPC(pygame.sprite.Sprite):
             direction = direction.normalize() * self.force
             self.acc.x = direction.x
             self.acc.y = direction.y
-
+    
     def find_path(self):
         start = (self.tileset_coord.y, self.tileset_coord.x)
         target = self.get_tileset_coord(self.target)
         goal = (target.y, target.x)
-        path = a_star(start=start, goal=goal, grid=self.scene.path_finding_grid)
+        # fps = f"FPS:\t{self.game.fps: 6.1f}\t3s:\t{self.game.avg_fps_3s: 6.1f}\t10s:\t{self.game.avg_fps_10s: 6.1f}\ttime:\t{self.game.time_elapsed:4.1f}"
+        path = a_star_cached(start=start, goal=goal, grid=self.scene.path_finding_grid, fps="") # fps=fps
         if path:
             waypoints = []
             path_list = list(path)
@@ -355,6 +361,7 @@ class NPC(pygame.sprite.Sprite):
         self.health_bar.kill()
         if self.model.health <= 0:
             self.scene.exit_state()
+            scene.Scene(self.game, "Village", "start").enter_state()
             splash_screen.SplashScreen(self.game, "GAME OVER").enter_state()
         self.kill()
         # TODO: add GAME OVER
@@ -574,8 +581,8 @@ class Player(NPC):
     def check_scene_exit(self):
         for exit in self.scene.exit_sprites:
             if self.feet.colliderect(exit.rect):
-                if exit.to_map == "Maze":
-                    pass
+                # if exit.to_map == "Maze":
+                #     pass
                 self.scene.new_scene = exit
                 self.scene.transition.exiting = True
                 # self.scene.go_to_scene()

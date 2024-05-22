@@ -1,0 +1,99 @@
+This page is in Quirks Mode. Page layout may be impacted. For Standards Mode use “<!DOCTYPE html>”.
+NinjaAdventure
+AUTOSTART https://pygame-web.github.io/archives/0.9/pythons.js https://hubertrex.github.io/pygame-ce-web-boilerplate/NinjaAdventure/ undefined pythons.js:2296:13
+Location of pythons.js overrides script https://pygame-web.github.io/archives/0.9/pythons.js => https://pygame-web.github.io/archives/0.9/pythons.js?# pythons.js:2318:17
+{"xtermjs":"1","_sdl2":"canvas","user_canvas":0,"user_canvas_managed":0,"ume_block":0,"can_close":0,"archive":"project","gui_debug":3,"cdn":"https://pygame-web.github.io/archives/0.9/","autorun":0,"PYBUILD":"3.12","pydigits":"312","executable":"https://pygame-web.github.io/archives/0.9/cpython312/main.js","debug":false,"interactive":false,"columns":132,"lines":"57","console":"25","fbdev":false,"quiet":false,"features":["vtx","fs","snd","gui"]} pythons.js:2427:13
+config.xtermjs = 1 pythons.js:2479:17
+config._sdl2 = canvas pythons.js:2479:17
+config.user_canvas = 0 pythons.js:2479:17
+config.user_canvas_managed = 0 pythons.js:2479:17
+config.ume_block = 0 pythons.js:2479:17
+config.can_close = 0 pythons.js:2479:17
+config.archive = project pythons.js:2479:17
+config.gui_debug = 3 pythons.js:2479:17
+config.cdn = https://pygame-web.github.io/archives/0.9/ pythons.js:2479:17
+config.autorun = 0 pythons.js:2479:17
+config.PYBUILD = 3.12 pythons.js:2479:17
+config.pydigits = 312 pythons.js:2479:17
+config.executable = https://pygame-web.github.io/archives/0.9/cpython312/main.js pythons.js:2479:17
+config.debug = false pythons.js:2479:17
+config.interactive = false pythons.js:2479:17
+config.columns = 132 pythons.js:2479:17
+config.lines = 57 pythons.js:2479:17
+config.console = 25 pythons.js:2479:17
+config.fbdev = false pythons.js:2479:17
+config.quiet = false pythons.js:2479:17
+config.features = 
+Array(4) [ "vtx", "fs", "snd", "gui" ]
+pythons.js:2479:17
+interpreter= cpython pythons.js:2481:13
+orig_argv 
+Array [ "" ]
+pythons.js:2482:13
+sys.argv:  
+Array [ "" ]
+pythons.js:2483:13
+docurl= https://hubertrex.github.io/pygame-ce-web-boilerplate/NinjaAdventure/ pythons.js:2484:13
+srcurl= https://pygame-web.github.io/archives/0.9/pythons.js pythons.js:2485:13
+data-os= vtx,fs,snd,gui pythons.js:2487:17
+data-python= python3.12 pythons.js:2488:17
+script: id= site pythons.js:2489:17
+code :  4562  as site.py pythons.js:2490:17
+Feature Policy: Skipping unsupported feature name “autoplay”. NinjaAdventure
+Feature Policy: Skipping unsupported feature name “midi”. NinjaAdventure
+Feature Policy: Skipping unsupported feature name “monetization”. NinjaAdventure
+Feature Policy: Skipping unsupported feature name “xr-spatial-tracking”. NinjaAdventure
+Feature Policy: Skipping unsupported feature name “gyroscope”. NinjaAdventure
+Feature Policy: Skipping unsupported feature name “accelerometer”. NinjaAdventure
+Feature Policy: Skipping unsupported feature name “xr”. NinjaAdventure
+Feature Policy: Skipping unsupported feature name “cross-origin-isolated”. NinjaAdventure
+Feature Policy: Skipping unsupported feature name “autoplay”. NinjaAdventure
+Feature Policy: Skipping unsupported feature name “midi”. NinjaAdventure
+Feature Policy: Skipping unsupported feature name “monetization”. NinjaAdventure
+Feature Policy: Skipping unsupported feature name “xr-spatial-tracking”. NinjaAdventure
+Feature Policy: Skipping unsupported feature name “gyroscope”. NinjaAdventure
+Feature Policy: Skipping unsupported feature name “accelerometer”. NinjaAdventure
+Feature Policy: Skipping unsupported feature name “xr”. NinjaAdventure
+Feature Policy: Skipping unsupported feature name “cross-origin-isolated”. NinjaAdventure
+Feature Policy: Skipping unsupported feature name “autoplay”. NinjaAdventure
+Feature Policy: Skipping unsupported feature name “midi”. NinjaAdventure
+Feature Policy: Skipping unsupported feature name “monetization”. NinjaAdventure
+Feature Policy: Skipping unsupported feature name “xr-spatial-tracking”. NinjaAdventure
+Feature Policy: Skipping unsupported feature name “gyroscope”. NinjaAdventure
+Feature Policy: Skipping unsupported feature name “accelerometer”. NinjaAdventure
+Feature Policy: Skipping unsupported feature name “xr”. NinjaAdventure
+Feature Policy: Skipping unsupported feature name “cross-origin-isolated”. NinjaAdventure
+This page is in Quirks Mode. Page layout may be impacted. For Standards Mode use “<!DOCTYPE html>”.
+empty.html
+Partitioned cookie or storage access was provided to “https://pygame-web.github.io/archives/0.9/empty.html” because it is loaded in the third-party context and dynamic state partitioning is enabled.
+
+FIXME: TypeError: navigator.userAgentData is undefined
+    mobile https://pygame-web.github.io/archives/0.9/pythons.js:1892
+    onload https://pygame-web.github.io/archives/0.9/pythons.js:2129
+    auto_start https://pygame-web.github.io/archives/0.9/pythons.js:2526
+    <anonymous> https://pygame-web.github.io/archives/0.9/pythons.js:2550
+pythons.js:1894:17
+
+
+
+== FLAGS : is_mobile(false) dev=false debug_user=false debug_mobile=false ==
+
+
+
+pythons.js:2151:13
+GET
+https://pygame-web.github.io/archives/0.9/pythonrc.py
+
+Terminal+ImageAddon importing from CDN : https://pygame-web.github.io/archives/0.9/vt/ vtx.js:19:17
+fnt: 602 / 82 = 6  Cols: 132 Cons: 25 pythons.js:1056:13
+terminal 132 82 
+Object { url: "https://pygame-web.github.io/archives/0.9/xtermjsixel/xterm-addon-image-worker.js", sixelSupport: true }
+vtx.js:87:25
+NO ume unlocker, safari == false pythons.js:1197:17
+TODO: user defined canvas pythons.js:664:9
+pythons.js:  custom_onload NinjaAdventure:422:17
+Loading python interpreter from https://pygame-web.github.io/archives/0.9/cpython312/main.js pythons.js:2288:13
+A resource is blocked by OpaqueResponseBlocking, please check browser console for details. pythonrc.py
+main.js:  locateData: main.data  -> https://pygame-web.github.io/archives/0.9/cpython312/main.data pythons.js:504:25
+main.js:  locateFile: main.wasm https://pygame-web.github.io/archives/0.9/cpython312/ pythons.js:507:25
+VM.prerun pythons.js:307:13

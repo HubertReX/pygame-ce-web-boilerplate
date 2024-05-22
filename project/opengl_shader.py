@@ -3,7 +3,9 @@ import struct
 import zengl
 import pygame
 
-from settings import SHADERS_DIR
+from settings import MAX_LIGHTS_COUNT, SHADERS_DIR, vec, vec3, IS_WEB
+# if not IS_WEB:
+import numpy as np
 
 zengl.init()
 
@@ -16,7 +18,6 @@ except:
     def CSI(param):
         pass
 
-
 class OpenGL_shader():
     def __init__(self, size: tuple[int, int], shader_name: str = "") -> None:
         
@@ -25,12 +26,12 @@ class OpenGL_shader():
             print("="*30,name,"="*30)
             try:
 
-                log = log.rstrip(b"\x00").decode()
+                log = log.rstrip(b"\x00").decode(errors="ignore")
                 shader = shader.rstrip(b"\x00").decode()
                 _, pos, msg  = log.split(": ",2)
                 c,l = map( int, pos.split(":",1) )
                 #print( l,c,msg  )
-                spacer = ""
+                spacer = "" # "#" * 50
                 for ln,line in enumerate(shader.split("\n")):
                     if ln==l:
                         CSI("1;93m")
@@ -53,9 +54,16 @@ class OpenGL_shader():
 
         _zengl.compile_error = compile_error_debug
 
-        self.image = self.ctx.image(size, "rgba8unorm") #, samples=4)
+        self.image = self.ctx.image(size, "rgba8unorm")  # , samples=4)
+        # self.depth = self.ctx.image(size, 'depth24plus') # , samples=4)
+
+        float_size = 16
+        floats_per_light = 3 # x, y, size
+        self.lights_pos_buffer = self.ctx.buffer(size=float_size * floats_per_light * MAX_LIGHTS_COUNT)
+
         self.shader_name = shader_name
         self.pipeline = None
+
 
     def create_pipeline(self, shader_name: str = ""):
         # if provided new shader_name then use it (otherwise use shader_name provided in constructor)
@@ -67,38 +75,72 @@ class OpenGL_shader():
 
         FS = self.read_shader_from_file(fs_file)
         VS = self.read_shader_from_file(vs_file)
+
+        includes = {'common': f'''
+const vec2 screen_size = vec2({self.size[0]}, {self.size[1]});
+const int MAX_LIGHTS_CNT = {MAX_LIGHTS_COUNT};
+        '''
+        }
         
         layout =[
             {
-                    "name": "Texture",
-                    "binding": 0,
+                "name": "Texture",
+                "binding": 0,
+            },
+            {
+                'name': 'LightPositions',
+                'binding': 1,
             },
         ]
         
         uniforms = {
-                "time": 0.0,
-                "screen_size": (self.size[0], self.size[1]),
+            "time": 0.0,
+            "scale": 0.0,
+            "ratio": 0.0,
+            "lights_cnt": 0,
         }
         
         resources = [
-                {
-                    "type": "sampler",
-                    "binding": 0,
-                    "image": self.image,
-                    "min_filter": "nearest",
-                    "mag_filter": "nearest",
-                    "wrap_x": "clamp_to_edge",
-                    "wrap_y": "clamp_to_edge",
-                },
+            {
+                "type": "sampler",
+                "binding": 0,
+                "image": self.image,
+                "min_filter": "nearest",
+                "mag_filter": "nearest",
+                "wrap_x": "clamp_to_edge",
+                "wrap_y": "clamp_to_edge",
+            },
+            {
+                'type': 'uniform_buffer',
+                'binding': 1,
+                'buffer': self.lights_pos_buffer,
+            },
         ]
+        depth = {
+            'test': True,
+            'write': False,
+            'func': 'greater',
+        },
+
+        blend = {
+            "enable": True,
+            "src_color": "src_alpha",
+            "dst_color": "one_minus_src_alpha",
+        }
         
         self.pipeline = self.ctx.pipeline(
             vertex_shader = VS,
             fragment_shader = FS,
+            includes=includes,
             layout = layout,
             resources = resources,
             uniforms = uniforms,
-            framebuffer = None,
+            # framebuffer = [self.image, self.depth],
+            # framebuffer = [self.image],
+            framebuffer = (None if IS_WEB else [self.image]),
+            # blend = blend,
+            # depth = depth,
+            # cull_face="back",
             viewport = (0, 0, self.size[0], self.size[1]),
             topology = "triangle_strip",
             vertex_count = 4,
@@ -121,14 +163,40 @@ class OpenGL_shader():
         return shader
 
 
-    def render(self, surface, dt: float = 0.0, use_shaders: bool = True):
+    def render(self, surface: pygame.Surface, lights_pos: list[vec3], scale: float, ratio: float, dt: float = 0.0, use_shaders: bool = True, blit_surface: bool = False):
         self.ctx.new_frame()
         self.image.clear()
         self.image.write(pygame.image.tobytes(surface, "RGBA", flipped=True))
+        # Fatal Python error: none_dealloc: deallocating None: bug likely caused by a refcount error in a C extension
+        # Python runtime state: initialized
+
+        # Current thread 0x00000001e9c18c00 (most recent call first):
+        #   File "/Users/hubertnafalski/Documents/Projects/pygame-ce-web-boilerplate/project/opengl_shader.py", line 172 in render
+        # self.lights_pos_buffer.write(data, offset= (i * 16))
+        for i, p in enumerate(lights_pos):
+            data = struct.pack('3f4x', p.x, p.y, p.z)
+            self.lights_pos_buffer.write(data, offset= (i * 16))
         self.timestamp += dt
         self.pipeline.uniforms["time"][:] = struct.pack("f", self.timestamp / 100.0)
+        self.pipeline.uniforms["scale"][:] = struct.pack("f", scale)
+        self.pipeline.uniforms["ratio"][:] = struct.pack("f", ratio)
+        self.pipeline.uniforms["lights_cnt"][:] = struct.pack("i", len(lights_pos))
         if use_shaders:
             self.pipeline.render()
+            # desktop rendering requires different handling in order to 
+            # record screen processed by shaders
+            if not IS_WEB:
+                # since we use framebuffer we need to blit
+                self.image.blit()
+                
+                # blit back to source surface (e.g. screen)
+                # useful only for screenshots and gameplay recording
+                # otherwise saved screen doesn't reflect shaders effect
+                # WARNING: very slow, can decrease the number of FPS by 33%     
+                if blit_surface:
+                    rendered_buffer = np.frombuffer(self.image.read(), 'u1').reshape(surface.get_width(), surface.get_height(), 4) # [:, :, :3]
+                    rendered_img = pygame.image.frombytes(rendered_buffer.tobytes(), surface.get_size(), "RGBA", flipped=True)
+                    surface.blit(rendered_img, (0,0))
         else:
             self.image.blit()
         self.ctx.end_frame()

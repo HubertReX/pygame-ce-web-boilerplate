@@ -16,6 +16,8 @@ import pyscroll
 import pyscroll.data
 from pyscroll.group import PyscrollGroup
 import menus
+from maze_generator.maze_utils import clear_maze_cache
+
 
 @dataclass
 class Camera():
@@ -48,6 +50,7 @@ class Scene(State):
         ) -> None:
         
         super().__init__(game)
+        self.game.time_elapsed = 0.0
         self.current_scene = current_scene
         self.entry_point = entry_point
         self.new_scene: Collider = None
@@ -216,7 +219,23 @@ class Scene(State):
                     ()
                 )
                 self.NPC.append(npc)
-            
+                
+            # uncomment to test path finding (A*) performance 
+            # self.player.waypoints = [
+            #     ((5) * TILE_SIZE, (6) * TILE_SIZE), 
+            #     ((5) * TILE_SIZE, (12) * TILE_SIZE),  
+            #     ((7) * TILE_SIZE, (12) * TILE_SIZE),  
+            #     ((7) * TILE_SIZE, (8) * TILE_SIZE), 
+            #     ((30) * TILE_SIZE, (8) * TILE_SIZE), 
+            #     ((30) * TILE_SIZE, (12) * TILE_SIZE),  
+            #     ((23) * TILE_SIZE, (12) * TILE_SIZE),  
+            #     ((23) * TILE_SIZE, (18) * TILE_SIZE),  
+            # ]
+            # self.player.waypoints_cnt = len(self.player.waypoints)
+            # self.player.target = vec(100,100)
+        
+        clear_maze_cache()
+        
         # create new renderer (camera)
         self.map_view = pyscroll.BufferedRenderer(
             data = pyscroll.data.TiledMapData(tileset_map),
@@ -537,7 +556,7 @@ class Scene(State):
         if INPUTS["debug"]:
             SHOW_DEBUG_INFO = not SHOW_DEBUG_INFO
             INPUTS["debug"] = False            
-
+        
         global USE_ALPHA_FILTER
         if INPUTS["alpha"]:
             USE_ALPHA_FILTER = not USE_ALPHA_FILTER
@@ -588,16 +607,15 @@ class Scene(State):
             # self.exit_state()
             # self.game.reset_inputs()
         
-        if INPUTS["help"]:
+        if INPUTS["menu"]:
             # next_scene = None #  self # Scene(self.game, "grasslands", "start")
             # AboutMenuScreen(self.game, next_scene).enter_state()
             menus.MainMenuScreen(self.game, "MainMenu").enter_state()
             # self.game.reset_inputs()
-            INPUTS["help"] = False
+            INPUTS["menu"] = False
         
         if INPUTS["screenshot"]:
-            self.game.save_screenshot()
-            INPUTS["screenshot"] = False
+            INPUTS["screenshot"] = not self.game.save_screenshot()
             
         # live reload map
         if INPUTS["reload"]:
@@ -655,14 +673,15 @@ class Scene(State):
         # alpha filter demo
         if USE_ALPHA_FILTER: 
             self.apply_alpha_filter(screen)
-        # else:
-        #     self.apply_time_of_day_filter(screen)
 
         # draw black bars at the top and bottom when during cutscene
         self.apply_cutscene_framing(screen, self.cutscene_framing)
 
         if SHOW_DEBUG_INFO:
             self.show_debug()
+        else:
+            fps = f"FPS: {self.game.fps: 6.1f} 3s: {self.game.avg_fps_3s: 6.1f} 10s: {self.game.avg_fps_10s: 6.1f}"
+            self.debug([fps])
         
         if SHOW_HELP_INFO:
             self.show_help()
@@ -684,48 +703,102 @@ class Scene(State):
         
         filter: ColorValue = [0, 0, 0, 0]
         hour: float = self.hour + (self.minute / 60)
-        
-        if hour < 6 or hour >= 20:
-            filter = NIGHT_FILTER
-        elif 6 <= hour < 9:
-            weight = (hour - 6) / (9 - 6)
-            for i in range(4):
-                filter[i] = pygame.math.lerp(NIGHT_FILTER[i], DAY_FILTER[i], weight)
-        elif 9 <= hour < 17:
-            filter = DAY_FILTER
-        elif 17 <= hour < 20:
-            weight = (hour - 17) / (20 - 17)
-            for i in range(4):
-                filter[i] = pygame.math.lerp(DAY_FILTER[i], NIGHT_FILTER[i], weight)
 
         if self.is_maze:
-            filter_surf.fill(NIGHT_FILTER)
+            filter = NIGHT_FILTER
         else:
-            filter_surf.fill(filter)
-        # f = [222, 222, 50, 120]
+            if hour < 6 or hour >= 20:
+                filter = NIGHT_FILTER
+            elif 6 <= hour < 9:
+                weight = (hour - 6) / (9 - 6)
+                for i in range(4):
+                    filter[i] = pygame.math.lerp(NIGHT_FILTER[i], DAY_FILTER[i], weight)
+            elif 9 <= hour < 17:
+                filter = DAY_FILTER
+            elif 17 <= hour < 20:
+                weight = (hour - 17) / (20 - 17)
+                for i in range(4):
+                    filter[i] = pygame.math.lerp(DAY_FILTER[i], NIGHT_FILTER[i], weight)
+
+        filter_surf.fill(filter)
+        
         if filter == NIGHT_FILTER or self.is_maze:
             for npc in self.NPC + [self.player]:
                 pos = self.map_view.translate_point(npc.pos + vec(0, -8))
                 pygame.draw.circle(filter_surf, DAY_FILTER, pos, 196)
             if "intro" in self.waypoints:
-                vilage_pos = self.waypoints["intro"][0]
-                pos = self.map_view.translate_point(vilage_pos + vec(0, 0))
+                village_pos = self.waypoints["intro"][0]
+                pos = self.map_view.translate_point(village_pos + vec(0, 0))
                 pygame.draw.circle(filter_surf, DAY_FILTER, pos, 256)
                 
-                vilage_pos = self.waypoints["intro"][-1]
-                pos = self.map_view.translate_point(vilage_pos + vec(0, 0))
-                pygame.draw.circle(filter_surf, DAY_FILTER, pos, 256)
-        # rect = self.circle_gradient.get_frect(center = pos)
+        #         village_pos = self.waypoints["intro"][-1]
+        #         pos = self.map_view.translate_point(village_pos + vec(0, 0))
+        #         pygame.draw.circle(filter_surf, DAY_FILTER, pos, 256)
+
+
+        rect = self.circle_gradient.get_frect(center = pos)
         
         # light_surf = pygame.Surface(rect.size, pygame.SRCALPHA)
         # light_surf.fill(f)
         # self.circle_gradient.set_alpha(128)
         # light_surf.blit(self.circle_gradient, (0,0))
         # filter_surf.blit(self.circle_gradient, rect)
-        screen.blit(filter_surf, (0, 0))    
+        
+        # screen.blit(filter_surf, (0, 0))    
+        
         # screen.blit(self.circle_gradient, rect)    
         # screen.blit(light_surf, rect)    
             
+
+    def get_lights(self) -> tuple[list[vec3], float]:
+        # return list of light source coordinates with sizes and day/night ratio as float in range [0.0, 1.0] (0.0 ==> day)
+        light_sources: list[vec3] = []
+        ratio: float = 0.0
+        
+        # indoors it's always day except mazes
+        # no light sources
+        if not self.outdoor and not self.is_maze:
+            ratio = 0.0
+        else:
+            # in maze it's always night
+            if self.is_maze:
+                ratio = 1.0            
+            else:
+                hour: float = self.hour + (self.minute / 60)
+                if hour < 6.00 or hour >= 20.00:
+                    ratio = 1.0
+                elif 6.00 <= hour < 9.00:
+                    ratio = 1.0 - ((hour - 6.00) / (9.00 - 6.00))
+                    # for i in range(4):
+                    #     filter[i] = pygame.math.lerp(NIGHT_FILTER[i], DAY_FILTER[i], weight)
+                elif 9.00 <= hour < 17.00:
+                    ratio = 0.0
+                elif 17.00 <= hour < 20.00:
+                    ratio = (hour - 17.00) / (20.00 - 17.00)
+                    # for i in range(4):
+                    #     filter[i] = pygame.math.lerp(DAY_FILTER[i], NIGHT_FILTER[i], weight)
+            
+            # if it's not full day add light sources
+            if ratio > 0.0:
+                for npc in self.NPC + [self.player]:
+                    pos = self.map_view.translate_point(npc.pos + vec(0, -8))
+                    # pos_list = scene.map_view.translate_point(npc.pos + vec(0, -8))
+                    light = vec3(pos[0], HEIGHT-pos[1], 64.0)
+                    light_sources.append(light)
+                    # pygame.draw.circle(filter_surf, DAY_FILTER, pos, 196)
+                if "intro" in self.waypoints:
+                    village_pos = self.waypoints["intro"][0]
+                    pos = self.map_view.translate_point(village_pos + vec(0, 0))
+                    light = vec3(pos[0], HEIGHT - pos[1], 64.0)
+                    light_sources.append(light)
+
+                    village_pos = self.waypoints["intro"][-1]
+                    pos = self.map_view.translate_point(village_pos + vec(0, 0))
+                    light = vec3(pos[0], HEIGHT - pos[1], 64.0)
+                    light_sources.append(light)
+                    # pygame.draw.circle(filter_surf, DAY_FILTER, pos, 256)
+                
+        return (light_sources, ratio)
 
     #MARK: apply_alpha_filter
     def apply_alpha_filter(self, screen: pygame.Surface):
@@ -760,68 +833,68 @@ class Scene(State):
 
     #MARK: show_debug
     def show_debug(self):
-            # prepare shader info
-            shader_index = SHADERS_NAMES.index(self.game.shader.shader_name)
-            if shader_index < 0:
-                shader_index = 0
-            if USE_SHADERS:
-                shader_name = SHADERS_NAMES[shader_index]
-            else:
-                shader_name = "n/a"
-            
-            # prepare debug messages displayed in upper left corner
-            msgs = [
-                f"FPS: {self.game.clock.get_fps(): 6.1f} Shader: {shader_name}",
-                f"Eye: x:{self.camera.target.x:6.2f} y:{self.camera.target.y:6.2f}",
-                f"Time: {self.hour}:{self.minute:02}",
-                # f"vel: {self.player.vel.x: 6.1f} {self.player.vel.y: 6.1f}",
-                f"x  : {self.player.pos.x: 3.0f}   y : {self.player.pos.y: 3.0f}",
-                f"g x:  {self.player.tileset_coord.x: 3.0f} g y : {self.player.tileset_coord.y: 3.0f}",
-                # f"up_vel: {self.player.up_vel: 3.1f} up_acc{self.player.up_acc: 3.1f}",
-                f"t x:  {self.player.target.x: 3.0f} t y : {self.player.target.y: 3.0f}",
-                # f"offset: {self.player.jumping_offset: 6.1f}",
-                # f"col: {self.player.rect.collidelist(self.walls):06.02f}",
-                # f"bored={self.player.state.enter_time: 5.1f} time_elapsed={self.game.time_elapsed: 5.1f}",
-            ]
-            self.debug(msgs)
-            
-            # display npc (and players) debug messages
-            for npc in self.NPC + [self.player]:
-                # prepare text displayed under NPC
-                texts = [
-                    npc.name,
-                    f"px={npc.pos.x // 1:3} y={(npc.pos.y - 4) // 1:3}",
-                    f"gx={npc.tileset_coord.x:3} y={npc.tileset_coord.y:3}",
-                    f"s ={npc.state} j={npc.is_flying}",
-                    f"wc={npc.waypoints_cnt} wn={npc.current_waypoint_no}",
-                    f"tx={npc.get_tileset_coord(npc.target).x:3} y={npc.get_tileset_coord(npc.target).y:3}",
-                ]
-                # draw lines connecting waypoints
-                if npc.waypoints_cnt > 0:
-                    curr_wp = npc.waypoints[npc.current_waypoint_no]
-                    # add current waypoint as text under NPC
-                    texts.append(f"cw={npc.get_tileset_coord(curr_wp).x:3} {npc.get_tileset_coord(curr_wp).y:3}")
-                    prev_point = (npc.pos.x, npc.pos.y - 4)
-                    for point in list(npc.waypoints)[npc.current_waypoint_no:]:
-                        from_p = self.map_view.translate_point(vec(prev_point[0], prev_point[1]))
-                        to_p = self.map_view.translate_point(vec(point[0], point[1]))
-                        pygame.draw.line(self.game.canvas, (0,0,128, 32), from_p, to_p, width=2)
-                        prev_point = point
-                
-                pos = self.map_view.translate_point(npc.pos)
-                self.game.render_texts(texts, pos, font_size=FONT_SIZE_MEDIUM, centred=True)
-                
-                # render red square indicating hitbox
-                rect = self.map_view.translate_rect(npc.feet)
-                pygame.draw.rect(self.game.canvas, "red", rect, width=2)
-                
-            # draw walls (colliders)
-            for y, row in enumerate(self.path_finding_grid):
-                for x, tile in enumerate(row):
-                    if tile > 0:
-                        rect_w = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
-                        rect_s = self.map_view.translate_rect(rect_w)
-                        img = pygame.Surface(rect_s.size, pygame.SRCALPHA)
-                        pygame.draw.rect(img, (0,0,200,64), img.get_rect())
-                        self.game.canvas.blit(img, rect_s)
+        # prepare shader info
+        shader_index = SHADERS_NAMES.index(self.game.shader.shader_name)
+        if shader_index < 0:
+            shader_index = 0
+        if USE_SHADERS:
+            shader_name = SHADERS_NAMES[shader_index]
+        else:
+            shader_name = "n/a"
         
+        # prepare debug messages displayed in upper left corner
+        msgs = [
+            f"FPS: {self.game.fps: 6.1f} Shader: {shader_name}",
+            # f"Eye: x:{self.camera.target.x:6.2f} y:{self.camera.target.y:6.2f}",
+            f"Time: {self.hour}:{self.minute:02}",
+            # f"vel: {self.player.vel.x: 6.1f} {self.player.vel.y: 6.1f}",
+            # f"x  : {self.player.pos.x: 3.0f}   y : {self.player.pos.y: 3.0f}",
+            # f"g x:  {self.player.tileset_coord.x: 3.0f} g y : {self.player.tileset_coord.y: 3.0f}",
+            # f"up_vel: {self.player.up_vel: 3.1f} up_acc{self.player.up_acc: 3.1f}",
+            # f"t x:  {self.player.target.x: 3.0f} t y : {self.player.target.y: 3.0f}",
+            # f"offset: {self.player.jumping_offset: 6.1f}",
+            # f"col: {self.player.rect.collidelist(self.walls):06.02f}",
+            # f"bored={self.player.state.enter_time: 5.1f} time_elapsed={self.game.time_elapsed: 5.1f}",
+        ]
+        self.debug(msgs)
+        
+        # display npc (and players) debug messages
+        for npc in self.NPC + [self.player]:
+            # prepare text displayed under NPC
+            texts = [
+                npc.name,
+                f"px={npc.pos.x // 1:3} y={(npc.pos.y - 4) // 1:3}",
+                # f"gx={npc.tileset_coord.x:3} y={npc.tileset_coord.y:3}",
+                # f"s ={npc.state} j={npc.is_flying}",
+                # f"wc={npc.waypoints_cnt} wn={npc.current_waypoint_no}",
+                # f"tx={npc.get_tileset_coord(npc.target).x:3} y={npc.get_tileset_coord(npc.target).y:3}",
+            ]
+            # draw lines connecting waypoints
+            if npc.waypoints_cnt > 0:
+                curr_wp = npc.waypoints[npc.current_waypoint_no]
+                # add current waypoint as text under NPC
+                texts.append(f"cw={npc.get_tileset_coord(curr_wp).x:3} {npc.get_tileset_coord(curr_wp).y:3}")
+                prev_point = (npc.pos.x, npc.pos.y - 4)
+                for point in list(npc.waypoints)[npc.current_waypoint_no:]:
+                    from_p = self.map_view.translate_point(vec(prev_point[0], prev_point[1]))
+                    to_p = self.map_view.translate_point(vec(point[0], point[1]))
+                    pygame.draw.line(self.game.canvas, (0,0,128, 32), from_p, to_p, width=2)
+                    prev_point = point
+            
+            pos = self.map_view.translate_point(npc.pos)
+            self.game.render_texts(texts, pos, font_size=FONT_SIZE_MEDIUM, centred=True)
+            
+            # render red square indicating hitbox
+            rect = self.map_view.translate_rect(npc.feet)
+            pygame.draw.rect(self.game.canvas, "red", rect, width=2)
+            
+        # # draw walls (colliders)
+        # for y, row in enumerate(self.path_finding_grid):
+        #     for x, tile in enumerate(row):
+        #         if tile > 0:
+        #             rect_w = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+        #             rect_s = self.map_view.translate_rect(rect_w)
+        #             img = pygame.Surface(rect_s.size, pygame.SRCALPHA)
+        #             pygame.draw.rect(img, (0,0,200,64), img.get_rect())
+        #             self.game.canvas.blit(img, rect_s)
+    

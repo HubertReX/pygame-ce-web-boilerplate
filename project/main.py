@@ -8,6 +8,7 @@
 # requires-python = ">=3.11"
 #
 # dependencies = [
+#  "numpy",
 #  "pytmx",
 #  "pyscroll",
 #  "functools",
@@ -18,6 +19,11 @@
 #  "pathlib",
 # ]
 # ///
+import random
+import numpy as np
+seed = 107 # 101 0017 # 106 0021 # 107 0030 no left down
+random.seed(seed)
+np.random.seed(seed)
 
 import asyncio
 from game import Game

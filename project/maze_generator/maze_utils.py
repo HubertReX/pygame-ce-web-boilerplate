@@ -1,9 +1,9 @@
 import random
 import pytmx
 from pygame.math import Vector2 as vec
-# from project.settings import TILE_SIZE
+from functools import wraps
+import time
 from .maze import Maze
-
 from functools import partial
 from rich import inspect, pretty, print
 from rich import traceback
@@ -35,12 +35,63 @@ TILE_SIZE = 16
 
 import heapq
 
-def heuristic(point, goal):
-    # Manhattan distance heuristic
-    return abs(point[0] - goal[0]) + abs(point[1] - goal[1])
+
+_CACHE = {}
+_sum: float = 0.0
+_cnt: int = 0
+
+def timeit(func):
+    
+    @wraps(func)
+    def timeit_wrapper(*args, **kwargs):
+        global _sum, _cnt
+        
+        start_time = time.perf_counter()
+        result = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        total_time = end_time - start_time
+        # func.add_execute_time(total_time)
+        _cnt += 1
+        _sum += total_time
+        el = float(kwargs["fps"][-4:])
+        if el <= 10.00:
+            print(f'{func.__name__} {str(kwargs["start"]):8} {str(kwargs["goal"]):8} duration:\t{total_time:.5f}\tAvg_time:\t{_sum / _cnt:.4f}\tcnt:\t{_cnt}\tCache_size:\t{len(_CACHE)}\t{kwargs["fps"]}'.replace(".", ","))
+        return result
+    return timeit_wrapper
+
+
+# @timeit
+def a_star_cached(grid, start, goal, fps):
+    global _CACHE#, _sum, _cnt
+            
+    key = (start, goal) # create_key(start, goal)
+    
+    if key not in _CACHE:
+        res = a_star(grid, start, goal)
+        _CACHE[key] = res
+        for i, wp in enumerate(res):
+            new_key = (wp, goal)
+            # if new_key not in _CACHE:
+            _CACHE[new_key] = res[i:]
+    #     fps += "\t[red]miss[/]"
+    # else:
+    #     fps += "\t[green]hit[/]"
+    return _CACHE[key]
+
+def clear_maze_cache():
+    # del _CACHE
+    global _CACHE, _sum, _cnt
+    print(f"Cache size was: {len(_CACHE)} {_sum=:.4f} {_cnt=}")
+    _CACHE = {}
+    _sum = 0.0
+    _cnt = 0
 
 # def is_diagonal(p)
 def a_star(grid, start, goal):
+    def heuristic(point, goal):
+        # Manhattan distance heuristic
+        return abs(point[0] - goal[0]) + abs(point[1] - goal[1])
+
     # https://panda-man.medium.com/a-pathfinding-algorithm-efficiently-navigating-the-maze-of-possibilities-8bb16f9cecbd
     open_set = []
 
@@ -63,7 +114,7 @@ def a_star(grid, start, goal):
             return path
         
         # 8 dir
-        for d in [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, -1), (-1, 1),]:
+        for d in ((0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, -1), (-1, 1),):
         
         # 4 dir
         # for d in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
