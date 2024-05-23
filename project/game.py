@@ -37,6 +37,7 @@ traceback.install(show_locals=True, width=150)
 # os.environ["SDL_WINDOWS_DPI_AWARENESS"] = "permonitorv2"
 
 
+#######################################################################################################################
 class Game:
     # MARK: Game
     def __init__(self) -> None:
@@ -117,7 +118,8 @@ class Game:
         if USE_SOD:
             self.init_SOD()
 
-    def loading_screen(self):
+    ###################################################################################################################
+    def show_loading_screen(self) -> None:
         self.screen.fill(BG_COLOR)
         self.render_text(
             "Loading...",
@@ -130,7 +132,8 @@ class Game:
         self.shader.render(self.screen, [], 1.0, -1.0, 0.01, True)
         pygame.display.flip()
 
-    def init_SOD(self):
+    ###################################################################################################################
+    def init_SOD(self) -> None:
         # frequency, reaction speed and oscillation
         f = 0.01
         # zeta, damping factor
@@ -143,6 +146,7 @@ class Game:
 
         self.SOD = SecondOrderDynamics(f, z, r, x0=pos)
 
+    ###################################################################################################################
     def render_panel(self, rect: pygame.Rect, color: ColorValue, surface: pygame.Surface = None) -> None:
         # MARK: render
         """
@@ -152,9 +156,6 @@ class Game:
             rect (pygame.Rect): Size and position of panel
             color (ColorValue): color to fill in the panel (with alpha)
             surface (pygame.Surface): surface to blit on. Defaults to None
-
-        Returns:
-            None
         """
         if not surface:
             surface = self.canvas
@@ -163,6 +164,7 @@ class Game:
         pygame.draw.rect(surf, color, surf.get_rect())
         surface.blit(surf, rect)
 
+    ###################################################################################################################
     def render_texts(
             self,
             texts:     list[str],
@@ -194,6 +196,7 @@ class Game:
             new_pos = [pos[0], pos[1] + line_no * font_size * TEXT_ROW_SPACING]
             self.render_text(text, new_pos, color, bg_color, shadow, font_size, centred, surface)
 
+    ###################################################################################################################
     def render_text(
             self,
             text:      str,
@@ -205,7 +208,6 @@ class Game:
             centred:   bool = False,
             surface:   pygame.Surface = None
     ) -> None:
-
         """
         Blit line of text on `surface` or on `game.canvas` if `surface` is not provided
 
@@ -228,7 +230,7 @@ class Game:
             selected_font = self.fonts[font_size]
 
         surf: pygame.surface.Surface = selected_font.render(text, False, color)
-        rect: pygame.Rect = surf.get_rect(center = pos) if centred else surf.get_rect(topleft = pos)
+        rect: pygame.Rect = surf.get_rect(center=pos) if centred else surf.get_rect(topleft=pos)
 
         # alpha blend semitransparent rect in background 8 pixels bigger than rect
         # works well for single line of text
@@ -249,7 +251,8 @@ class Game:
 
         surface.blit(surf, rect)
 
-    def custom_cursor(self, screen: pygame.Surface):
+    ###################################################################################################################
+    def custom_cursor(self, screen: pygame.Surface) -> None:
         """
         blit custom cursor in mouse current position if USE_CUSTOM_MOUSE_CURSOR is enabled
         """
@@ -274,22 +277,35 @@ class Game:
         else:
             screen.blit(self.cursor_img, cursor_rect.center)
 
-    def get_images(self, path: str):
+    ###################################################################################################################
+    def get_images(self, path: str) -> list[pygame.Surface]:
+        """
+        Gets a list of images from the specified path.
+
+        Args:
+            path (str): The directory path to load the images from.
+            *: Additional keyword arguments, currently ignored.
+
+        Returns:
+            list[pygame.Surface]: A list of pygame.Surface objects representing the loaded images.
+        """
         images = []
         for file in os.listdir(path):
             full_path = os.path.join(path, file)
             # img = pygame.image.load(full_path).convert_alpha()
             img = pygame.image.load(full_path)
             images.append(img)
+
         return images
 
-    def get_animations(self, path: str) -> dict[str, Any]:
+    ###################################################################################################################
+    def get_animations(self, path: str) -> dict[str, list[str]]:
         """
         read sprite animations from given folder
 
         :param path: folder containing folders with animations names that contain frames as separate files
         :type path: str
-        :return: dictionary with animation name (subfolder) as keys
+        :return: dictionary with animation name (subfolder) as keys and empty list as value
         """
         animations = {}
         for file in os.listdir(path):
@@ -297,6 +313,7 @@ class Game:
                 animations.update({file: []})
         return animations
 
+    ###################################################################################################################
     def save_screenshot(self) -> bool:
         """
         save current screen to SCREENSHOT_FOLDER as PNG with timestamp in name
@@ -322,9 +339,20 @@ class Game:
             return False
         # self.reset_inputs()
 
-    def register_custom_event(self, custom_event_id: int, handle_function: callable):
+    ###################################################################################################################
+    def register_custom_event(self, custom_event_id: int, handle_function: callable) -> None:
+        """
+        Registers a custom event with a specific ID and associates it with a handler function.
+
+        Args:
+            custom_event_id (int): A unique integer identifier for the custom event.
+            handle_function (callable): A function that will be called when the custom event is triggered.
+
+        """
+
         self.custom_events[custom_event_id] = handle_function
 
+    ###################################################################################################################
     def get_inputs(self) -> list[pygame.event.EventType]:
         # MARK: get_inputs
         events = pygame.event.get()
@@ -421,11 +449,13 @@ class Game:
 
         return events
 
-    def reset_inputs(self):
+    ###################################################################################################################
+    def reset_inputs(self) -> None:
         for key in ACTIONS.keys():
             INPUTS[key] = False
 
-    def save_recordings(self, dt):
+    ###################################################################################################################
+    def save_recordings(self, dt: float) -> None:
         if not IS_WEB:
             # first stop if there is ongoing recording
             if self.recorder.running_thread is not None:
@@ -456,12 +486,39 @@ class Game:
             # save all recordings with default file naming (recording_{N}.mp4)
             # self.recorder.save_recordings("mp4", SCREENSHOTS_DIR)
 
-    def prepare_recording(self):
+    ###################################################################################################################
+    def prepare_recording(self) -> None:
         if not IS_WEB:
             # encoder is determined by recording file extension (see save_recordings below)
             self.recorder = ScreenRecorder(RECORDING_FPS, compress=0)
             self.recordings_names = []
 
+    ###################################################################################################################
+    def show_pause_message(self) -> None:
+        self.render_text(
+            "PAUSED",
+                        (WIDTH * SCALE // 2, HEIGHT * SCALE // 2),
+            font_size=FONT_SIZE_LARGE,
+            centred=True,
+            bg_color=PANEL_BG_COLOR
+        )
+
+    ###################################################################################################################
+    def postprocessing(self, dt: float) -> None:
+        # shaders are used for postprocessing special effects
+        # the whole Surface is used as texture on rect that fills to a full screen
+        if hasattr(self.states[-1], "player"):
+            scene = self.states[-1]
+            positions, ratio = scene.get_lights()
+            scale = scene.map_view.zoom
+        else:
+            positions = [vec3(0.0, 0.0, 0.0)]
+            ratio: float = -1.0
+            scale = 1.0
+
+        self.shader.render(self.screen, positions, scale, ratio, dt, USE_SHADERS, blit_surface=self.save_frame)
+
+    ###################################################################################################################
     async def loop(self):
         # MARK: loop
         self.prepare_recording()
@@ -492,41 +549,18 @@ class Game:
                 self.custom_cursor(self.canvas)
 
                 if self.is_paused:
-                    self.render_text(
-                        "PAUSED",
-                        (WIDTH * SCALE // 2, HEIGHT * SCALE // 2),
-                        font_size=FONT_SIZE_LARGE,
-                        centred=True,
-                        bg_color=PANEL_BG_COLOR
-                    )
+                    self.show_pause_message()
 
                 # than scale and copy on final Surface (game.screen)
                 if SCALE != 1:
                     self.screen.blit(pygame.transform.scale_by(self.canvas, SCALE), (0, 0))
                 else:
                     self.screen.blit(self.canvas, (0, 0))
-                # shaders are used for postprocessing special effects
-                # the whole Surface is used as texture on rect that fills to a full screen
 
-                if hasattr(self.states[-1], "player"):
-                    scene = self.states[-1]
-                    positions, ratio = scene.get_lights()
-                    scale = scene.map_view.zoom
-                else:
-                    positions = [vec3(0.0, 0.0, 0.0)]
-                    ratio: float = -1.0
-                    scale = 1.0
-
-                self.shader.render(self.screen, positions, scale, ratio, dt, USE_SHADERS, blit_surface=self.save_frame)
-
-                # if hasattr(self.states[-1], "player"):
-                #     scene = self.states[-1]
-                #     scene.show_debug()
-                #     self.screen.blit(self.canvas, (0,0))
+                self.postprocessing(dt)
 
                 pygame.display.flip()
                 await asyncio.sleep(0)
         finally:
-
             self.save_recordings(dt)
             pygame.quit()

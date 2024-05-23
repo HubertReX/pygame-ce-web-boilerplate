@@ -5,3 +5,9 @@ pyperclip==1.8.2
 pyscroll==2.31
 PyTMX==3.32
 typing_extensions==4.10.0
+zengl==2.4.1
+zengl-extras==0.5.0
+rich>=13.7.1
+numpy>=1.26.4
+pygame-screen-record>=0.1.1
+pydantic>=2.7.1

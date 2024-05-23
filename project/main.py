@@ -21,16 +21,18 @@
 # ///
 import random
 import numpy as np
-seed = 107 # 101 0017 # 106 0021 # 107 0030 no left down
+import asyncio
+from game import Game
+# 101 0017 # 106 0021 # 107 0030 no left down
+seed = 107
 random.seed(seed)
 np.random.seed(seed)
 
-import asyncio
-from game import Game
 
 def main():
-    game = Game()    
+    game = Game()
     asyncio.run(game.loop())
+
 
 if __name__ == "__main__":
     main()

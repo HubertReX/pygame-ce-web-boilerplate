@@ -20,11 +20,8 @@ ANIMATION_FINISHED = 3
 PY2 = sys.version_info[0] == 2
 string_types = None
 text_type = None
-if PY2:
-    string_types = basestring
-    text_type = unicode
-else:
-    string_types = text_type = str
+
+string_types = text_type = str
 
 
 def is_number(value):
@@ -49,13 +46,15 @@ def remove_animations_of(target, group):
     :returns: list of animations that were removed
     """
     animations = [ani for ani in group.sprites() if isinstance(ani, Animation)]
-    to_remove = [ani for ani in animations
-                 if target in [i[0] for i in ani.targets]]
+    to_remove = [
+        ani for ani in animations
+        if target in [i[0] for i in ani.targets]]
     group.remove(*to_remove)
     return to_remove
 
-##########################################################################################################################
-#MARK: AnimBase
+
+#######################################################################################################################
+# MARK: AnimBase
 class AnimBase(pygame.sprite.Sprite):
     _valid_schedules = []
 
@@ -83,7 +82,7 @@ class AnimBase(pygame.sprite.Sprite):
         """
         if DEBUG:
             print(self._name, "schedule called")
-        
+
         if when is None:
             when = self._valid_schedules[0]
 
@@ -96,7 +95,7 @@ class AnimBase(pygame.sprite.Sprite):
     def _execute_callbacks(self, when):
         if DEBUG and when != "on update":
             print(self._name, "execute_callbacks", when)
-            
+
         try:
             callbacks = self._callbacks[when]
         except KeyError:
@@ -104,8 +103,9 @@ class AnimBase(pygame.sprite.Sprite):
         else:
             [cb() for cb in callbacks]
 
-##########################################################################################################################
-#MARK: Task
+
+#######################################################################################################################
+# MARK: Task
 class Task(AnimBase):
     """ Execute functions at a later time and optionally loop it
 
@@ -152,9 +152,9 @@ class Task(AnimBase):
 
         When chaining tasks, do not add the chained tasks to a group.
     """
-    _valid_schedules = ("on interval", "on finish", "on abort") # , "on start"
+    _valid_schedules = ("on interval", "on finish", "on abort")
 
-    def __init__(self, callback, interval=0, times=1, _name: str="task", _description: str="n/a"):
+    def __init__(self, callback, interval=0, times=1, _name: str = "task", _description: str = "n/a"):
         if not callable(callback):
             raise ValueError
 
@@ -169,7 +169,7 @@ class Task(AnimBase):
         self._state = ANIMATION_RUNNING
         self._name = _name
         self._description = _description
-        
+
         self.schedule(callback)
 
     def chain(self, *others):
@@ -187,7 +187,7 @@ class Task(AnimBase):
             if not isinstance(task, Task):
                 raise TypeError
             self._chain.append(task)
-            
+
         # self._execute_callbacks("on start")
         return others
 
@@ -239,14 +239,15 @@ class Task(AnimBase):
         self._chain = None
         # Added by HN
         self.kill()
-        
+
     def _execute_chain(self):
         groups = self.groups()
         for task in self._chain:
             task.add(*groups)
 
-##########################################################################################################################
-#MARK: Animation 
+
+#######################################################################################################################
+# MARK: Animation
 class Animation(AnimBase):
     """ Change numeric values over time
 
@@ -317,7 +318,7 @@ class Animation(AnimBase):
     def __init__(self, *targets, **kwargs):
         super(Animation, self).__init__()
         self._targets = list()
-        self._pre_targets = list()      #  used when there is a delay
+        self._pre_targets = list()
         self._delay = kwargs.get("delay", 0)
         self._state = ANIMATION_NOT_STARTED
         self._round_values = kwargs.get("round_values", False)
@@ -339,7 +340,7 @@ class Animation(AnimBase):
 
         if targets:
             self.start(*targets)
-            
+
         # self._execute_callbacks("on start")
 
     @property
@@ -477,11 +478,11 @@ class Animation(AnimBase):
                     self._set_value(target, name, b)
 
         self._execute_callbacks("on update")
-        
+
         self._state = ANIMATION_FINISHED
         self._targets = None
         self.kill()
-        
+
         self._execute_callbacks("on finish")
 
     def abort(self):
@@ -499,7 +500,7 @@ class Animation(AnimBase):
         """
         # if DEBUG:
         #     print(self._name, "on abort")
-        
+
         # if self._state is not ANIMATION_RUNNING:
         #     raise RuntimeError
 
@@ -519,8 +520,8 @@ class Animation(AnimBase):
         """
         if DEBUG:
             print(self._name, "start called")
-        
-        # TODO: weakref the targets
+
+        # TO DO: weakref the targets
         if self._state is not ANIMATION_NOT_STARTED:
             raise RuntimeError
 
@@ -529,36 +530,46 @@ class Animation(AnimBase):
 
         if self._delay == 0:
             self._gather_initial_values()
-            
-        
+
         self._execute_callbacks("on start")
-            
-##########################################################################################################################
-#MARK: sum_delays
+
+
+#######################################################################################################################
+# MARK: sum_delays
 def sum_delays(cutscene_def: dict[str, Any], step_name: str) -> int:
     delay: float = 0.0
-    
+
     for step in cutscene_def["steps"]:
         if step["name"] == step_name:
             delay += step["duration"]
-            step_name = step["from"] 
+            step_name = step["from"]
             break
-    
+
     if step_name != "<root>":
         delay += sum_delays(cutscene_def, step_name)
-    
+
     return delay
-    
-##########################################################################################################################
-#MARK: create_subtask
-def create_subtask(target: Callable, args: dict[str, Any], interval:int, times:int, _name:str, _description:str, group: pygame.sprite.Group) -> Task:
-    
+
+
+#######################################################################################################################
+# MARK: create_subtask
+def create_subtask(
+    target: Callable,
+    args: dict[str, Any],
+    interval: int,
+    times: int,
+    _name: str,
+    _description: str,
+    group: pygame.sprite.Group
+) -> Task:
+
     t = Task(partial(target, **args), interval=interval, times=times, _name=_name, _description=_description)
     group.add(t)
     return t
-    
-##########################################################################################################################
-#MARK: animator
+
+
+#######################################################################################################################
+# MARK: animator
 def animator(cutscene_def: dict[str, Any], group: pygame.sprite.Group) -> Animation:
     animations: dict[str, Animation] = {}
     first_step_name = cutscene_def["steps"][0]["name"]
@@ -566,32 +577,60 @@ def animator(cutscene_def: dict[str, Any], group: pygame.sprite.Group) -> Animat
         # print(step["name"], "create")
         if step["type"] == "animation":
             # create animation step
-            anim = Animation(**step["args"], duration=step["duration"], transition=step.get("transition", "linear"), round_values=step.get("round_values", False), _name=step["name"], _description=step["description"])
+            anim = Animation(
+                **step["args"],
+                duration=step["duration"],
+                transition=step.get("transition", "linear"),
+                round_values=step.get("round_values", False),
+                _name=step["name"],
+                _description=step["description"]
+            )
         else:
             if step["from"] != "<root>":
                 # calculate sum of delays (durations) of previous steps all the way to the start ("<root>")
                 delay = sum_delays(cutscene_def, step["from"]) * 1.0
                 # print(f"{delay=}")
                 # create subtask and add it to group
-                subtask = partial(create_subtask, step["target"], args=step["args"], interval=step["interval"] * 1.0, times=step["times"], _name=step["name"], _description=step["description"], group=group)
+                subtask = partial(
+                    create_subtask,
+                    step["target"],
+                    args=step["args"],
+                    interval=step["interval"] * 1.0,
+                    times=step["times"],
+                    _name=step["name"],
+                    _description=step["description"],
+                    group=group
+                )
                 # create delaying task so the subtask starts afters finishing "from" step
-                anim = Task(subtask, interval=delay, times=1, _name=f'{step["name"]}_delay', _description="dummy task to delay start")
+                anim = Task(
+                    subtask,
+                    interval=delay,
+                    times=1,
+                    _name=f'{step["name"]}_delay',
+                    _description="dummy task to delay start"
+                )
             else:
                 # no need to create subtask and delay it
-                anim = Task(partial(step["target"], **step["args"]), interval=step["interval"] * 1.0, times=step["times"], _name=step["name"], _description=step["description"])
-        
+                anim = Task(
+                    partial(step["target"], **step["args"]),
+                    interval=step["interval"] * 1.0,
+                    times=step["times"],
+                    _name=step["name"],
+                    _description=step["description"]
+                )
+
         # add to dict so it's easy to find by name
         animations[step["name"]] = anim
-        
+
         if step["name"] != first_step_name:
             if step["type"] == "animation":
                 # chain/schedule from previous (can be further away in pase) step
                 # on finish == chain
-                # on start  == start at the same time as previous step            
+                # on start  == start at the same time as previous step
                 animations[step["from"]].schedule(partial(anim.start, step["target"]), step["trigger"])
             # else:
             #     animations[step["from"]].schedule(anim)
-        
+
         # add each animation step to Sprite Group
         group.add(anim)
     # start first animation

@@ -660,7 +660,7 @@ class ColorInputManager(AbstractWidgetManager, ABC):
         :param title: Title of the color input
         :param color_type: Type of the color input
         :param color_id: ID of the color input
-        :param default: Default value to display, if RGB type it must be a tuple ``(r, g, b)``, if HEX must be a string ``"#XXXXXX"``
+        :param default: Default value to display, if RGB type it must be a tuple ``(r, g, b)``, if HEX must be a string ``"#xxxxxx"``
         :param hex_format: Hex format string mode
         :param input_separator: Divisor between RGB channels, not valid in HEX format
         :param input_underline: Underline character
