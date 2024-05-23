@@ -6,13 +6,10 @@ from pygame.math import Vector2 as vec
 from maze_generator.maze_utils import a_star, a_star_cached
 from config_model.config import AttitudeEnum, Character
 from settings import (
-    ACTIONS, ANIMATION_SPEED, BG_COLOR, CHARACTERS_DIR, CIRCLE_GRADIENT, CUTSCENE_BG_COLOR,
-    DAY_FILTER, FONT_SIZE_MEDIUM, GAME_TIME_SPEED,
-    HEIGHT, INITIAL_HOUR, MAPS_DIR, MAZE_DIR,
-    NIGHT_FILTER, PANEL_BG_COLOR, PARTICLES, PUSHED_TIME, RECALCULATE_PATH_DISTANCE,
-    SHADERS_NAMES, SPRITE_SHEET_DEFINITION, STUNNED_COLOR, STUNNED_TIME, TEXT_ROW_SPACING, TILE_SIZE, USE_SHADERS,
-    WAYPOINTS_LINE_COLOR, WIDTH, ZOOM_LEVEL,
-    ColorValue, Point, load_image
+    ANIMATION_SPEED, CHARACTERS_DIR,
+    HEIGHT, PUSHED_TIME, RECALCULATE_PATH_DISTANCE,
+    SPRITE_SHEET_DEFINITION, STUNNED_COLOR, STUNNED_TIME, TILE_SIZE,
+    Point, INPUTS
 )
 import game
 import scene
@@ -106,9 +103,11 @@ class NPC(pygame.sprite.Sprite):
         self.state: npc_state.NPC_State = npc_state.Idle()
         self.state.enter_time = self.scene.game.time_elapsed
 
+    ###################################################################################################################
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.name})"
 
+    ###################################################################################################################
     def get_tileset_coord(self, pos: vec | None = None) -> Point:
         """
         map position in world coordinates to tileset grid
@@ -119,6 +118,7 @@ class NPC(pygame.sprite.Sprite):
         # shift up by 4 pixels since perceived location is different than actual Sprite position on screen
         return Point(int(pos.x // TILE_SIZE), int((pos.y - 4) // TILE_SIZE))
 
+    ###################################################################################################################
     def import_sprite_sheet(self, path: str):
         """
         Load sprite sheet and cut it into animation names and frames using SPRITE_SHEET_DEFINITION dict.
@@ -159,6 +159,7 @@ class NPC(pygame.sprite.Sprite):
                 if direction not in key:
                     self.animations[f"{key}_{direction}"] = self.animations[key]
 
+    ###################################################################################################################
     def import_image(self, path: str):
         """
         old implementation used with separate img per frame (e.g. monochrome_ninja)
@@ -178,6 +179,7 @@ class NPC(pygame.sprite.Sprite):
                     self.animations[f"{animation}_right"].append(converted)
                     self.animations[f"{animation}_left"].append(pygame.transform.flip(converted, True, False))
 
+    ###################################################################################################################
     # MAR: animate
     def animate(self, state, fps: float, loop=True):
         self.frame_index += fps
@@ -195,6 +197,7 @@ class NPC(pygame.sprite.Sprite):
             red_filter.fill(STUNNED_COLOR)
             self.image.blit(red_filter, (0, 0))
 
+    ###################################################################################################################
     def get_direction_360(self) -> str:
         angle = self.vel.angle_to(vec(0, 1))
         angle = (angle + 360) % 360
@@ -208,6 +211,7 @@ class NPC(pygame.sprite.Sprite):
         else:
             return "down"
 
+    ###################################################################################################################
     def get_direction_horizontal(self) -> str:
         angle = self.vel.angle_to(vec(0, 1))
         angle = (angle + 360) % 360
@@ -217,6 +221,7 @@ class NPC(pygame.sprite.Sprite):
         else:
             return "left"
 
+    ###################################################################################################################
     # MAR: movement
     def movement(self):
         if self.is_stunned:
@@ -237,6 +242,7 @@ class NPC(pygame.sprite.Sprite):
 
         self.follow_waypoints()
 
+    ###################################################################################################################
     def follow_waypoints(self):
         if self.waypoints_cnt > 0:
             npc_pos = self.pos
@@ -264,6 +270,7 @@ class NPC(pygame.sprite.Sprite):
             self.acc.x = direction.x
             self.acc.y = direction.y
 
+    ###################################################################################################################
     def find_path(self):
         start = (self.tileset_coord.y, self.tileset_coord.x)
         target = self.get_tileset_coord(self.target)
@@ -301,12 +308,14 @@ class NPC(pygame.sprite.Sprite):
             self.acc = vec(0, 0)
             self.vel = vec(0, 0)
 
+    ###################################################################################################################
     def jump(self):
         self.is_jumping = True
         self.up_acc = self.up_force
         # self.up_vel = 50
         self.jumping_offset = 1
 
+    ###################################################################################################################
     # MAR: physics
     def physics(self, dt: float):
         if self.is_stunned:
@@ -360,18 +369,21 @@ class NPC(pygame.sprite.Sprite):
 
         self.adjust_rect()
 
+    ###################################################################################################################
     def change_state(self):
         new_state = self.state.enter_state(self)
         if new_state:
             new_state.enter_time = self.scene.game.time_elapsed
             self.state = new_state
 
+    ###################################################################################################################
     def check_scene_exit(self):
         for exit in self.scene.exit_sprites:
             if self.feet.colliderect(exit.rect):
                 self.die()
                 # TODO NPC goes to another map
 
+    ###################################################################################################################
     def die(self):
         self.scene.NPC = [npc for npc in self.scene.NPC if not npc == self]
         self.shadow.kill()
@@ -382,10 +394,12 @@ class NPC(pygame.sprite.Sprite):
             splash_screen.SplashScreen(self.game, "GAME OVER").enter_state()
         self.kill()
 
+    ###################################################################################################################
     def update(self, dt: float):
         self.state.update(dt, self)
         self.change_state()
 
+    ###################################################################################################################
     def slide(self, colliders) -> None:
         move_vec = self.pos - self.prev_pos
         # can't move by full vector,
@@ -411,6 +425,7 @@ class NPC(pygame.sprite.Sprite):
         # slide is not possible, block movement
         self.move_back()
 
+    ###################################################################################################################
     # MAR: process_custom_event
     def process_custom_event(self, **kwargs):
         # print(self.model.name, kwargs)
@@ -427,6 +442,7 @@ class NPC(pygame.sprite.Sprite):
         else:
             print("unknown action", self.model.name, kwargs)
 
+    ###################################################################################################################
     # MAR: encounter
     def encounter(self, oponent: "NPC"):
         if oponent.model.attitude == AttitudeEnum.enemy.value:
@@ -481,10 +497,12 @@ class NPC(pygame.sprite.Sprite):
             self.health_bar.set_bar(self.model.health / self.model.max_health, self.game)
             oponent.health_bar.set_bar(oponent.model.health / oponent.model.max_health, self.game)
 
+    ###################################################################################################################
     def set_event_timer(self, npc: "NPC", action: NPCEventActionEnum, interval: int, repeat: int) -> None:
         event = pygame.event.Event(npc.custom_event_id, action=action.value)
         pygame.time.set_timer(event, interval, repeat)
 
+    ###################################################################################################################
     def move_back(self) -> None:
         """
         If called after an update, the sprite can move back
@@ -495,6 +513,7 @@ class NPC(pygame.sprite.Sprite):
 
         self.adjust_rect()
 
+    ###################################################################################################################
     def adjust_rect(self):
         self.tileset_coord = self.get_tileset_coord()
         # display sprite n pixels above position so the shadow doesn't stick out from the bottom
@@ -507,6 +526,7 @@ class NPC(pygame.sprite.Sprite):
         # + vec(0, -TILE_SIZE - 4)
         self.health_bar.rect.midtop = self.pos
 
+    ###################################################################################################################
     def debug(self, msgs: list[str]):
         if scene.SHOW_DEBUG_INFO:
             for i, msg in enumerate(msgs):
@@ -532,6 +552,7 @@ class Player(NPC):
         self.speed_walk *= 1.2
         self.speed = self.speed_run
 
+    ###################################################################################################################
     def movement(self):
         global INPUTS
 
@@ -592,6 +613,7 @@ class Player(NPC):
             if self.target == vec(0, 0):
                 self.acc.y = 0
 
+    ###################################################################################################################
     def check_scene_exit(self):
         for exit in self.scene.exit_sprites:
             if self.feet.colliderect(exit.rect):

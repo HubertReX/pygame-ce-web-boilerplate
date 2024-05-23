@@ -1,3 +1,4 @@
+import heapq
 import random
 import pytmx
 from pygame.math import Vector2 as vec
@@ -23,7 +24,7 @@ SUBTILE_ROWS_OFFSET = SUBTILE_ROWS + SUBTILE_ROWS_SEP
 EMPTY_CELL = 0
 BACKGROUND_CELL = 0
 BACKGROUND_DECORS_IDS = [12, 24]
-STAIRS_CELL = 33 #332
+STAIRS_CELL = 33  # 332
 
 WALLS_DECORS_IDS = [28, 29, 19,]
 SPECIAL_WALLS_IDS = [65, 74, 82, 63, 73, 124,]
@@ -33,19 +34,18 @@ MARGIN = 3
 
 TILE_SIZE = 16
 
-import heapq
-
 
 _CACHE = {}
 _sum: float = 0.0
 _cnt: int = 0
 
+
 def timeit(func):
-    
+
     @wraps(func)
     def timeit_wrapper(*args, **kwargs):
         global _sum, _cnt
-        
+
         start_time = time.perf_counter()
         result = func(*args, **kwargs)
         end_time = time.perf_counter()
@@ -53,19 +53,21 @@ def timeit(func):
         # func.add_execute_time(total_time)
         _cnt += 1
         _sum += total_time
-        el = float(kwargs["fps"][-4:])
-        if el <= 10.00:
-            print(f'{func.__name__} {str(kwargs["start"]):8} {str(kwargs["goal"]):8} duration:\t{total_time:.5f}\tAvg_time:\t{_sum / _cnt:.4f}\tcnt:\t{_cnt}\tCache_size:\t{len(_CACHE)}\t{kwargs["fps"]}'.replace(".", ","))
+        # el = float(kwargs["fps"][-4:])
+        # if el <= 10.00:
+        #     print(f'{func.__name__} {str(kwargs["start"]):8}
+        # {str(kwargs["goal"]):8} duration:\t{total_time:.5f}\tAvg_time:\t{
+        #           _sum / _cnt:.4f}\tcnt:\t{_cnt}\tCache_size:\t{len(_CACHE)}\t{kwargs["fps"]}'.replace(".", ","))
         return result
     return timeit_wrapper
 
 
 # @timeit
 def a_star_cached(grid, start, goal, fps):
-    global _CACHE#, _sum, _cnt
-            
-    key = (start, goal) # create_key(start, goal)
-    
+    global _CACHE  # , _sum, _cnt
+
+    key = (start, goal)  # create_key(start, goal)
+
     if key not in _CACHE:
         res = a_star(grid, start, goal)
         _CACHE[key] = res
@@ -78,6 +80,7 @@ def a_star_cached(grid, start, goal, fps):
     #     fps += "\t[green]hit[/]"
     return _CACHE[key]
 
+
 def clear_maze_cache():
     # del _CACHE
     global _CACHE, _sum, _cnt
@@ -87,6 +90,8 @@ def clear_maze_cache():
     _cnt = 0
 
 # def is_diagonal(p)
+
+
 def a_star(grid, start, goal):
     def heuristic(point, goal):
         # Manhattan distance heuristic
@@ -99,10 +104,10 @@ def a_star(grid, start, goal):
     heapq.heappush(open_set, (0, start))
     came_from = {}
     g_score = {start: 0}
-    
+
     while open_set:
         _, current = heapq.heappop(open_set)
-        
+
         if current == goal:
             # Reconstruct the path and return
             path = []
@@ -112,12 +117,12 @@ def a_star(grid, start, goal):
             path.append(start)
             path.reverse()
             return path
-        
+
         # 8 dir
         for d in ((0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, -1), (-1, 1),):
-        
-        # 4 dir
-        # for d in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+
+            # 4 dir
+            # for d in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
             dx, dy = d
             is_diagonal = (abs(dx) + abs(dy)) > 1
             x, y = current[0] + dx, current[1] + dy
@@ -127,10 +132,11 @@ def a_star(grid, start, goal):
             # tentative_g = g_score[current] + 1
             # orthogonal move cost == 100 diagonal move cost == sqrt(2)
             # node with negative value indicates custom step cost (e.g. water = -200)
-            tentative_g = g_score[current] + abs(grid[x][y]) if not is_diagonal else g_score[current] + int(abs(-grid[x][y] * 1.41))
+            tentative_g = g_score[current] + \
+                abs(grid[x][y]) if not is_diagonal else g_score[current] + int(abs(-grid[x][y] * 1.41))
             # move permitted if new node is not blocked
             # move_permitted = grid[x][y] == 0
-            
+
             # all orthogonal moves are permitted, orthogonal move permitted only if not passing blocked corner
             # e.g. move from S to G (X == blocked)
             #    |   |
@@ -138,28 +144,29 @@ def a_star(grid, start, goal):
             #    | S |       Permitted
             # ---+---+---
             #  G |   |
-            
+
             #    |   |
             # ---+---+---
             #    | S |       Not permitted
             # ---+---+---
             #  G | X |
-            
+
             #    |   |
             # ---+---+---
             #  X | S |       Not permitted
             # ---+---+---
             #  G |   |
-            
+
             if 0 <= x < len(grid) and 0 <= y < len(grid[0]):
-                move_permitted = grid[x][y] <= 0 if not is_diagonal else (grid[x][y] <= 0 and grid[x][current[1]] <= 0 and grid[current[0]][y] <= 0)
+                move_permitted = grid[x][y] <= 0 if not is_diagonal else (
+                    grid[x][y] <= 0 and grid[x][current[1]] <= 0 and grid[current[0]][y] <= 0)
                 if move_permitted:
                     if neighbor not in g_score or tentative_g < g_score[neighbor]:
                         g_score[neighbor] = tentative_g
                         f_score = tentative_g + heuristic(neighbor, goal) * 100
                         heapq.heappush(open_set, (f_score, neighbor))
                         came_from[neighbor] = current
-    
+
     return None  # No path found
 
 # # Example usage:
@@ -176,6 +183,7 @@ def a_star(grid, start, goal):
 # path = a_star(grid, start, goal)
 # print("Shortest path:", path)
 
+
 def copy_subtile(new_data: list[list[int]], x: int, y: int, subtile_sheet: list[list[int]]):
     rows = len(subtile_sheet)
     cols = len(subtile_sheet[0])
@@ -185,7 +193,7 @@ def copy_subtile(new_data: list[list[int]], x: int, y: int, subtile_sheet: list[
 
 
 def get_gid_from_tmx_id(tmx_id: int, tileset_map: pytmx.TiledMap) -> int:
-    gid_tuple = tileset_map.gidmap[tmx_id+1]
+    gid_tuple = tileset_map.gidmap[tmx_id + 1]
     if len(gid_tuple):
         return gid_tuple[0][0]
     else:
@@ -195,7 +203,7 @@ def get_gid_from_tmx_id(tmx_id: int, tileset_map: pytmx.TiledMap) -> int:
 
 
 def make_layer(layer, maze: Maze, new_cols_cnt: int, new_rows_cnt: int):
-    
+
     subtile_sheet_dict = {}
     for y in range(SUBTILE_GRID_ROWS):
         for x in range(SUBTILE_GRID_COLS):
@@ -203,15 +211,16 @@ def make_layer(layer, maze: Maze, new_cols_cnt: int, new_rows_cnt: int):
             for subtile_y in range(SUBTILE_ROWS):
                 subtile_row = []
                 for subtile_x in range(SUBTILE_COLS):
-                    subtile_row.append(layer.data[subtile_y + (y * SUBTILE_ROWS_OFFSET)][subtile_x + (x * SUBTILE_COLS_OFFSET)])
+                    subtile_row.append(layer.data[subtile_y + (y * SUBTILE_ROWS_OFFSET)]
+                                       [subtile_x + (x * SUBTILE_COLS_OFFSET)])
                 subtile.append(subtile_row)
-            
+
             subtile_sheet_dict[x + (y * SUBTILE_GRID_ROWS)] = subtile
 
     new_data = [[EMPTY_CELL for _ in range(new_cols_cnt)] for _ in range(new_rows_cnt)]
 
     for y, row in enumerate(maze.cell_rows):
-            
+
         for x, cell in enumerate(row):
             # find the correct image for the cell
             # index = 0
@@ -219,48 +228,48 @@ def make_layer(layer, maze: Maze, new_cols_cnt: int, new_rows_cnt: int):
             # for dir in range(4):
             #     if allowed_moves[dir]:
             #         index += 2**dir
-                    
+
             tile_index = subtile_sheet_dict[cell.image_index]
             copy_subtile(new_data, (x * SUBTILE_COLS) + MARGIN, (y * SUBTILE_ROWS) + MARGIN, tile_index)
-    
+
     layer.data = new_data
     # layer.width = new_cols_cnt
     # layer.height = new_rows_cnt
-    
-    
+
+
 def build_tileset_map_from_maze(clean_tileset_map: pytmx.TiledMap, maze: Maze, to_map: str, entry_point: str) -> None:
-    
+
     # if "entry_points" in self.layers:
     #     for obj in tileset_map.get_layer_by_name("entry_points"):
     #         self.entry_points[obj.name] = vec(obj.x, obj.y)
     ENTRY_X_OFFSET = 3
     ENTRY_Y_OFFSET = 3
-    
+
     RETURN_X_OFFSET = 3
     RETURN_Y_OFFSET = 1
-    
+
     WALLS_DECORS_OFFSET_RANGE_X = 2
     WALLS_DECORS_OFFSET_RANGE_Y = 1
-    
+
     entry_obj = clean_tileset_map.get_object_by_name("Entry")
     entry_obj.x = (MARGIN + ENTRY_X_OFFSET) * TILE_SIZE + (TILE_SIZE // 2)
     entry_obj.y = (MARGIN + ENTRY_Y_OFFSET) * TILE_SIZE
-    
+
     return_obj = clean_tileset_map.get_object_by_name("Return")
     return_obj.x = (MARGIN + RETURN_X_OFFSET) * TILE_SIZE
     return_obj.y = (MARGIN + RETURN_Y_OFFSET) * TILE_SIZE
-    return_obj.to_map = to_map # "Village"
-    return_obj.entry_point = entry_point # "Stairs"
-    
+    return_obj.to_map = to_map  # "Village"
+    return_obj.entry_point = entry_point  # "Stairs"
+
     new_cols_cnt = (maze.num_cols * SUBTILE_COLS) + (2 * MARGIN)
     new_rows_cnt = (maze.num_rows * SUBTILE_ROWS) + (2 * MARGIN)
-    
+
     for layer_name in ["walls", "floor"]:
         layer = clean_tileset_map.get_layer_by_name(layer_name)
         make_layer(layer, maze, new_cols_cnt, new_rows_cnt)
         if layer_name == "walls":
             # SPECIAL_WALLS_IDS
-            
+
             special_walls_gids = [get_gid_from_tmx_id(cell_id, clean_tileset_map) for cell_id in SPECIAL_WALLS_IDS]
             # print(f"{special_walls_gids=}")
             special_walls_max = 6
@@ -270,10 +279,10 @@ def build_tileset_map_from_maze(clean_tileset_map: pytmx.TiledMap, maze: Maze, t
                 13: vec(4, 3),
                 11: vec(2, 2),
                 10: vec(2, 2),
-                9 : vec(4, 2),
-                7 : vec(3, 4),
-                6 : vec(1, 4),
-                5 : vec(4, 4),
+                9: vec(4, 2),
+                7: vec(3, 4),
+                6: vec(1, 4),
+                5: vec(4, 4),
             }
             # print(f"{clean_tileset_map.gidmap}=")
             # for cell_id in SPECIAL_WALLS_IDS:
@@ -289,8 +298,7 @@ def build_tileset_map_from_maze(clean_tileset_map: pytmx.TiledMap, maze: Maze, t
                     y = (r_y * SUBTILE_COLS) + MARGIN + int(special_walls_offsets_map[image_index].y)
                     layer.data[y][x] = tile_gid
                     special_walls_cnt += 1
-            
-        
+
     for layer in clean_tileset_map.layers:
         # print(layer.name)
         # clear and init layer size for all other layers
@@ -299,8 +307,8 @@ def build_tileset_map_from_maze(clean_tileset_map: pytmx.TiledMap, maze: Maze, t
             layer.data = new_data
         layer.width = new_cols_cnt
         layer.height = new_rows_cnt
-        
-    # background 
+
+    # background
     bg_id = get_gid_from_tmx_id(BACKGROUND_CELL, clean_tileset_map)
     # bg_data = [[bg_id for _ in range(maze.num_cols + (2 * margin))] for _ in range(maze.num_rows + (2 * margin))]
     bg_data = [[bg_id for _ in range(new_cols_cnt)] for _ in range(new_rows_cnt)]
@@ -322,8 +330,8 @@ def build_tileset_map_from_maze(clean_tileset_map: pytmx.TiledMap, maze: Maze, t
             r_x = random.randint(0, new_cols_cnt - 1)
             r_y = random.randint(new_rows_cnt - MARGIN - 1, new_rows_cnt - 1)
         bg_data[r_y][r_x] = random.choice(background_decors_gids)
-    bg_layer.data = bg_data    
-    
+    bg_layer.data = bg_data
+
     # put wall_decors_max decors randomly selected from the list of WALLS_DECORS_IDS tiles
     decors_layer = clean_tileset_map.get_layer_by_name("walls_decors")
     # print(f"{len(decors_layer.data)=}")
@@ -341,10 +349,10 @@ def build_tileset_map_from_maze(clean_tileset_map: pytmx.TiledMap, maze: Maze, t
             y = (r_y * SUBTILE_COLS) + MARGIN + WALLS_DECORS_OFFSET_RANGE_Y
             decors_layer.data[y][x] = tile_gid
             wall_decors_cnt += 1
-            
-    # place exit doors (must be last since nothing should cover them)        
+
+    # place exit doors (must be last since nothing should cover them)
     stairs_id = get_gid_from_tmx_id(STAIRS_CELL, clean_tileset_map)
     decors_layer.data[MARGIN + RETURN_Y_OFFSET][MARGIN + RETURN_X_OFFSET] = stairs_id
-    
+
     clean_tileset_map.width = new_cols_cnt
     clean_tileset_map.height = new_rows_cnt

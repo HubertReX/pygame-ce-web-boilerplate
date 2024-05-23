@@ -1,3 +1,4 @@
+import _zengl
 from pathlib import Path
 import struct
 import zengl
@@ -9,34 +10,35 @@ import numpy as np
 
 zengl.init()
 
-import _zengl
 
-
-try: 
-    CSI("test")
-except:
+try:
+    CSI("test")  # noqa: F821
+except NameError:
     def CSI(param):
         pass
 
+#######################################################################################################################
+
+
 class OpenGL_shader():
     def __init__(self, size: tuple[int, int], shader_name: str = "") -> None:
-        
+
         def compile_error_debug(shader: bytes, shader_type: int, log: bytes):
             name = {0x8B31: "Vertex Shader", 0x8B30: "Fragment Shader"}[shader_type]
-            print("="*30,name,"="*30)
+            print("=" * 30, name, "=" * 30)
             try:
 
                 log = log.rstrip(b"\x00").decode(errors="ignore")
                 shader = shader.rstrip(b"\x00").decode()
-                _, pos, msg  = log.split(": ",2)
-                c,l = map( int, pos.split(":",1) )
-                #print( l,c,msg  )
-                spacer = "" # "#" * 50
-                for ln,line in enumerate(shader.split("\n")):
-                    if ln==l:
+                _, pos, msg  = log.split(": ", 2)
+                c, error_line_no = map(int, pos.split(":", 1))
+                # print( l,c,msg  )
+                spacer = ""  # "#" * 50
+                for ln, line in enumerate(shader.split("\n")):
+                    if ln == error_line_no:
                         CSI("1;93m")
                     print(f"{str(ln).zfill(3)}: {line.rstrip()}", end="")
-                    if ln==l:
+                    if ln == error_line_no:
                         CSI("1;97m")
                         CSI("1;91m")
                         print(f" // {msg}", end=spacer)
@@ -46,7 +48,7 @@ class OpenGL_shader():
                 raise ValueError(f"{name} Error\n\n{log}")
 
             finally:
-                print("="*70)
+                print("=" * 70)
 
         self.ctx = zengl.context()
         self.timestamp: float = 0.0
@@ -58,18 +60,18 @@ class OpenGL_shader():
         # self.depth = self.ctx.image(size, 'depth24plus') # , samples=4)
 
         float_size = 16
-        floats_per_light = 3 # x, y, size
+        floats_per_light = 3  # x, y, size
         self.lights_pos_buffer = self.ctx.buffer(size=float_size * floats_per_light * MAX_LIGHTS_COUNT)
 
         self.shader_name = shader_name
         self.pipeline = None
 
-
+    ###################################################################################################################
     def create_pipeline(self, shader_name: str = ""):
         # if provided new shader_name then use it (otherwise use shader_name provided in constructor)
         if shader_name:
             self.shader_name = shader_name
-        
+
         fs_file = self.get_shader_file_name("fs")
         vs_file = self.get_shader_file_name("vs")
 
@@ -80,9 +82,9 @@ class OpenGL_shader():
 const vec2 screen_size = vec2({self.size[0]}, {self.size[1]});
 const int MAX_LIGHTS_CNT = {MAX_LIGHTS_COUNT};
         '''
-        }
-        
-        layout =[
+                    }
+
+        layout = [
             {
                 "name": "Texture",
                 "binding": 0,
@@ -92,14 +94,14 @@ const int MAX_LIGHTS_CNT = {MAX_LIGHTS_COUNT};
                 'binding': 1,
             },
         ]
-        
+
         uniforms = {
             "time": 0.0,
             "scale": 0.0,
             "ratio": 0.0,
             "lights_cnt": 0,
         }
-        
+
         resources = [
             {
                 "type": "sampler",
@@ -116,18 +118,19 @@ const int MAX_LIGHTS_CNT = {MAX_LIGHTS_COUNT};
                 'buffer': self.lights_pos_buffer,
             },
         ]
-        depth = {
-            'test': True,
-            'write': False,
-            'func': 'greater',
-        },
 
-        blend = {
-            "enable": True,
-            "src_color": "src_alpha",
-            "dst_color": "one_minus_src_alpha",
-        }
-        
+        # depth = {
+        #     'test': True,
+        #     'write': False,
+        #     'func': 'greater',
+        # },
+
+        # blend = {
+        #     "enable": True,
+        #     "src_color": "src_alpha",
+        #     "dst_color": "one_minus_src_alpha",
+        # }
+
         self.pipeline = self.ctx.pipeline(
             vertex_shader = VS,
             fragment_shader = FS,
@@ -146,24 +149,49 @@ const int MAX_LIGHTS_CNT = {MAX_LIGHTS_COUNT};
             vertex_count = 4,
             # instance_count = 7,
         )
-        
+
+    ###################################################################################################################
     def get_shader_file_name(self, prefix: str) -> Path:
         # try to get shader program specific for particular effect (shader_name)
         f_name = SHADERS_DIR / f"{prefix}_{self.shader_name}.glsl"
         # if there is no specific shader program, use default
         if not f_name.exists():
             f_name = SHADERS_DIR / f"{prefix}.glsl"
-        
+
         return f_name
-        
+
+    ###################################################################################################################
     def read_shader_from_file(self, file_name: Path):
         with open(file_name, encoding="UTF-8") as f:
             shader = "".join(f.readlines())
-            
+
         return shader
 
+    ###################################################################################################################
+    def render(
+        self,
+        surface: pygame.Surface,
+        lights_pos: list[vec3],
+        scale: float,
+        ratio: float,
+        dt: float = 0.0,
+        use_shaders: bool = True,
+        blit_surface: bool = False
+    ) -> None:
+        """
+        Add postprocessing effects to the surface using shaders with lighting.
 
-    def render(self, surface: pygame.Surface, lights_pos: list[vec3], scale: float, ratio: float, dt: float = 0.0, use_shaders: bool = True, blit_surface: bool = False):
+        Args:
+            surface (pygame.Surface): The surface to be saned to `OpenGL` as texture.
+            lights_pos (list[vec3]): A list of light positions `(x, y)` and radius `(z)`.
+            scale (float): The scale factor of the camera (`zoom`).
+            ratio (float): The day/night ration (`0.0` ==> `day`, `1.0` ==> `night`).
+            dt (float, optional): The time delta since last frame. Defaults to `0.0`.
+            use_shaders (bool, optional): Whether to use shaders or not. Defaults to `True`.
+            blit_surface (bool, optional): Whether to blit the rendered surface back to the original.
+                                            Defaults to `False`.
+
+        """
         self.ctx.new_frame()
         self.image.clear()
         self.image.write(pygame.image.tobytes(surface, "RGBA", flipped=True))
@@ -171,33 +199,36 @@ const int MAX_LIGHTS_CNT = {MAX_LIGHTS_COUNT};
         # Python runtime state: initialized
 
         # Current thread 0x00000001e9c18c00 (most recent call first):
-        #   File "/Users/hubertnafalski/Documents/Projects/pygame-ce-web-boilerplate/project/opengl_shader.py", line 172 in render
+        #   File "/Users/hubertnafalski/Documents/Projects/pygame-ce-web-boilerplate/project/opengl_shader.py",
+        # line 172 in render
         # self.lights_pos_buffer.write(data, offset= (i * 16))
-        for i, p in enumerate(lights_pos):
-            data = struct.pack('3f4x', p.x, p.y, p.z)
-            self.lights_pos_buffer.write(data, offset= (i * 16))
         self.timestamp += dt
-        self.pipeline.uniforms["time"][:] = struct.pack("f", self.timestamp / 100.0)
-        self.pipeline.uniforms["scale"][:] = struct.pack("f", scale)
-        self.pipeline.uniforms["ratio"][:] = struct.pack("f", ratio)
-        self.pipeline.uniforms["lights_cnt"][:] = struct.pack("i", len(lights_pos))
+
         if use_shaders:
+            for i, p in enumerate(lights_pos):
+                data = struct.pack('3f4x', p.x, p.y, p.z)
+                self.lights_pos_buffer.write(data, offset= (i * 16))
+            self.pipeline.uniforms["time"][:] = struct.pack("f", self.timestamp / 100.0)
+            self.pipeline.uniforms["scale"][:] = struct.pack("f", scale)
+            self.pipeline.uniforms["ratio"][:] = struct.pack("f", ratio)
+            self.pipeline.uniforms["lights_cnt"][:] = struct.pack("i", len(lights_pos))
             self.pipeline.render()
-            # desktop rendering requires different handling in order to 
+            # desktop rendering requires different handling in order to
             # record screen processed by shaders
             if not IS_WEB:
                 # since we use framebuffer we need to blit
                 self.image.blit()
-                
+
                 # blit back to source surface (e.g. screen)
                 # useful only for screenshots and gameplay recording
                 # otherwise saved screen doesn't reflect shaders effect
-                # WARNING: very slow, can decrease the number of FPS by 33%     
+                # WARNING: very slow, can decrease the number of FPS by 33%
                 if blit_surface:
-                    rendered_buffer = np.frombuffer(self.image.read(), 'u1').reshape(surface.get_width(), surface.get_height(), 4) # [:, :, :3]
-                    rendered_img = pygame.image.frombytes(rendered_buffer.tobytes(), surface.get_size(), "RGBA", flipped=True)
-                    surface.blit(rendered_img, (0,0))
+                    rendered_buffer = np.frombuffer(self.image.read(), 'u1').reshape(
+                        surface.get_width(), surface.get_height(), 4)
+                    rendered_img = pygame.image.frombytes(
+                        rendered_buffer.tobytes(), surface.get_size(), "RGBA", flipped=True)
+                    surface.blit(rendered_img, (0, 0))
         else:
             self.image.blit()
         self.ctx.end_frame()
-

@@ -1,10 +1,25 @@
 import pygame
 from config_model.config import AttitudeEnum, Character
-from settings import *
+from settings import FONT_SIZE_TINY, HUD_DIR, TILE_SIZE, load_image
 
-##########################################################################################################################
+#######################################################################################################################
+
+
 class Collider(pygame.sprite.Sprite):
-    def __init__(self, groups: list[pygame.sprite.Group], pos: list[int], size: list[int], name: str, to_map: str, entry_point: str, is_maze: bool, maze_cols: int, maze_rows: int, return_entry_point: str = ""):
+    def __init__(
+        self,
+        groups: list[pygame.sprite.Group],
+        pos: list[int],
+        size: list[int],
+        name: str,
+        to_map: str,
+        entry_point: str,
+        is_maze: bool,
+        maze_cols: int,
+        maze_rows: int,
+        return_entry_point: str = ""
+    ) -> None:
+
         super().__init__(groups)
         self.image: pygame.Surface = pygame.Surface((size))
         self.rect: pygame.FRect = self.image.get_frect(topleft = pos)
@@ -16,17 +31,21 @@ class Collider(pygame.sprite.Sprite):
         self.maze_rows = maze_rows
         self.return_entry_point = return_entry_point
 
-##########################################################################################################################
+#######################################################################################################################
+
+
 class Shadow(pygame.sprite.Sprite):
     def __init__(self, groups: list[pygame.sprite.Group], pos: list[int], size: list[int]):
         super().__init__(groups)
         self.image: pygame.Surface = pygame.Surface((size)).convert_alpha()
         self.rect: pygame.FRect = self.image.get_frect(topleft = pos)
-        self.image.fill((0,0,0,0))
+        self.image.fill((0, 0, 0, 0))
         # self.image.set_colorkey("black")
-        pygame.draw.ellipse(self.image, (0,0,0,255), self.rect)
+        pygame.draw.ellipse(self.image, (0, 0, 0, 255), self.rect)
 
-##########################################################################################################################
+#######################################################################################################################
+
+
 class HealthBar(pygame.sprite.Sprite):
     def __init__(self, model: Character, groups: list[pygame.sprite.Group], pos: list[int]):
         super().__init__(groups)
@@ -46,15 +65,14 @@ class HealthBar(pygame.sprite.Sprite):
             self.color = "green"
         else:
             self.color = "pink"
-        
-        
-    def set_bar(self, percentage: float, game):
-        self.image.fill((0,0,0,0))
-        
+
+    def set_bar(self, percentage: float, game) -> None:
+        self.image.fill((0, 0, 0, 0))
+
         # leave image fully transparent (hide labels)
         if percentage < 0.0:
             return
-        
+
         self.image.blit(self.image_full, self.rect_full.topleft)
 
         percentage = min(1.0, percentage)
@@ -64,31 +82,48 @@ class HealthBar(pygame.sprite.Sprite):
         tmp_img = self.image_empty.subsurface(rect)
 
         self.image.blit(tmp_img, (self.rect_full.left + width, 1))
-        
+
         game.render_text(
-            self.model.name, 
-            (self.rect.width // 2, 10), 
-            self.color, 
-            font_size=FONT_SIZE_TINY, 
-            shadow=True, 
-            centred=True, 
+            self.model.name,
+            (self.rect.width // 2, 10),
+            self.color,
+            font_size=FONT_SIZE_TINY,
+            shadow=True,
+            centred=True,
             surface=self.image
         )
-        
-##########################################################################################################################
+
+#######################################################################################################################
+
+
 class Object(pygame.sprite.Sprite):
-    def __init__(self, groups: list[pygame.sprite.Group], pos: list[int], z: str ="blocks", surf=pygame.Surface((TILE_SIZE, TILE_SIZE))):
+    def __init__(
+        self,
+        groups: list[pygame.sprite.Group],
+        pos: list[int],
+        z: str = "blocks",
+        surf=pygame.Surface((TILE_SIZE, TILE_SIZE))
+    ) -> None:
+
         super().__init__(groups)
-        
+
         self.image = surf
         self.rect: pygame.FRect = self.image.get_frect(topleft = pos)
-        self.hitbox: pygame.FRect = self.rect.copy().inflate(0,0)
+        self.hitbox: pygame.FRect = self.rect.copy().inflate(0, 0)
         self.z = z
-        
-##########################################################################################################################
+
+#######################################################################################################################
+
+
 class Wall(Object):
-    def __init__(self, groups: list[pygame.sprite.Group], pos: list[int], z: str ="blocks", surf=pygame.Surface((TILE_SIZE, TILE_SIZE))):
+    def __init__(
+        self,
+        groups: list[pygame.sprite.Group],
+        pos: list[int],
+        z: str = "blocks",
+        surf=pygame.Surface((TILE_SIZE, TILE_SIZE))
+    ) -> None:
+
         super().__init__(groups, pos, z, surf)
         # decrease the size of rectangle for collisions aka. hitbox
         # self.hitbox: pygame.FRect = self.rect.copy().inflate(0, -self.rect.height / 2)
-        

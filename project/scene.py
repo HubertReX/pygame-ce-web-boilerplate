@@ -15,7 +15,7 @@ from maze_generator.maze_utils import (
 from objects import Collider
 from pyscroll.group import PyscrollGroup
 from pytmx.util_pygame import load_pygame
-from state import State, vec, vec3
+from state import State
 from transition import Transition, TransitionCircle
 
 from settings import (
@@ -25,7 +25,7 @@ from settings import (
     NIGHT_FILTER, PANEL_BG_COLOR, PARTICLES,
     SHADERS_NAMES, TEXT_ROW_SPACING, USE_SHADERS,
     WAYPOINTS_LINE_COLOR, WIDTH, ZOOM_LEVEL,
-    ColorValue, load_image
+    ColorValue, load_image,  vec, vec3, INPUTS, SHOW_DEBUG_INFO, SHOW_HELP_INFO, USE_ALPHA_FILTER
 )
 
 
@@ -260,7 +260,7 @@ class Scene(State):
             # set first start position for the Player
             ep = self.entry_points[self.entry_point]
             self.player.pos = vec(ep.x, ep.y)
-            self.player.adjust_rect(32423)
+            self.player.adjust_rect()
         else:
             print("[red]no entry point found!")
             # fallback - put the player in the center of the map

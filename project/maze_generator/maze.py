@@ -1,15 +1,16 @@
 import random
-from .cell import *
+from .cell import Cell, CELL_EAST, CELL_SOUTH, CELL_WEST, CELL_NORTH
+
+#######################################################################################################################
 
 
 class Maze:
-
     def __init__(self, cols: int, rows: int):
         self.num_rows = rows
         self.num_cols = cols
 
         self.cell_rows: list[list[Cell]] = []
-        
+
         for y in range(rows):
             cells = []
             for x in range(cols):
@@ -29,26 +30,28 @@ class Maze:
                 if y < rows - 1:
                     cell.add_neighbor(CELL_SOUTH, self.cell_rows[y + 1][x])
 
-
+    ###################################################################################################################
     def get_all_cells(self, start_from_top_row: bool = False):
         if start_from_top_row:
             rows = self.cell_rows
         else:
             rows = reversed(self.cell_rows)
-            
+
         for row in rows:
             for cell in row:
                 yield cell
 
-
+    ###################################################################################################################
     def get_random_cell(self):
         x = random.randint(0, self.num_cols - 1)
         y = random.randint(0, self.num_rows - 1)
         return self.cell_rows[y][x]
 
-
+    ###################################################################################################################
     def get_number_cells(self):
         return self.num_rows * self.num_cols
-    
+
+    ###################################################################################################################
     def generate(self):
-        raise NotImplementedError("[red]error[/] This is abstract class. 'generate' method needs to be implemented in subclass.")
+        raise NotImplementedError(
+            "[red]error[/] This is abstract class. 'generate' method needs to be implemented in subclass.")
