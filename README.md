@@ -66,7 +66,7 @@ Build using:
 - separation of **key bindings** from **actions** - easy to customize in one file
 - scene **transitions** (_fade in/out_, _circle shutter close/open_)
 - build-in **screenshots** saving (in both **desktop** and **Web** modes)
-- build-in gameplay **recordings** saving (*.mp4, *.avi, *.webm, series of png files) thanks to [pygame_screen_record](https://github.com/theRealProHacker/PyGameRecorder) - only in **desktop** mode
+- build-in gameplay **recordings** saving (_.mp4,_.avi, *.webm, series of png files) thanks to [pygame_screen_record](https://github.com/theRealProHacker/PyGameRecorder) - only in **desktop** mode
 - automatic **build** and **deploy** from selected branch to **GitHub Pages** using [GitHub action](.github/workflows/pygbag.yml)
 
 ## Known bugs
@@ -74,7 +74,7 @@ Build using:
 - ✅ ~~screenshot of menu not working (showing only part of menu)~~ - `done`
 - ✅ ~~some key events are lost (action is repeated even key is not pressed in menus)~~ - `done`
 - after transition between game **Scenes**, game state is not preserved
-- ✅ ~~low performance of **A*** function - delaying of **A*** calls (no need to do it every frame)~~ - `done`
+- ✅ ~~low performance of **A**_function - delaying of **A**_ calls (no need to do it every frame)~~ - `done`
 - ✅ ~~very low performance of **color filtering** (alpha blending) on **Windows** (heavy on **CPU**), although works well on **Macbook** - to be moved into **shader**~~ - `done`
 - **pydantic** not imported properly in **WEB** (problem with **pygbag**)
 - **camera** randomly stops **following** the **Player**
@@ -128,7 +128,10 @@ Build using:
   - [Piskel](https://www.piskelapp.com/) - `free`, online
   - [Pixilart](https://www.pixilart.com/) - `free`, online
   - [Photopea](https://www.photopea.com/) - `free`, online
-  - [aseprite](https://www.aseprite.org/) - `$20` or [build](https://siytek.com/get-aseprite-for-free-on-mac/) own, `free` copy
+  - [aseprite](https://www.aseprite.org/) - `$20` or [build](https://siytek.com/get-aseprite-for-free-on-mac/) own for [MacOs](https://github.com/Chasnah7/aseprite-build-script-mac) or [Win](https://github.com/Intrivus/Aseductor), `free` copy
+    - [PixelLab](https://www.pixellab.ai/) - `free` tier, plugin for Aseprite to generate pixel art, rendered in cloud
+    - [RetroDiffusion](https://astropulse.itch.io/retrodiffusion) - `$60` plugins for Aseprite to generate pixel art using Stable Diffusion
+  - [PixelVive](https://beta.pixelvibe.com/) - `free` online asset generator
 - create **workflow** to quickly create **new assets** (_characters_, _animations_, _tiles_):
   - use **Stable Diffusion**
   - find pixelation filter and apply to images found on net (eg.: for different types of trees)

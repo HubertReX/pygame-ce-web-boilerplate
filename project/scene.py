@@ -28,6 +28,8 @@ from settings import (
     ColorValue, load_image,  vec, vec3, INPUTS, SHOW_DEBUG_INFO, SHOW_HELP_INFO, USE_ALPHA_FILTER
 )
 
+#######################################################################################################################
+
 
 @dataclass
 class Camera():
@@ -298,10 +300,12 @@ class Scene(State):
 
         self.set_camera_on_player()
 
+    ###################################################################################################################
     def __repr__(self) -> str:
         # MARK: __repr__
         return f"{__class__.__name__}: {self.current_scene}"
 
+    ###################################################################################################################
     def start_intro(self):
         # MARK: start_intro
 
@@ -480,16 +484,19 @@ class Scene(State):
         }
         animator(self.intro_cutscene, self.animations)
 
+    ###################################################################################################################
     def set_camera_on_player(self):
         self.camera.target = self.player.pos
         self.camera.zoom = ZOOM_LEVEL
         # TODO fix zoom
         # self.map_view.zoom = self.camera.zoom
 
+    ###################################################################################################################
     def set_camera_free(self):
         # release reference to self.player.pos by coping only value
         self.camera.target = self.camera.target.copy()
 
+    ###################################################################################################################
     def go_to_scene(self):
         self.transition.exiting = False
         new_scene = Scene(
@@ -503,6 +510,7 @@ class Scene(State):
         self.exit_state(quit=False)
         new_scene.enter_state()
 
+    ###################################################################################################################
     def update(self, dt: float, events: list[pygame.event.EventType]):
         # MARK: update
         global INPUTS
@@ -642,6 +650,7 @@ class Scene(State):
             # self.map_view.zoom = self.camera.zoom
             INPUTS["zoom_out"] = False
 
+    ###################################################################################################################
     def show_help(self):
         # list actions to be displayed by the property "show"
         show_actions = [action for action in ACTIONS.values() if action["show"]]
@@ -662,8 +671,9 @@ class Scene(State):
                 shadow = True
             )
 
-    # MARK: draw
+    ###################################################################################################################
     def draw(self, screen: pygame.Surface, dt: float):
+        # MARK: draw
         # center map on player
         # self.group.center(self.player.pos)
         # self.map_view.center(self.camera.target)
@@ -700,8 +710,9 @@ class Scene(State):
                 centred = True
             )
 
-    # MARK: apply_time_of_day_filter
+    ###################################################################################################################
     def apply_time_of_day_filter(self, screen: pygame.Surface):
+        # MARK: apply_time_of_day_filter
         # do not apply night and day filter indoors
         if not self.outdoor and not self.is_maze:
             return
@@ -755,6 +766,7 @@ class Scene(State):
         # screen.blit(self.circle_gradient, rect)
         # screen.blit(light_surf, rect)
 
+    ###################################################################################################################
     def get_lights(self) -> tuple[list[vec3], float]:
         # return list of light source coordinates with sizes and day/night ratio as float
         # in range [0.0, 1.0] (0.0 ==> day)
@@ -806,8 +818,9 @@ class Scene(State):
 
         return (light_sources, ratio)
 
-    # MARK: apply_alpha_filter
+    ###################################################################################################################
     def apply_alpha_filter(self, screen: pygame.Surface):
+        # MARK: apply_alpha_filter
         h = HEIGHT // 2
         self.game.render_text("Day",   (0, h - FONT_SIZE_MEDIUM * TEXT_ROW_SPACING))
         self.game.render_text("Night", (0, h +                    TEXT_ROW_SPACING))
@@ -821,8 +834,9 @@ class Scene(State):
         half_screen.fill(NIGHT_FILTER)
         screen.blit(half_screen, (0, h))
 
-    # MARK: apply_cutscene_framing
+    ###################################################################################################################
     def apply_cutscene_framing(self, screen: pygame.Surface, percentage: float):
+        # MARK: apply_cutscene_framing
         if percentage <= 0.001:
             return
 
@@ -836,6 +850,7 @@ class Scene(State):
         # blit a black rect at the bottom of the screen
         screen.blit(half_screen, (0, HEIGHT - framing_offset))
 
+    ###################################################################################################################
     def show_debug(self):
         # MARK: show_debug
         # prepare shader info

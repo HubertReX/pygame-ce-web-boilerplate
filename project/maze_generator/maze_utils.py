@@ -39,6 +39,8 @@ _CACHE = {}
 _sum: float = 0.0
 _cnt: int = 0
 
+#######################################################################################################################
+
 
 def timeit(func):
 
@@ -61,8 +63,10 @@ def timeit(func):
         return result
     return timeit_wrapper
 
-
+#######################################################################################################################
 # @timeit
+
+
 def a_star_cached(grid, start, goal, fps):
     global _CACHE  # , _sum, _cnt
 
@@ -91,8 +95,11 @@ def clear_maze_cache():
 
 # def is_diagonal(p)
 
+#######################################################################################################################
+
 
 def a_star(grid, start, goal):
+    # MARK: A*
     def heuristic(point, goal):
         # Manhattan distance heuristic
         return abs(point[0] - goal[0]) + abs(point[1] - goal[1])
@@ -183,6 +190,8 @@ def a_star(grid, start, goal):
 # path = a_star(grid, start, goal)
 # print("Shortest path:", path)
 
+#######################################################################################################################
+
 
 def copy_subtile(new_data: list[list[int]], x: int, y: int, subtile_sheet: list[list[int]]):
     rows = len(subtile_sheet)
@@ -190,6 +199,8 @@ def copy_subtile(new_data: list[list[int]], x: int, y: int, subtile_sheet: list[
     for row in range(rows):
         for col in range(cols):
             new_data[y + row][x + col] = subtile_sheet[row][col]
+
+#######################################################################################################################
 
 
 def get_gid_from_tmx_id(tmx_id: int, tileset_map: pytmx.TiledMap) -> int:
@@ -200,6 +211,8 @@ def get_gid_from_tmx_id(tmx_id: int, tileset_map: pytmx.TiledMap) -> int:
         print(f"[red]ERROR[/] GID for {tmx_id} not found!")
         # print(tileset_map.gidmap)
         return 0
+
+#######################################################################################################################
 
 
 def make_layer(layer, maze: Maze, new_cols_cnt: int, new_rows_cnt: int):
@@ -236,8 +249,42 @@ def make_layer(layer, maze: Maze, new_cols_cnt: int, new_rows_cnt: int):
     # layer.width = new_cols_cnt
     # layer.height = new_rows_cnt
 
+#######################################################################################################################
+
 
 def build_tileset_map_from_maze(clean_tileset_map: pytmx.TiledMap, maze: Maze, to_map: str, entry_point: str) -> None:
+    """
+    Builds a final maze map from a maze grid.
+
+    Args:
+        clean_tileset_map (pytmx.TiledMap): The tileset map with maze template. Will be overwritten with the final map.
+        maze (Maze): The input maze grid to convert.
+        to_map (str): The exit to map (name of map file, eg. `Village.tmx)`.
+        entry_point (str): The starting point in the exit map (name of object on exits layer).
+
+    Description:
+        maze template consist of a 4 by 4 grid. Each cell is a patch of tiles
+        representing one of maze elements.
+        * -> wall
+        . -> floor
+
+        #..#  #..#  #..#  #..#
+        ....  ...#  #...  #..#
+        #..#  #..#  #..#  #..#
+
+        #..#  #..#  #..#  #..#
+        ....  ...#  #...  #..#
+        ####  ####  ####  ####
+
+        ####  ####  ####  ####
+        ....  ...#  #...  #..#
+        #..#  #..#  #..#  #..#
+
+        ####  ####  ####
+        ....  ...#  #...
+        ####  ####  ####
+
+    """
 
     # if "entry_points" in self.layers:
     #     for obj in tileset_map.get_layer_by_name("entry_points"):
