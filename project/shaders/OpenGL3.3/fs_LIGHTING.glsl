@@ -60,7 +60,7 @@ vec3 RGBtoHSV(in vec3 RGB)
     float H   = abs((Q.w - Q.y) / (6.0 * C + Epsilon) + Q.z);
     vec3  HCV = vec3(H, C, Q.x);
     float S   = HCV.y / (HCV.z + Epsilon);
-    
+
     return vec3(HCV.x, S, HCV.z);
 }
 
@@ -78,17 +78,18 @@ vec3 screen(vec2 vertex) {
     if (abs(vertex.x) > 1.001 || abs(vertex.y) > 1.001) {
         return vec3(0.0);
     }
-    
+
     vec2 uv = vertex * 0.5 + 0.5;
     vec3 color = texture(Texture, uv).rgb;
-    
+
     return color;
 }
 
 float get_distance(vec3 pos) {
     vec2 uv = vertex * 0.5 + 0.5;
     uv = screen_size * uv;
-    float TILE = 12.0 * scale;
+    // piselate
+    float TILE = 4.0 * scale;
     uv = floor(uv / TILE) * TILE;
     return distance(uv, pos.xy);
 }
@@ -104,9 +105,9 @@ void main() {
     float dist = 999999.0;
     float size = 100.0;
     vec3 color = screen(vertex);
-    
+
     vec3 col_hsv = RGBtoHSV(color.rgb);
-    
+
     // HUE
     col_hsv.x += HUE_SHIFT;
 
@@ -115,7 +116,7 @@ void main() {
 
     const float night = 0.1;
     const float day = 1.0;
-    
+
     // LIGHTNESS
     if (ratio > 0.0) {
         float new_night = mix(day, night,  ratio);
@@ -129,7 +130,7 @@ void main() {
             }
         }
         float max_distance = size + (sin(time * PI * 400.0) * 5.0); // 256.0;
-        float min_distance = max_distance - (24.0 * scale); // 150.0;
+        float min_distance = max_distance - (16.0 * scale); // 150.0;
 
         // dist = floor(dist / 16.0) * 16.0;
 
@@ -143,7 +144,7 @@ void main() {
             col_hsv.z *= (mix(day, new_night,clamp(( dist - min_distance) / (max_distance - min_distance), 0.0, 1.0)));
 
             // col_hsv.z *= mix(day, night, ratio);
-        } 
+        }
         // day color
         if (dist < min_distance) {
             col_hsv.z *= day;
@@ -155,6 +156,6 @@ void main() {
     col_hsv = clamp(col_hsv, 0.0, 1.0);
     color = HSVtoRGB(col_hsv.rgb);
 
-    
+
     out_color = vec4(color, 1.0);
 }
