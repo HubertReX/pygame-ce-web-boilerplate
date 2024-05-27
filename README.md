@@ -66,7 +66,7 @@ Build using:
 - separation of **key bindings** from **actions** - easy to customize in one file
 - scene **transitions** (_fade in/out_, _circle shutter close/open_)
 - build-in **screenshots** saving (in both **desktop** and **Web** modes)
-- build-in gameplay **recordings** saving (_.mp4,_.avi, *.webm, series of png files) thanks to [pygame_screen_record](https://github.com/theRealProHacker/PyGameRecorder) - only in **desktop** mode
+- build-in gameplay **recordings** saving (_.mp4,_.avi, *.webm, series of png files) thanks to [pygame_screen_record](https://github.com/theRealProHacker/PyGameRecorder) (patched "ScreenRecorder.py", line 570) - only in **desktop** mode
 - automatic **build** and **deploy** from selected branch to **GitHub Pages** using [GitHub action](.github/workflows/pygbag.yml)
 
 ## Known bugs
