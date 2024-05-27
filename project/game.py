@@ -105,7 +105,7 @@ class Game:
         start_state = scene.Scene(self, "Village", "start")
         # start_state = scene.Scene(self, "Maze", "start", is_maze=True, maze_cols=10, maze_rows=5)
         start_state.enter_state()
-        self.states.append(start_state)
+        # self.states.append(start_state)
         # self.states.append(start_state)
 
         if USE_CUSTOM_MOUSE_CURSOR:
@@ -510,7 +510,7 @@ class Game:
         if hasattr(self.states[-1], "player"):
             scene = self.states[-1]
             positions, ratio = scene.get_lights()
-            scale = scene.map_view.zoom
+            scale = scene.camera.zoom
         else:
             positions = [vec3(0.0, 0.0, 0.0)]
             ratio: float = -1.0
@@ -532,6 +532,8 @@ class Game:
             while self.is_running:
                 # delta time since last frame in milliseconds
                 dt = self.clock.tick(FPS_CAP) / 1000
+                # slow down
+                # dt *= 0.5
                 self.fps = self.clock.get_fps()
                 self.fps_data_3s.append(self.fps)
                 self.fps_data_10s.append(self.fps)

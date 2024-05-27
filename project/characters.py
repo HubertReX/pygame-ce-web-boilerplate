@@ -26,7 +26,7 @@ class NPCEventActionEnum(StrEnum):
 
 
 ###################################################################################################################
-# MAR: NPC
+# MARK: NPC
 class NPC(pygame.sprite.Sprite):
     def __init__(
             self,
@@ -45,8 +45,8 @@ class NPC(pygame.sprite.Sprite):
         self.scene = scene
         self.name = name
         self.model: Character = game.conf.characters[name]
-        self.shadow = Shadow(shadow_group, (0, 0), [TILE_SIZE - 2, 6])
-        self.health_bar = HealthBar(self.model, label_group, pos)
+        self.shadow = self.create_shadow(shadow_group)
+        self.health_bar = self.create_health_bar(label_group, pos)
         # hide health bar at start (negative value makes it transparent)
         self.health_bar.set_bar(-1.0, self.game)
 
@@ -102,6 +102,14 @@ class NPC(pygame.sprite.Sprite):
         # actual NPC state, mainly to determine type of animation and speed
         self.state: npc_state.NPC_State = npc_state.Idle()
         self.state.enter_time = self.scene.game.time_elapsed
+
+    ###################################################################################################################
+    def create_health_bar(self, label_group: pygame.sprite.Group, pos: list[int]):
+        return HealthBar(self.model, label_group, pos)
+
+    ###################################################################################################################
+    def create_shadow(self, shadow_group: pygame.sprite.Group):
+        return Shadow(shadow_group, (0, 0), [TILE_SIZE - 2, 6])
 
     ###################################################################################################################
     def __repr__(self) -> str:
@@ -180,9 +188,9 @@ class NPC(pygame.sprite.Sprite):
                     self.animations[f"{animation}_left"].append(pygame.transform.flip(converted, True, False))
 
     ###################################################################################################################
-    # MAR: animate
-    def animate(self, state, fps: float, loop=True):
-        self.frame_index += fps
+    # MARK: animate
+    def animate(self, state, dt: float, loop=True):
+        self.frame_index += dt
 
         if self.frame_index >= len(self.animations[state]) - 1:
             if loop:
@@ -222,7 +230,7 @@ class NPC(pygame.sprite.Sprite):
             return "left"
 
     ###################################################################################################################
-    # MAR: movement
+    # MARK: movement
     def movement(self):
         if self.is_stunned:
             return
@@ -316,7 +324,7 @@ class NPC(pygame.sprite.Sprite):
         self.jumping_offset = 1
 
     ###################################################################################################################
-    # MAR: physics
+    # MARK: physics
     def physics(self, dt: float):
         if self.is_stunned:
             return
@@ -426,7 +434,7 @@ class NPC(pygame.sprite.Sprite):
         self.move_back()
 
     ###################################################################################################################
-    # MAR: process_custom_event
+    # MARK: process_custom_event
     def process_custom_event(self, **kwargs):
         # print(self.model.name, kwargs)
 
@@ -443,7 +451,7 @@ class NPC(pygame.sprite.Sprite):
             print("unknown action", self.model.name, kwargs)
 
     ###################################################################################################################
-    # MAR: encounter
+    # MARK: encounter
     def encounter(self, oponent: "NPC"):
         if oponent.model.attitude == AttitudeEnum.enemy.value:
             # deal damage
@@ -534,7 +542,7 @@ class NPC(pygame.sprite.Sprite):
 
 
 #######################################################################################################################
-# MAR: Player
+# MARK: Player
 class Player(NPC):
     def __init__(
             self,

@@ -21,7 +21,8 @@ class Transition():
         if self.exiting:
             self.alpha = min(255, int(self.alpha + self.fade_out_speed * dt))
             if self.alpha == 255:
-                self.scene.go_to_scene()
+                # self.scene.go_to_scene()
+                self.scene.go_to_map()
         else:
             self.alpha = max(0, self.alpha - int(self.fade_in_speed * dt))
         # self.radius = (WIDTH//2) -  (WIDTH//2) * (self.alpha/255)

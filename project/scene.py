@@ -1,3 +1,4 @@
+from copy import deepcopy
 import random
 from dataclasses import dataclass, field
 
@@ -12,9 +13,11 @@ from maze_generator.maze_utils import (
     TILE_SIZE, build_tileset_map_from_maze,
     clear_maze_cache, get_gid_from_tmx_id
 )
+from camera import Camera
 from objects import Collider
 from pyscroll.group import PyscrollGroup
 from pytmx.util_pygame import load_pygame
+from particles import ParticleSystem
 from state import State
 from transition import Transition, TransitionCircle
 
@@ -25,27 +28,8 @@ from settings import (
     NIGHT_FILTER, PANEL_BG_COLOR, PARTICLES,
     SHADERS_NAMES, TEXT_ROW_SPACING, USE_SHADERS,
     WAYPOINTS_LINE_COLOR, WIDTH, ZOOM_LEVEL,
-    ColorValue, load_image,  vec, vec3, INPUTS, SHOW_DEBUG_INFO, SHOW_HELP_INFO, USE_ALPHA_FILTER
+    ColorValue, vec, vec3, INPUTS, SHOW_DEBUG_INFO, SHOW_HELP_INFO, USE_ALPHA_FILTER
 )
-
-#######################################################################################################################
-
-
-@dataclass
-class Camera():
-    target: vec = field(default_factory=lambda: vec(0, 0))
-    _zoom: float = ZOOM_LEVEL
-    scene: "Scene" = None
-
-    @property
-    def zoom(self) -> float:
-        return self._zoom
-
-    @zoom.setter
-    def zoom(self, value: float) -> None:
-        self._zoom = value
-        if self.scene.map_view:
-            self.scene.map_view.zoom = self._zoom
 
 
 #######################################################################################################################
@@ -81,7 +65,7 @@ class Scene(State):
         self.transition = TransitionCircle(self)
 
         # moved here to avoid circular imports
-        from characters import NPC, Player
+        from characters import Player
         self.player: Player = Player(
             self.game,
             self,
@@ -106,29 +90,39 @@ class Scene(State):
         self.minute_f: float = 0.0
         # are we outdoors? shell there be night and day cycle?
         self.outdoor: bool = False
+        # self.circle_gradient: pygame.Surface = (CIRCLE_GRADIENT).convert_alpha()
 
+        self.load_map()
+
+        # self.set_camera_on_player()
+
+    ###################################################################################################################
+
+    def load_map(self) -> None:
+        # MARK: load_map
         if self.is_maze:
             # check from which scene we came here
-            if len(self.game.states) > 1:
+            if len(self.game.states) > 0:
                 self.prev_state = self.game.states[-1]
 
             # if we returned from last scene on the stack, it's actually time to exit
-            if not self.prev_state:
-                # pass
-                self.game.is_running = False
-                self.exit_state()
-                quit()
-            else:
-                # generate new maze
-                self.maze = hunt_and_kill_maze.HuntAndKillMaze(self.maze_cols, self.maze_rows)
-                self.maze.generate()
-                tileset_map = load_pygame(MAZE_DIR / "MazeTileset_clean.tmx")
-                build_tileset_map_from_maze(
-                    tileset_map,
-                    self.maze,
-                    to_map = self.prev_state.current_scene,
-                    entry_point = self.prev_state.new_scene.return_entry_point
-                )
+            # if not self.prev_state:
+            #     pass
+            # self.game.is_running = False
+            # self.exit_state()
+            # quit()
+            # else:
+            # generate new maze
+            self.maze = hunt_and_kill_maze.HuntAndKillMaze(self.maze_cols, self.maze_rows)
+            self.maze.generate()
+            tileset_map = load_pygame(MAZE_DIR / "MazeTileset_clean.tmx")
+            # combine tileset clean template with maze grid into final map
+            build_tileset_map_from_maze(
+                tileset_map,
+                self.maze,
+                to_map = self.return_scene,
+                entry_point = self.return_entry_point
+            )
         else:
             # load data from pytmx
             tileset_map = load_pygame(MAPS_DIR / f"{self.current_scene}.tmx")
@@ -139,17 +133,6 @@ class Scene(State):
             self.layers.append(layer.name)
 
         self.outdoor = tileset_map.properties.get("outdoor", False)
-        self.circle_gradient: pygame.Surface = load_image(CIRCLE_GRADIENT).convert_alpha()
-
-        # string with coma separated names of particle systems active in this map
-        map_particles = tileset_map.properties.get("particles", "").replace(" ", "").strip().lower().split(",")
-        self.particles = []
-        # init particle systems relevant for this scene
-        for particle in map_particles:
-            if particle in PARTICLES:
-                particle_class = PARTICLES[particle]
-                self.particles.append(particle_class(self.game.canvas))
-                self.game.register_custom_event(self.particles[-1].custom_event_id, self.particles[-1].add)
 
         self.walls = []
         if "walls" in self.layers:
@@ -157,11 +140,14 @@ class Scene(State):
             walls_width = walls.width
             walls_height = walls.height
             # path finding uses only grid build of tiles and not world coordinates in pixels
+            # 0   => floor (later zeros will be replaced with negative numbers representing actual cost)
+            # 100 => wall (not walkable)
             self.path_finding_grid = [[0 for _ in range(walls_width)] for _ in range(walls_height)]
 
             for x, y, surf in tileset_map.get_layer_by_name("walls").tiles():
                 rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, surf.get_width(), surf.get_height())
                 self.walls.append(rect)
+                # blocked from walking (wall)
                 self.path_finding_grid[y][x] = 100
 
         if "exits" in self.layers:
@@ -191,6 +177,8 @@ class Scene(State):
             for obj in tileset_map.get_layer_by_name("entry_points"):
                 self.entry_points[obj.name] = vec(obj.x, obj.y)
 
+        # moved here to avoid circular imports
+        from characters import NPC
         # self.notify_npc_event_id  = pygame.event.custom_type()
         self.NPC: list[NPC] = []
         # layer of invisible objects being single points determining where NPCs will spawn
@@ -273,19 +261,24 @@ class Scene(State):
         # Sprites (NPCs) are always drawn over the tiles of the layer they are on.
         self.sprites_layer = self.layers.index("sprites")
         # main SpritesGroup holding whole tiled map with all layers and NPCs
-        self.group = PyscrollGroup(map_layer = self.map_view, default_layer = self.sprites_layer)
+        self.group: PyscrollGroup = PyscrollGroup(map_layer = self.map_view, default_layer = self.sprites_layer)
 
         # add our player to the group
         self.group.add(self.shadow_sprites, layer = self.sprites_layer - 1)
         self.group.add(self.label_sprites,  layer = self.sprites_layer + 1)
-        self.group.add(self.player)
-        self.group.add(self.NPC)
+        self.group.add(self.player, layer=self.sprites_layer)
+        self.group.add(self.NPC, layer=self.sprites_layer)
 
         for x, y, surf in tileset_map.layers[0].tiles():
 
             # get step cost for all walkable tiles
-            # stored as negative number to distinguish from walls (positive numbers)
+            # 100 => road, pavement - low cost
+            # 150 => grass, dirt - moderate cost
+            # 200 => long grass, corn field - high cost
+            # 300 => water - high cost
+            # stored as negative number to distinguish from walls (positive numbers == 100)
             # this is used in A*
+            # path_finding_grid = 0 => floor
             if self.path_finding_grid[y][x] == 0:
                 # check the 'under' layers one by one - the top most cost prevails
                 tile_0_gid = tileset_map.get_tile_properties(x, y, 0)
@@ -299,6 +292,17 @@ class Scene(State):
                 self.path_finding_grid[y][x] = -step_cost
 
         self.set_camera_on_player()
+        self.group.center(self.camera.target)
+
+        # string with coma separated names of particle systems active in this map
+        map_particles = tileset_map.properties.get("particles", "").replace(" ", "").strip().lower().split(",")
+        self.particles: list[ParticleSystem] = []
+        # init particle systems relevant for this scene
+        for particle in map_particles:
+            if particle in PARTICLES:
+                particle_class = PARTICLES[particle]
+                self.particles.append(particle_class(self.game.canvas, self.group, self.camera))
+                self.game.register_custom_event(self.particles[-1].custom_event_id, self.particles[-1].add)
 
     ###################################################################################################################
     def __repr__(self) -> str:
@@ -511,6 +515,36 @@ class Scene(State):
         new_scene.enter_state()
 
     ###################################################################################################################
+    def go_to_map(self):
+        self.transition.exiting = False
+        self.return_scene = self.current_scene
+        self.return_entry_point = self.new_scene.return_entry_point
+
+        self.current_scene = self.new_scene.to_map
+        # print(f"{self.entry_point=} {self.new_scene.entry_point}")
+        self.entry_point = self.new_scene.entry_point
+        self.is_maze = self.new_scene.is_maze
+        self.maze_cols = self.new_scene.maze_cols
+        self.maze_rows = self.new_scene.maze_rows
+        self.shadow_sprites.empty()
+        self.label_sprites.empty()
+        # self.map_view.reload()
+        self.player.shadow = self.player.create_shadow(self.shadow_sprites)
+        self.player.health_bar = self.player.create_health_bar(self.label_sprites, self.player.pos)
+
+        self.load_map()
+        # new_scene = Scene(
+        #     self.game,
+        #     self.new_scene.to_map,
+        #     self.new_scene.entry_point,
+        #     self.new_scene.is_maze,
+        #     self.new_scene.maze_cols,
+        #     self.new_scene.maze_rows
+        # )
+        # self.exit_state(quit=False)
+        # new_scene.enter_state()
+
+    ###################################################################################################################
     def update(self, dt: float, events: list[pygame.event.EventType]):
         # MARK: update
         global INPUTS
@@ -634,7 +668,18 @@ class Scene(State):
 
         # live reload map
         if INPUTS["reload"]:
-            self.map_view.reload()
+            # shadow = self.player.shadow
+            self.label_sprites.empty()
+            self.draw_sprites.empty()
+            self.exit_sprites.empty()
+            self.block_sprites.empty()
+            self.shadow_sprites.empty()
+            self.group.empty()
+            # self.map_view.reload()
+            self.player.shadow = self.player.create_shadow(self.shadow_sprites)
+            self.player.health_bar = self.player.create_health_bar(self.label_sprites, self.player.pos)
+            self.load_map()
+
             INPUTS["reload"] = False
 
         # camera zoom in/out
