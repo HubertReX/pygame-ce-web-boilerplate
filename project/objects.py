@@ -1,6 +1,6 @@
 import pygame
 from config_model.config import AttitudeEnum, Character
-from settings import FONT_SIZE_TINY, HUD_DIR, TILE_SIZE, load_image
+from settings import BLACK_COLOR, FONT_SIZE_TINY, HUD_DIR, TILE_SIZE, TRANSPARENT_COLOR, load_image
 
 #######################################################################################################################
 
@@ -39,9 +39,9 @@ class Shadow(pygame.sprite.Sprite):
         super().__init__(groups)
         self.image: pygame.Surface = pygame.Surface((size)).convert_alpha()
         self.rect: pygame.FRect = self.image.get_frect(topleft = pos)
-        self.image.fill((0, 0, 0, 0))
+        self.image.fill(TRANSPARENT_COLOR)
         # self.image.set_colorkey("black")
-        pygame.draw.ellipse(self.image, (0, 0, 0, 255), self.rect)
+        pygame.draw.ellipse(self.image, BLACK_COLOR, self.rect)
 
 #######################################################################################################################
 
@@ -50,6 +50,7 @@ class HealthBar(pygame.sprite.Sprite):
     def __init__(self, model: Character, groups: list[pygame.sprite.Group], pos: list[int]):
         super().__init__(groups)
         self.image: pygame.Surface = pygame.Surface((70, 16)).convert_alpha()
+        self.image.fill(TRANSPARENT_COLOR)
         self.model = model
         self.image_full: pygame.Surface = load_image(HUD_DIR / "LifeBarMiniProgress.png").convert_alpha()
         self.image_empty: pygame.Surface = load_image(HUD_DIR / "LifeBarMiniUnder.png").convert_alpha()
@@ -66,8 +67,9 @@ class HealthBar(pygame.sprite.Sprite):
         else:
             self.color = "pink"
 
+    ###################################################################################################################
     def set_bar(self, percentage: float, game) -> None:
-        self.image.fill((0, 0, 0, 0))
+        self.image.fill(TRANSPARENT_COLOR)
 
         # leave image fully transparent (hide labels)
         if percentage < 0.0:
@@ -127,3 +129,5 @@ class Wall(Object):
         super().__init__(groups, pos, z, surf)
         # decrease the size of rectangle for collisions aka. hitbox
         # self.hitbox: pygame.FRect = self.rect.copy().inflate(0, -self.rect.height / 2)
+
+#######################################################################################################################
