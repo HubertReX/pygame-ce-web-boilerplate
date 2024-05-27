@@ -66,10 +66,13 @@ STUNNED_TIME: int = 1000
 PUSHED_TIME: int = 1000
 
 # initial game time hour
-INITIAL_HOUR = 1
+INITIAL_HOUR = 9
 # game time speed (N game hours / 1 real time second)
 GAME_TIME_SPEED = 0.25
 
+
+TRANSPARENT_COLOR = (0, 0, 0, 0)
+BLACK_COLOR = (0, 0, 0, 255)
 # background fill color
 BG_COLOR = (0, 0, 0, 0)
 # render text panel background color
