@@ -8,7 +8,7 @@
  <tileset firstgid="485" source="tilesets/Interior.tsx"/>
  <tileset firstgid="805" source="Element.tsx"/>
  <tileset firstgid="1045" source="tilesets/House.tsx"/>
- <layer id="1" name="Under0" width="14" height="15">
+ <layer id="1" name="floor" width="14" height="15">
   <data encoding="csv">
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 24,1,2,2,2,3,2147483651,1,2147483650,2147483650,2147483649,24,0,0,

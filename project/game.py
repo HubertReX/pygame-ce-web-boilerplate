@@ -8,7 +8,7 @@ import numpy as np
 import asyncio
 import os
 import sys
-from config_model.config import load_config
+
 import random
 from rich import print, traceback
 from settings import ACTIONS, BG_COLOR, CONFIG_FILE, CUTSCENE_BG_COLOR, DEFAULT_SHADER, FONT_SIZE_DEFAULT, \
@@ -16,6 +16,11 @@ from settings import ACTIONS, BG_COLOR, CONFIG_FILE, CUTSCENE_BG_COLOR, DEFAULT_
     IS_FULLSCREEN, IS_WEB, MAIN_FONT, MOUSE_CURSOR_IMG, PANEL_BG_COLOR, PROGRAM_ICON, RECORDING_FPS, SCALE, \
     SCREENSHOTS_DIR, SHADERS_NAMES, TEXT_ROW_SPACING, TILE_SIZE, USE_CUSTOM_MOUSE_CURSOR, USE_SOD, WIDTH, \
     ColorValue, vec, vec3, USE_SHADERS
+if IS_WEB:
+    from config_model.config import load_config
+else:
+    from config_model.config_pydantic import load_config
+
 import pygame
 from opengl_shader import OpenGL_shader
 

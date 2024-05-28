@@ -9,6 +9,7 @@
         "colliderect",
         "colordict",
         "colorkey",
+        "cooldown",
         "dealloc",
         "DOUBLEBUF",
         "emscripten",

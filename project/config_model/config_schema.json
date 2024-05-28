@@ -78,6 +78,75 @@
             "title": "Character",
             "type": "object"
         },
+        "Item": {
+            "properties": {
+                "name": {
+                    "description": "Unique item name",
+                    "minLength": 3,
+                    "rozen": true,
+                    "title": "Name",
+                    "type": "string"
+                },
+                "type": {
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/ItemTypeEnum"
+                        }
+                    ],
+                    "description": "Item type (e.g. weapon, tool, consumable)"
+                },
+                "value": {
+                    "default": 50,
+                    "description": "Monetary value",
+                    "minimum": 0,
+                    "title": "Value",
+                    "type": "integer"
+                },
+                "health_impact": {
+                    "default": 0,
+                    "description": "The impact on health when consumed (e.g. apple => +30, poison => -10)",
+                    "minimum": 0,
+                    "title": "Health Impact",
+                    "type": "integer"
+                },
+                "in_use": {
+                    "default": false,
+                    "description": "Whether the item is currently in use",
+                    "title": "In Use",
+                    "type": "boolean"
+                },
+                "damage": {
+                    "default": 10,
+                    "description": "The amount of damage delt (weapon only)",
+                    "minimum": 0,
+                    "title": "Damage",
+                    "type": "integer"
+                },
+                "cooldown_time": {
+                    "default": 1.0,
+                    "description": "The amount of time in seconds it takes to use the weapon again",
+                    "minimum": 0.0,
+                    "title": "Cooldown Time",
+                    "type": "number"
+                }
+            },
+            "required": [
+                "name",
+                "type"
+            ],
+            "title": "Item",
+            "type": "object"
+        },
+        "ItemTypeEnum": {
+            "enum": [
+                "weapon",
+                "key",
+                "consumable",
+                "money"
+            ],
+            "title": "ItemTypeEnum",
+            "type": "string"
+        },
         "RaceEnum": {
             "enum": [
                 "humanoid",
@@ -95,10 +164,18 @@
             },
             "title": "Characters",
             "type": "object"
+        },
+        "items": {
+            "additionalProperties": {
+                "$ref": "#/$defs/Item"
+            },
+            "title": "Items",
+            "type": "object"
         }
     },
     "required": [
-        "characters"
+        "characters",
+        "items"
     ],
     "title": "Config",
     "type": "object"

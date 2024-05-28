@@ -1,6 +1,9 @@
 import pygame
-from config_model.config import AttitudeEnum, Character
-from settings import BLACK_COLOR, FONT_SIZE_TINY, HUD_DIR, TILE_SIZE, TRANSPARENT_COLOR, load_image
+from settings import BLACK_COLOR, FONT_SIZE_TINY, HUD_DIR, TILE_SIZE, TRANSPARENT_COLOR, load_image, IS_WEB
+if IS_WEB:
+    from config_model.config import AttitudeEnum, Character, Item
+else:
+    from config_model.config_pydantic import AttitudeEnum, Character, Item
 
 #######################################################################################################################
 
@@ -103,31 +106,36 @@ class Object(pygame.sprite.Sprite):
         self,
         groups: list[pygame.sprite.Group],
         pos: list[int],
-        z: str = "blocks",
-        surf=pygame.Surface((TILE_SIZE, TILE_SIZE))
+        image=pygame.Surface((TILE_SIZE, TILE_SIZE)),
+        # z: str = "blocks",
     ) -> None:
 
         super().__init__(groups)
 
-        self.image = surf
+        self.image = image
         self.rect: pygame.FRect = self.image.get_frect(topleft = pos)
-        self.hitbox: pygame.FRect = self.rect.copy().inflate(0, 0)
-        self.z = z
+        # self.hitbox: pygame.FRect = self.rect.copy().inflate(0, 0)
+        # self.z = z
 
 #######################################################################################################################
 
 
-class Wall(Object):
+class ItemSprite(Object):
     def __init__(
         self,
         groups: list[pygame.sprite.Group],
+        gid: int,
         pos: list[int],
-        z: str = "blocks",
-        surf=pygame.Surface((TILE_SIZE, TILE_SIZE))
+        # z: str = "blocks",
+        name: str,
+        model: Item,
+        image=pygame.Surface((TILE_SIZE, TILE_SIZE)),
     ) -> None:
 
-        super().__init__(groups, pos, z, surf)
+        super().__init__(groups, pos, image)
         # decrease the size of rectangle for collisions aka. hitbox
         # self.hitbox: pygame.FRect = self.rect.copy().inflate(0, -self.rect.height / 2)
-
+        self.gid = gid
+        self.name = name
+        self.model = model
 #######################################################################################################################

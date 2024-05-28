@@ -99,6 +99,8 @@ ACTIONS = {
     "run":            {"show": ["CTRL"],     "msg": "toggle run",  "keys": [pygame.K_LSHIFT, pygame.K_RSHIFT]},
     "jump":           {"show": ["SPACE"],    "msg": "jump",        "keys": [pygame.K_SPACE]},
     "fly":            {"show": ["SHIFT"],    "msg": "toggle fly",  "keys": [pygame.K_LALT, pygame.K_RALT]},
+    "pick_up":        {"show": ["e"],        "msg": "pick up item", "keys": [pygame.K_e]},
+    "drop":           {"show": ["x"],        "msg": "drop item",   "keys": [pygame.K_x]},
     "select":         {"show": None,         "msg": "select",      "keys": [pygame.K_SPACE]},
     "accept":         {"show": None,         "msg": "accept",      "keys": [pygame.K_RETURN, pygame.K_KP_ENTER]},
     "help":           {"show": ["F1", "h"],  "msg": "help",        "keys": [pygame.K_F1,    pygame.K_h]},

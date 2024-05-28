@@ -1,6 +1,4 @@
-from copy import deepcopy
 import random
-from dataclasses import dataclass, field
 
 import game
 import menus
@@ -14,7 +12,7 @@ from maze_generator.maze_utils import (
     clear_maze_cache, get_gid_from_tmx_id
 )
 from camera import Camera
-from objects import Collider
+from objects import Collider, ItemSprite
 from pyscroll.group import PyscrollGroup
 from pytmx.util_pygame import load_pygame
 from particles import ParticleSystem
@@ -59,6 +57,7 @@ class Scene(State):
         self.draw_sprites = pygame.sprite.Group()
         self.block_sprites = pygame.sprite.Group()
         self.exit_sprites = pygame.sprite.Group()
+        self.item_sprites = pygame.sprite.Group()
         self.animations = pygame.sprite.Group()
 
         # self.transition = Transition(self)
@@ -149,6 +148,32 @@ class Scene(State):
                 self.walls.append(rect)
                 # blocked from walking (wall)
                 self.path_finding_grid[y][x] = 100
+
+        # for tileset in tileset_map.tilesets:
+        #     if tileset.name == "items":
+        #         print(tileset)
+        #         from pytmx import TiledTileset
+        #         t = TiledTileset()
+        #         t.
+        self.items = []
+        if "items" in self.layers:
+            items_layer = tileset_map.get_layer_by_name("items")
+
+            for x, y, tile in items_layer.tiles():
+                gid = items_layer.data[y][x]
+                name = tileset_map.tile_properties[gid]["item_name"]
+                item = ItemSprite(
+                    [self.item_sprites],
+                    gid,
+                    (x * TILE_SIZE, y * TILE_SIZE),
+                    # (tile.width, tile.height),
+                    name,  # tile.item_name,
+                    image=tile,
+                    model=self.game.conf.items[name]
+                )
+                self.items.append(item)
+                print(item.model)
+            items_layer.visible = False
 
         if "exits" in self.layers:
             for obj in tileset_map.get_layer_by_name("exits"):
@@ -257,16 +282,18 @@ class Scene(State):
             self.player.pos = self.map_view.map_rect.center
 
         # Pyscroll supports layered rendering.
-        # Our map has several 'under' layers and 'over' layers.
+        # Our map has several 'under' layers and 'over' layers in relations to Sprites.
         # Sprites (NPCs) are always drawn over the tiles of the layer they are on.
         self.sprites_layer = self.layers.index("sprites")
         # main SpritesGroup holding whole tiled map with all layers and NPCs
         self.group: PyscrollGroup = PyscrollGroup(map_layer = self.map_view, default_layer = self.sprites_layer)
 
-        # add our player to the group
-        self.group.add(self.shadow_sprites, layer = self.sprites_layer - 1)
+        self.group.add(self.shadow_sprites, layer = self.sprites_layer - 2)
+        self.group.add(self.item_sprites,   layer = self.sprites_layer - 1)
         self.group.add(self.label_sprites,  layer = self.sprites_layer + 1)
+        # add Player to the group
         self.group.add(self.player, layer=self.sprites_layer)
+        # add all NPCs to the group
         self.group.add(self.NPC, layer=self.sprites_layer)
 
         for x, y, surf in tileset_map.layers[0].tiles():
@@ -567,13 +594,14 @@ class Scene(State):
             if self.hour >= 24:
                 self.hour = 0
 
-        # check if the sprite's feet are colliding with wall
-        # sprite must have a rect called feet, and slide and move_back methods,
+        # check if the Player's feet are colliding with wall
+        # Player must have a rect called feet, slide and move_back methods,
         # otherwise this will fail
         if self.player.feet.collidelist(self.walls) > -1:
             # slide along wall or do a step_back
             self.player.slide(self.walls)
 
+        # check if the Player is colliding with an NPC
         if not self.player.is_flying:
             collided_index = self.player.feet.collidelist(self.NPC)
             if collided_index > -1:
@@ -619,6 +647,29 @@ class Scene(State):
         if INPUTS["help"]:
             SHOW_HELP_INFO = not SHOW_HELP_INFO
             INPUTS["help"] = False
+
+        if INPUTS["drop"]:
+            # drop item from inventory to ground
+            if len(self.player.items) > 0:
+                item = self.player.drop_item()
+                item.pos = self.player.pos
+                item.rect.center = self.player.pos
+                self.item_sprites.add(item)
+                self.group.add(item, layer=self.sprites_layer - 1)
+                print(f"Dropped {item.name}[{item.model.type.value}]")
+            INPUTS["drop"] = False
+
+        if INPUTS["pick_up"]:
+            if not self.player.is_flying:
+                items = self.item_sprites.sprites()
+                collided_index = self.player.feet.collidelist(items)
+                if collided_index > -1:
+                    # try to pick up item
+                    self.player.pick_up(items[collided_index])
+                    self.group.remove(items[collided_index])
+                    self.item_sprites.remove(items[collided_index])
+
+            INPUTS["pick_up"] = False
 
         if INPUTS["run"]:
             # toggle between run and walk
@@ -672,6 +723,7 @@ class Scene(State):
             self.label_sprites.empty()
             self.draw_sprites.empty()
             self.exit_sprites.empty()
+            self.item_sprites.empty()
             self.block_sprites.empty()
             self.shadow_sprites.empty()
             self.group.empty()

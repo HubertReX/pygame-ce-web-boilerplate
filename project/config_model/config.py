@@ -22,6 +22,15 @@ class AttitudeEnum(StrEnum):
     afraid = auto()
     enemy = auto()
 
+###################################################################################################################
+
+
+class ItemTypeEnum(StrEnum):
+    weapon = auto()
+    key = auto()
+    consumable = auto()
+    money = auto()
+
 # https://docs.python.org/3/library/enum.html#enum.Enum
 # class ToolEnum(IntEnum):
 #     spanner = 1
@@ -62,12 +71,35 @@ class Character():
         return cls(
             name = data.get('name'),
             sprite = data.get('sprite'),
-            race = data.get('race'),
-            attitude = data.get('attitude'),
+            race = RaceEnum(data.get('race')),
+            attitude = AttitudeEnum(data.get('attitude')),
             health = data.get('health', 30),
             max_health = data.get('max_health', 30),
             money = data.get('money', 0),
             damage = data.get('damage', 10),
+        )
+
+
+@dataclass
+class Item():
+    name: str
+    type:          ItemTypeEnum
+    value:         Annotated[int,          field(repr=False)]
+    health_impact: Annotated[int,          field(repr=False)]
+    in_use:        Annotated[bool,         field(repr=False)]
+    damage:        Annotated[int,          field(repr=False)]
+    cooldown_time: Annotated[float,        field(repr=False)]
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            name          = data.get('name'),
+            type          = ItemTypeEnum(data.get('type')),
+            value         = data.get('value', 50),
+            in_use        = data.get('in_use', False),
+            health_impact = data.get('health_impact', 0),
+            damage        = data.get('damage', 10),
+            cooldown_time = data.get('cooldown_time', 1.0),
         )
 
 ###################################################################################################################
@@ -82,6 +114,7 @@ class Character():
 @dataclass
 class Config():
     characters: Dict[str, Character]
+    items: Dict[str, Item]
 
     @classmethod
     def build(cls, data):
@@ -91,7 +124,13 @@ class Config():
             character = Character.from_dict(chr)
             chars[name] = character
 
-        return cls(chars)
+        items = {}
+        for name, itm in data["items"].items():
+            # print(name, itm)
+            item = Item.from_dict(itm)
+            items[name] = item
+
+        return cls(chars, items)
 ###################################################################################################################
 
 

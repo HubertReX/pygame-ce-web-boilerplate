@@ -223,15 +223,15 @@ class ParticleImageBased:
 #######################################################################################################################
 # MARK: ParticleSystem
 class ParticleSystem(ABC):
-    @ abstractmethod
+    @abstractmethod
     def __init__(self, canvas: pygame.Surface, group: PyscrollGroup, camera: Camera) -> None:
         ...
 
-    @ abstractmethod
+    @abstractmethod
     def add(self, **kwargs) -> None:
         ...
 
-    @ abstractmethod
+    @abstractmethod
     def emit(self, dt: float) -> None:
         ...
 

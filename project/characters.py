@@ -3,18 +3,22 @@ import os
 import random
 import pygame
 from pygame.math import Vector2 as vec
+
 from maze_generator.maze_utils import a_star, a_star_cached
-from config_model.config import AttitudeEnum, Character
 from settings import (
     ANIMATION_SPEED, CHARACTERS_DIR,
     HEIGHT, PUSHED_TIME, RECALCULATE_PATH_DISTANCE,
     SPRITE_SHEET_DEFINITION, STUNNED_COLOR, STUNNED_TIME, TILE_SIZE,
-    Point, INPUTS
+    Point, INPUTS, IS_WEB
 )
+if IS_WEB:
+    from config_model.config import AttitudeEnum, Character, Item
+else:
+    from config_model.config_pydantic import AttitudeEnum, Character, Item
 import game
 import scene
 import npc_state
-from objects import HealthBar, Shadow
+from objects import HealthBar, Shadow, ItemSprite
 import splash_screen
 
 
@@ -49,7 +53,7 @@ class NPC(pygame.sprite.Sprite):
         self.health_bar = self.create_health_bar(label_group, pos)
         # hide health bar at start (negative value makes it transparent)
         self.health_bar.set_bar(-1.0, self.game)
-
+        self.items: list[ItemSprite] = []
         self.animations: dict[str, list[pygame.surface.Surface]] = {}
         self.animation_speed = ANIMATION_SPEED
         self.import_sprite_sheet(CHARACTERS_DIR / self.model.sprite / "SpriteSheet.png")
@@ -630,3 +634,14 @@ class Player(NPC):
                 self.scene.new_scene = exit
                 self.scene.transition.exiting = True
                 # self.scene.go_to_scene()
+
+    ###################################################################################################################
+    def pick_up(self, item: ItemSprite) -> None:
+        self.items.append(item)
+        print(f"Picked up {item.name}({item.model.type.value})")
+
+    ###################################################################################################################
+    def drop_item(self) -> ItemSprite:
+        item = self.items.pop(-1)
+
+        return item

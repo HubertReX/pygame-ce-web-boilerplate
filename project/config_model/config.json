@@ -1,5 +1,54 @@
 {
     "$schema": "./config_schema.json",
+    "items": {
+        "axe": {
+            "name": "War Axe",
+            "type": "weapon",
+            "damage": 35,
+            "cooldown_time": 1.5,
+            "value": 150
+        },
+        "golden_coin": {
+            "name": "Golden coin",
+            "type": "money",
+            "value": 1000
+        },
+        "silver_key": {
+            "name": "Silver key",
+            "type": "key",
+            "value": 500
+        },
+        "life_pot": {
+            "name": "Life restore potion",
+            "type": "consumable",
+            "health_impact": 50,
+            "value": 300
+        },
+        "shashlik": {
+            "name": "Shashlik",
+            "type": "consumable",
+            "health_impact": 30,
+            "value": 20
+        },
+        "leaf": {
+            "name": "Tea leaf",
+            "type": "consumable",
+            "health_impact": 3,
+            "value": 5
+        },
+        "shrimp": {
+            "name": "Tiger shrimp",
+            "type": "consumable",
+            "health_impact": 5,
+            "value": 15
+        },
+        "fish": {
+            "name": "Fresh fish",
+            "type": "consumable",
+            "health_impact": 5,
+            "value": 15
+        }
+    },
     "characters": {
         "Player": {
             "name": "Player",
