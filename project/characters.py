@@ -55,6 +55,7 @@ class NPC(pygame.sprite.Sprite):
         # hide health bar at start (negative value makes it transparent)
         self.health_bar.set_bar(-1.0, self.game)
         self.items: list[ItemSprite] = []
+        self.selected_weapon: ItemSprite | None = None
         self.selected_item_idx: int = -1
         self.total_items_weight: float = 0.0
         self.animations: dict[str, list[pygame.surface.Surface]] = {}
@@ -410,7 +411,7 @@ class NPC(pygame.sprite.Sprite):
         self.scene.NPC = [npc for npc in self.scene.NPC if not npc == self]
         self.shadow.kill()
         self.health_bar.kill()
-        if self.model.health <= 0:
+        if self.name == "Player" and self.model.health <= 0:
             self.scene.exit_state()
             scene.Scene(self.game, "Village", "start").enter_state()
             splash_screen.SplashScreen(self.game, "GAME OVER").enter_state()
@@ -470,7 +471,11 @@ class NPC(pygame.sprite.Sprite):
         if oponent.model.attitude == AttitudeEnum.enemy.value:
             # deal damage
             self.model.health -= oponent.model.damage
-            oponent.model.health -= self.model.damage
+            if self.selected_weapon:
+                damage = self.selected_weapon.model.damage
+            else:
+                damage = self.model.damage
+            oponent.model.health -= damage
 
             self.model.health = max(0, self.model.health)
             oponent.model.health = max(0, oponent.model.health)
@@ -654,6 +659,8 @@ class Player(NPC):
         if item.model.type == ItemTypeEnum.consumable:
             self.model.health += item.model.health_impact
             self.model.health = max(0, min(self.model.health, self.model.max_health))
+        elif item.model.type == ItemTypeEnum.weapon:
+            self.selected_weapon = item
 
     ###################################################################################################################
     def pick_up(self, item: ItemSprite) -> bool:

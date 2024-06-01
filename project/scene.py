@@ -820,7 +820,7 @@ class Scene(State):
         else:
             fps = f"FPS: {self.game.fps: 6.1f}"  # 3s: {self.game.avg_fps_3s: 6.1f} 10s: {self.game.avg_fps_10s: 6.1f}"
             stats = f"Health: {
-                self.player.model.health} / {self.player.model.max_health} Money: {self.player.model.money}"
+                self.player.model.health}/{self.player.model.max_health} Money: {self.player.model.money}"
 
             inventory_list = []
             for idx, item in enumerate(self.player.items):
@@ -829,10 +829,12 @@ class Scene(State):
                     label = f"-->{label}<--"
                 inventory_list.append(label)
 
-            weight = f"{self.player.total_items_weight:4.2f} / {self.player.model.max_carry_weight:4.2f}"
+            weight = f"{self.player.total_items_weight:4.2f}/{self.player.model.max_carry_weight:4.2f}"
             inventory = ", ".join(inventory_list)
+            weapon = f"{self.player.selected_weapon.model.name}[{
+                self.player.selected_weapon.model.damage}]" if self.player.selected_weapon else "n/a"
 
-            self.debug([fps, stats, f"Items[{weight}]: {inventory}"])
+            self.debug([fps, stats, f"Items[{weight}]: {inventory}", f"Weapon: {weapon}"])
 
         if SHOW_HELP_INFO:
             self.show_help()
