@@ -156,6 +156,7 @@ class Scene(State):
         #         t = TiledTileset()
         #         t.
         self.items = []
+        self.item_sprites.empty()
         if "items" in self.layers:
             items_layer = tileset_map.get_layer_by_name("items")
 
@@ -172,7 +173,7 @@ class Scene(State):
                     model=self.game.conf.items[name]
                 )
                 self.items.append(item)
-                print(item.model)
+                # print(item.model)
             items_layer.visible = False
 
         if "exits" in self.layers:
@@ -634,10 +635,10 @@ class Scene(State):
             SHOW_DEBUG_INFO = not SHOW_DEBUG_INFO
             INPUTS["debug"] = False
 
-        global USE_ALPHA_FILTER
-        if INPUTS["alpha"]:
-            USE_ALPHA_FILTER = not USE_ALPHA_FILTER
-            INPUTS["alpha"] = False
+        # global USE_ALPHA_FILTER
+        # if INPUTS["alpha"]:
+        #     USE_ALPHA_FILTER = not USE_ALPHA_FILTER
+        #     INPUTS["alpha"] = False
 
         if INPUTS["intro"]:
             self.start_intro()
@@ -648,27 +649,50 @@ class Scene(State):
             SHOW_HELP_INFO = not SHOW_HELP_INFO
             INPUTS["help"] = False
 
+        if INPUTS["use_item"]:
+            self.player.use_item()
+            INPUTS["next_item"] = False
+
+        if INPUTS["next_item"]:
+            if len(self.player.items) > 0:
+                self.player.selected_item_idx += 1
+                if self.player.selected_item_idx >= len(self.player.items):
+                    self.player.selected_item_idx = 0
+            INPUTS["next_item"] = False
+
+        if INPUTS["prev_item"]:
+            if len(self.player.items) > 0:
+                self.player.selected_item_idx -= 1
+                if self.player.selected_item_idx < 0:
+                    self.player.selected_item_idx = len(self.player.items) - 1
+            INPUTS["prev_item"] = False
+
         if INPUTS["drop"]:
             # drop item from inventory to ground
             if len(self.player.items) > 0:
-                item = self.player.drop_item()
-                item.pos = self.player.pos
-                item.rect.center = self.player.pos
-                self.item_sprites.add(item)
-                self.group.add(item, layer=self.sprites_layer - 1)
-                print(f"Dropped {item.name}[{item.model.type.value}]")
+                res = item = self.player.drop_item()
+                if res:
+                    item.pos = self.player.pos
+                    item.rect.center = self.player.pos
+                    self.item_sprites.add(item)
+                    self.group.add(item, layer=self.sprites_layer - 1)
+                    print(f"Dropped {item.name}[{item.model.type.value}]")
+                else:
+                    print("No item to drop!")
             INPUTS["drop"] = False
 
         if INPUTS["pick_up"]:
             if not self.player.is_flying:
-                items = self.item_sprites.sprites()
+                items: list[ItemSprite] = self.item_sprites.sprites()
                 collided_index = self.player.feet.collidelist(items)
                 if collided_index > -1:
                     # try to pick up item
-                    self.player.pick_up(items[collided_index])
-                    self.group.remove(items[collided_index])
-                    self.item_sprites.remove(items[collided_index])
-
+                    res = self.player.pick_up(items[collided_index])
+                    if res:
+                        self.group.remove(items[collided_index])
+                        self.item_sprites.remove(items[collided_index])
+                    else:
+                        print(f"You can't pick up '{items[collided_index].model.name}' - it's too heavy.")
             INPUTS["pick_up"] = False
 
         if INPUTS["run"]:
@@ -794,8 +818,21 @@ class Scene(State):
         if SHOW_DEBUG_INFO:
             self.show_debug()
         else:
-            fps = f"FPS: {self.game.fps: 6.1f} 3s: {self.game.avg_fps_3s: 6.1f} 10s: {self.game.avg_fps_10s: 6.1f}"
-            self.debug([fps])
+            fps = f"FPS: {self.game.fps: 6.1f}"  # 3s: {self.game.avg_fps_3s: 6.1f} 10s: {self.game.avg_fps_10s: 6.1f}"
+            stats = f"Health: {
+                self.player.model.health} / {self.player.model.max_health} Money: {self.player.model.money}"
+
+            inventory_list = []
+            for idx, item in enumerate(self.player.items):
+                label = f"{item.model.name}[{item.model.type.value[0].upper()}][{item.model.count}]"
+                if idx == self.player.selected_item_idx:
+                    label = f"-->{label}<--"
+                inventory_list.append(label)
+
+            weight = f"{self.player.total_items_weight:4.2f} / {self.player.model.max_carry_weight:4.2f}"
+            inventory = ", ".join(inventory_list)
+
+            self.debug([fps, stats, f"Items[{weight}]: {inventory}"])
 
         if SHOW_HELP_INFO:
             self.show_help()
@@ -806,8 +843,8 @@ class Scene(State):
                 shadow = True,
                 centred = True
             )
-
     ###################################################################################################################
+
     def apply_time_of_day_filter(self, screen: pygame.Surface):
         # MARK: apply_time_of_day_filter
         # do not apply night and day filter indoors

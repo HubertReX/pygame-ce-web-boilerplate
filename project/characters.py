@@ -1,3 +1,4 @@
+import copy
 from enum import StrEnum, auto
 import os
 import random
@@ -7,14 +8,14 @@ from pygame.math import Vector2 as vec
 from maze_generator.maze_utils import a_star, a_star_cached
 from settings import (
     ANIMATION_SPEED, CHARACTERS_DIR,
-    HEIGHT, PUSHED_TIME, RECALCULATE_PATH_DISTANCE,
+    HEIGHT, MONSTER_WAKE_DISTANCE, PUSHED_TIME, RECALCULATE_PATH_DISTANCE,
     SPRITE_SHEET_DEFINITION, STUNNED_COLOR, STUNNED_TIME, TILE_SIZE,
     Point, INPUTS, IS_WEB
 )
 if IS_WEB:
-    from config_model.config import AttitudeEnum, Character, Item
+    from config_model.config import AttitudeEnum, Character, Item, ItemTypeEnum
 else:
-    from config_model.config_pydantic import AttitudeEnum, Character, Item
+    from config_model.config_pydantic import AttitudeEnum, Character, Item, ItemTypeEnum
 import game
 import scene
 import npc_state
@@ -54,6 +55,8 @@ class NPC(pygame.sprite.Sprite):
         # hide health bar at start (negative value makes it transparent)
         self.health_bar.set_bar(-1.0, self.game)
         self.items: list[ItemSprite] = []
+        self.selected_item_idx: int = -1
+        self.total_items_weight: float = 0.0
         self.animations: dict[str, list[pygame.surface.Surface]] = {}
         self.animation_speed = ANIMATION_SPEED
         self.import_sprite_sheet(CHARACTERS_DIR / self.model.sprite / "SpriteSheet.png")
@@ -239,15 +242,22 @@ class NPC(pygame.sprite.Sprite):
         if self.is_stunned:
             return
 
+        distance_from_player = (self.pos - self.scene.player.pos).magnitude_squared()
+        # activate monsters in maze when player is near
+        # no designated waypoints, distance from player in range, is enemy
+        if self.waypoints_cnt == 0 and distance_from_player < MONSTER_WAKE_DISTANCE**2 and \
+                self.model.attitude == AttitudeEnum.enemy.value:
+            self.target = self.scene.player.pos.copy()
+            self.find_path()
         # if character has a set target (and needs to follow it) or there are no waypoints to follow any more
-        if not self.target == vec(0, 0) or self.waypoints_cnt == 0:
+        elif not self.target == vec(0, 0):  # or self.waypoints_cnt == 0:
             # if (no more waypoints or the player has moved) and (character is a monster chasing player)
             # not self.target == self.scene.player.pos)
             distance_player_moved = (self.target - self.scene.player.pos).magnitude_squared()
 
             # if (self.waypoints_cnt == 0 or not self.target == self.scene.player.pos) and \
             #     self.model.attitude == AttitudeEnum.enemy.value:
-            if (self.waypoints_cnt == 0 or distance_player_moved > RECALCULATE_PATH_DISTANCE ** 2) \
+            if (distance_player_moved > RECALCULATE_PATH_DISTANCE ** 2) \
                     and self.model.attitude == AttitudeEnum.enemy.value:
                 self.target = self.scene.player.pos.copy()
                 self.find_path()
@@ -636,12 +646,62 @@ class Player(NPC):
                 # self.scene.go_to_scene()
 
     ###################################################################################################################
-    def pick_up(self, item: ItemSprite) -> None:
-        self.items.append(item)
-        print(f"Picked up {item.name}({item.model.type.value})")
+    def use_item(self) -> None:
+        if not self.items or not self.selected_item_idx >= 0 or self.selected_item_idx > len(self.items) - 1:
+            return None
+
+        item = self.items[self.selected_item_idx]
+        if item.model.type == ItemTypeEnum.consumable:
+            self.model.health += item.model.health_impact
+            self.model.health = max(0, min(self.model.health, self.model.max_health))
 
     ###################################################################################################################
-    def drop_item(self) -> ItemSprite:
-        item = self.items.pop(-1)
+    def pick_up(self, item: ItemSprite) -> bool:
+        result: bool = False
 
-        return item
+        if item.model.type == ItemTypeEnum.money:
+            self.model.money += item.model.value
+            result = True
+        else:
+            item_total_weight = item.model.weight * item.model.count
+            if self.total_items_weight + item_total_weight <= self.model.max_carry_weight:
+                self.total_items_weight += item_total_weight
+                found = False
+                for idx, owned_item in enumerate(self.items):
+                    if owned_item.model.name == item.model.name:
+                        self.items[idx].model.count += 1
+                        found = True
+
+                if not found:
+                    self.items.append(item)
+
+                if self.selected_item_idx < 0:
+                    self.selected_item_idx = 0
+                result = True
+
+        # print(f"Picked up {item.name}({item.model.type.value})")
+
+        return result
+
+    ###################################################################################################################
+    def drop_item(self) -> ItemSprite | None:
+        if not self.items or not self.selected_item_idx >= 0 or self.selected_item_idx > len(self.items) - 1:
+            return None
+
+        selected_item = self.items[self.selected_item_idx]
+        self.total_items_weight -= selected_item.model.weight * selected_item.model.count
+
+        if selected_item.model.count > 1:
+            org_item = selected_item
+            org_item.model.count -= 1
+            selected_item = copy.copy(org_item)
+            selected_item.rect = org_item.rect.copy()
+            selected_item.model = copy.copy(org_item.model)
+            selected_item.model.count = 1
+        else:
+            self.items.remove(selected_item)
+            if self.selected_item_idx >= len(self.items):
+                self.selected_item_idx -= 1
+        # item = self.items.pop(-1)
+
+        return selected_item

@@ -51,6 +51,10 @@ SHOW_HELP_INFO = False
 FPS_CAP = 30
 # gameplay recording fps (doesn't need to be the same as FPS_CAP)
 RECORDING_FPS = 30
+
+# monsters will wake up when closer from player than this value
+MONSTER_WAKE_DISTANCE = 100
+
 # path from monster will be recalculated
 # only if player moved by more then N pixels
 RECALCULATE_PATH_DISTANCE = 16
@@ -93,14 +97,17 @@ MAX_LIGHTS_COUNT: int = 16
 ACTIONS = {
     "quit":           {"show": ["ESC", "q"], "msg": "back",        "keys": [pygame.K_ESCAPE,    pygame.K_q]},
     "debug":          {"show": ["`", "z"],   "msg": "debug",       "keys": [pygame.K_BACKQUOTE, pygame.K_z]},
-    "alpha":          {"show": ["f"],        "msg": "filter",      "keys": [pygame.K_f]},
-    "shaders_toggle": {"show": ["g"],        "msg": "shader 0/1",  "keys": [pygame.K_g]},
-    "next_shader":    {"show": [".", ">"],   "msg": "next shader", "keys": [pygame.K_PERIOD]},
+    # "alpha":          {"show": ["f"],        "msg": "filter",      "keys": [pygame.K_f]},
+    # "shaders_toggle": {"show": ["g"],        "msg": "shader 0/1",  "keys": [pygame.K_g]},
+    # "next_shader":    {"show": [".", ">"],   "msg": "next shader", "keys": [pygame.K_PERIOD]},
     "run":            {"show": ["CTRL"],     "msg": "toggle run",  "keys": [pygame.K_LSHIFT, pygame.K_RSHIFT]},
     "jump":           {"show": ["SPACE"],    "msg": "jump",        "keys": [pygame.K_SPACE]},
     "fly":            {"show": ["SHIFT"],    "msg": "toggle fly",  "keys": [pygame.K_LALT, pygame.K_RALT]},
     "pick_up":        {"show": ["e"],        "msg": "pick up item", "keys": [pygame.K_e]},
     "drop":           {"show": ["x"],        "msg": "drop item",   "keys": [pygame.K_x]},
+    "next_item":      {"show": [">"],        "msg": "next item",   "keys": [pygame.K_PERIOD]},
+    "prev_item":      {"show": ["<"],        "msg": "prev item",   "keys": [pygame.K_COMMA]},
+    "use_item":       {"show": ["f"],        "msg": "use item",    "keys": [pygame.K_f]},
     "select":         {"show": None,         "msg": "select",      "keys": [pygame.K_SPACE]},
     "accept":         {"show": None,         "msg": "accept",      "keys": [pygame.K_RETURN, pygame.K_KP_ENTER]},
     "help":           {"show": ["F1", "h"],  "msg": "help",        "keys": [pygame.K_F1,    pygame.K_h]},

@@ -436,21 +436,21 @@ class Game:
                     print("Recording stopped")
             INPUTS["record"] = False
 
-        if INPUTS["shaders_toggle"]:
-            USE_SHADERS = not USE_SHADERS
-            INPUTS["shaders_toggle"] = False
+        # if INPUTS["shaders_toggle"]:
+        #     USE_SHADERS = not USE_SHADERS
+        #     INPUTS["shaders_toggle"] = False
 
-        if INPUTS["next_shader"]:
-            shader_index = SHADERS_NAMES.index(self.shader.shader_name)
-            if shader_index < 0:
-                shader_index = 0
-            else:
-                shader_index += 1
-                if shader_index >= len(SHADERS_NAMES):
-                    shader_index = 0
+        # if INPUTS["next_shader"]:
+        #     shader_index = SHADERS_NAMES.index(self.shader.shader_name)
+        #     if shader_index < 0:
+        #         shader_index = 0
+        #     else:
+        #         shader_index += 1
+        #         if shader_index >= len(SHADERS_NAMES):
+        #             shader_index = 0
 
-            self.shader.create_pipeline(SHADERS_NAMES[shader_index])
-            INPUTS["next_shader"] = False
+        #     self.shader.create_pipeline(SHADERS_NAMES[shader_index])
+        #     INPUTS["next_shader"] = False
 
         return events
 

@@ -4,48 +4,87 @@
         "axe": {
             "name": "War Axe",
             "type": "weapon",
+            "weight": 5.0,
             "damage": 35,
             "cooldown_time": 1.5,
+            "value": 150
+        },
+        "sword_long": {
+            "name": "Long sword",
+            "type": "weapon",
+            "weight": 3.0,
+            "damage": 25,
+            "cooldown_time": 1.0,
+            "value": 200
+        },
+        "sword_short": {
+            "name": "Short sword",
+            "type": "weapon",
+            "weight": 1.0,
+            "damage": 15,
+            "cooldown_time": 0.3,
+            "value": 50
+        },
+        "staff_violet": {
+            "name": "Violet staff",
+            "type": "weapon",
+            "weight": 0.8,
+            "damage": 20,
+            "cooldown_time": 0.6,
             "value": 150
         },
         "golden_coin": {
             "name": "Golden coin",
             "type": "money",
+            "weight": 0.02,
             "value": 1000
         },
         "silver_key": {
             "name": "Silver key",
             "type": "key",
+            "weight": 0.01,
             "value": 500
+        },
+        "flask_health": {
+            "name": "Life restore flask",
+            "type": "consumable",
+            "health_impact": 50,
+            "weight": 0.15,
+            "value": 300
         },
         "life_pot": {
             "name": "Life restore potion",
             "type": "consumable",
             "health_impact": 50,
+            "weight": 0.15,
             "value": 300
         },
         "shashlik": {
             "name": "Shashlik",
             "type": "consumable",
             "health_impact": 30,
+            "weight": 1.0,
             "value": 20
         },
         "leaf": {
             "name": "Tea leaf",
             "type": "consumable",
+            "weight": 0.01,
             "health_impact": 3,
             "value": 5
         },
         "shrimp": {
             "name": "Tiger shrimp",
             "type": "consumable",
+            "weight": 0.1,
             "health_impact": 5,
             "value": 15
         },
         "fish": {
             "name": "Fresh fish",
             "type": "consumable",
-            "health_impact": 5,
+            "weight": 0.5,
+            "health_impact": 15,
             "value": 15
         }
     },

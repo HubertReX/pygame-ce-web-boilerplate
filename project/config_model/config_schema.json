@@ -115,6 +115,20 @@
                     "title": "In Use",
                     "type": "boolean"
                 },
+                "count": {
+                    "default": 1,
+                    "description": "Number of items in the stack",
+                    "minimum": 1,
+                    "title": "Count",
+                    "type": "integer"
+                },
+                "weight": {
+                    "default": 1.0,
+                    "description": "Weight of single item in the stack",
+                    "minimum": 0.0,
+                    "title": "Weight",
+                    "type": "number"
+                },
                 "damage": {
                     "default": 10,
                     "description": "The amount of damage delt (weapon only)",

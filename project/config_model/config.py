@@ -63,6 +63,7 @@ class Character():
     attitude:     AttitudeEnum
     health:       Annotated[int,          field(repr=False)]
     max_health:   Annotated[int,          field(repr=False)]
+    max_carry_weight: Annotated[float,    field(repr=False)]
     money:        Annotated[int,          field(repr=False)]
     damage:       Annotated[int,          field(repr=False)]
 
@@ -75,6 +76,7 @@ class Character():
             attitude = AttitudeEnum(data.get('attitude')),
             health = data.get('health', 30),
             max_health = data.get('max_health', 30),
+            max_carry_weight = data.get('max_carry_weight', 15.0),
             money = data.get('money', 0),
             damage = data.get('damage', 10),
         )
@@ -88,6 +90,8 @@ class Item():
     health_impact: Annotated[int,          field(repr=False)]
     in_use:        Annotated[bool,         field(repr=False)]
     damage:        Annotated[int,          field(repr=False)]
+    count:         Annotated[int,          field(repr=False)]
+    weight:        Annotated[float,        field(repr=False)]
     cooldown_time: Annotated[float,        field(repr=False)]
 
     @classmethod
@@ -96,9 +100,11 @@ class Item():
             name          = data.get('name'),
             type          = ItemTypeEnum(data.get('type')),
             value         = data.get('value', 50),
-            in_use        = data.get('in_use', False),
             health_impact = data.get('health_impact', 0),
+            in_use        = data.get('in_use', False),
             damage        = data.get('damage', 10),
+            count         = data.get('count', 1),
+            weight        = data.get('weight', 1.0),
             cooldown_time = data.get('cooldown_time', 1.0),
         )
 
