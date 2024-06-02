@@ -1,3 +1,5 @@
+from opengl_shader import OpenGL_shader
+import pygame
 from collections import deque
 from datetime import datetime
 from os import environ
@@ -21,8 +23,7 @@ if IS_WEB:
 else:
     from config_model.config_pydantic import load_config
 
-import pygame
-from opengl_shader import OpenGL_shader
+environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
 if not IS_WEB:
     from pygame_screen_record import ScreenRecorder, add_codec
@@ -36,7 +37,6 @@ if USE_SOD:
 seed = 107
 random.seed(seed)
 np.random.seed(seed)
-environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 traceback.install(show_locals=True, width=150)
 
 # os.environ["SDL_WINDOWS_DPI_AWARENESS"] = "permonitorv2"

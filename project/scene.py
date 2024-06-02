@@ -651,7 +651,7 @@ class Scene(State):
 
         if INPUTS["use_item"]:
             self.player.use_item()
-            INPUTS["next_item"] = False
+            INPUTS["use_item"] = False
 
         if INPUTS["next_item"]:
             if len(self.player.items) > 0:

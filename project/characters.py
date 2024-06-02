@@ -660,7 +660,13 @@ class Player(NPC):
             self.model.health += item.model.health_impact
             self.model.health = max(0, min(self.model.health, self.model.max_health))
         elif item.model.type == ItemTypeEnum.weapon:
-            self.selected_weapon = item
+            if self.selected_weapon:
+                if self.selected_weapon.model.name == item.model.name:
+                    self.selected_weapon = None
+                else:
+                    self.selected_weapon = item
+            else:
+                self.selected_weapon = item
 
     ###################################################################################################################
     def pick_up(self, item: ItemSprite) -> bool:

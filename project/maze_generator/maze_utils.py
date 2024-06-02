@@ -113,7 +113,7 @@ def a_star_cached(grid, start, goal, fps):
 def clear_maze_cache():
     # del _CACHE
     global _CACHE, _sum, _cnt
-    print(f"Cache size was: {len(_CACHE)} {_sum=:.4f} {_cnt=}")
+    # print(f"Cache size was: {len(_CACHE)} {_sum=:.4f} {_cnt=}")
     _CACHE = {}
     _sum = 0.0
     _cnt = 0
