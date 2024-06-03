@@ -1,10 +1,11 @@
+import ffmpeg
+from PIL import Image
 from opengl_shader import OpenGL_shader
 import pygame
 from collections import deque
 from datetime import datetime
 from os import environ
 from typing import Any
-# Pep8 run document formatting
 import numpy as np
 
 import asyncio
@@ -25,11 +26,6 @@ else:
 
 environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
-if not IS_WEB:
-    from pygame_screen_record import ScreenRecorder, add_codec
-    # add_codec("mp4", "mpv4")
-    # add_codec("webm", "vp90")
-
 if USE_SOD:
     from second_order_dynamics import SecondOrderDynamics
 
@@ -41,8 +37,9 @@ traceback.install(show_locals=True, width=150)
 
 # os.environ["SDL_WINDOWS_DPI_AWARENESS"] = "permonitorv2"
 
+#################################################################################################################
 
-#######################################################################################################################
+
 class Game:
     # MARK: Game
     def __init__(self) -> None:
@@ -123,7 +120,7 @@ class Game:
         if USE_SOD:
             self.init_SOD()
 
-    ###################################################################################################################
+    #############################################################################################################
     def show_loading_screen(self) -> None:
         self.screen.fill(BG_COLOR)
         self.render_text(
@@ -137,7 +134,7 @@ class Game:
         self.shader.render(self.screen, [], 1.0, -1.0, 0.01, True)
         pygame.display.flip()
 
-    ###################################################################################################################
+    #############################################################################################################
     def init_SOD(self) -> None:
         # frequency, reaction speed and oscillation
         f = 0.01
@@ -151,7 +148,7 @@ class Game:
 
         self.SOD = SecondOrderDynamics(f, z, r, x0=pos)
 
-    ###################################################################################################################
+    #############################################################################################################
     def render_panel(self, rect: pygame.Rect, color: ColorValue, surface: pygame.Surface = None) -> None:
         # MARK: render
         """
@@ -169,7 +166,7 @@ class Game:
         pygame.draw.rect(surf, color, surf.get_rect())
         surface.blit(surf, rect)
 
-    ###################################################################################################################
+    #############################################################################################################
     def render_texts(
             self,
             texts:     list[str],
@@ -201,7 +198,7 @@ class Game:
             new_pos = [pos[0], pos[1] + line_no * font_size * TEXT_ROW_SPACING]
             self.render_text(text, new_pos, color, bg_color, shadow, font_size, centred, surface)
 
-    ###################################################################################################################
+    #############################################################################################################
     def render_text(
             self,
             text:      str,
@@ -256,7 +253,7 @@ class Game:
 
         surface.blit(surf, rect)
 
-    ###################################################################################################################
+    #############################################################################################################
     def custom_cursor(self, screen: pygame.Surface) -> None:
         """
         blit custom cursor in mouse current position if USE_CUSTOM_MOUSE_CURSOR is enabled
@@ -282,7 +279,7 @@ class Game:
         else:
             screen.blit(self.cursor_img, cursor_rect.center)
 
-    ###################################################################################################################
+    #############################################################################################################
     def get_images(self, path: str) -> list[pygame.Surface]:
         """
         Gets a list of images from the specified path.
@@ -303,7 +300,7 @@ class Game:
 
         return images
 
-    ###################################################################################################################
+    #############################################################################################################
     def get_animations(self, path: str) -> dict[str, list[str]]:
         """
         read sprite animations from given folder
@@ -318,8 +315,8 @@ class Game:
                 animations.update({file: []})
         return animations
 
-    ###################################################################################################################
-    def save_screenshot(self) -> bool:
+    #############################################################################################################
+    def save_screenshot(self, data: bytes | None = None) -> bool:
         """
         save current screen to SCREENSHOT_FOLDER as PNG with timestamp in name
         """
@@ -331,7 +328,8 @@ class Game:
 
             time_str = datetime.now().strftime("%Y%m%d_%H%M%S")
             file_name = SCREENSHOTS_DIR / f"screenshot_{time_str}.png"
-            pygame.image.save(self.screen, file_name)
+            # pygame.image.save(self.screen, file_name)
+            Image.frombuffer('RGBA', (WIDTH, HEIGHT), data, 'raw', 'RGBA', 0, -1).save(file_name)
             if IS_WEB:
                 import platform
                 platform.window.download_from_browser_fs(file_name.as_posix(), "image/png")
@@ -342,9 +340,8 @@ class Game:
             # next frame rendered by pipeline needs to be saved back to screen
             self.save_frame = True
             return False
-        # self.reset_inputs()
 
-    ###################################################################################################################
+    #############################################################################################################
     def register_custom_event(self, custom_event_id: int, handle_function: callable) -> None:
         """
         Registers a custom event with a specific ID and associates it with a handler function.
@@ -357,7 +354,7 @@ class Game:
 
         self.custom_events[custom_event_id] = handle_function
 
-    ###################################################################################################################
+    #############################################################################################################
     def get_inputs(self) -> list[pygame.event.EventType]:
         # MARK: get_inputs
         events = pygame.event.get()
@@ -423,18 +420,14 @@ class Game:
 
         if INPUTS["record"]:
             if not IS_WEB:
-                if self.recorder.running_thread is None:
-                    self.save_frame = True
-                    self.recorder.start_rec()
-                    time_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    file_name = f"recording_{time_str}.mp4"
-                    self.recordings_names.append(file_name)
-                    print("Recording started")
+                if not self.save_frame:
+                    self.start_recording()
                 else:
-                    self.save_frame = False
-                    self.recorder.stop_rec()
-                    print("Recording stopped")
+                    self.save_recording()
             INPUTS["record"] = False
+
+        if INPUTS["screenshot"]:
+            INPUTS["screenshot"] = not self.save_screenshot()
 
         # if INPUTS["shaders_toggle"]:
         #     USE_SHADERS = not USE_SHADERS
@@ -454,61 +447,64 @@ class Game:
 
         return events
 
-    ###################################################################################################################
+    #############################################################################################################
     def reset_inputs(self) -> None:
         for key in ACTIONS.keys():
             INPUTS[key] = False
 
-    ###################################################################################################################
-    def save_recordings(self, dt: float) -> None:
-        if not IS_WEB:
-            # first stop if there is ongoing recording
-            if self.recorder.running_thread is not None:
-                self.save_frame = False
-                self.recorder.stop_rec()
+    #############################################################################################################
+    def save_recording(self) -> None:
+        if not self.save_frame:
+            return
 
-            if len(self.recorder.recordings) > 0:
-                print("saving recordings - this can take a while...")
-                self.render_text(
-                    "SAVING...",
-                    (WIDTH * SCALE // 2, HEIGHT * SCALE // 2),
-                    font_size=FONT_SIZE_LARGE,
-                    centred=True,
-                    bg_color=PANEL_BG_COLOR,
-                    surface=self.screen
-                )
+        self.save_frame = False
+        print("Recording stopped")
+        self.rec_process.stdin.close()
+        print("saving recordings - this can take a while...")
+        self.render_text(
+            "SAVING...",
+            (WIDTH * SCALE // 2, HEIGHT * SCALE // 2),
+            font_size=FONT_SIZE_LARGE,
+            centred=True,
+            bg_color=PANEL_BG_COLOR,
+            surface=self.screen
+        )
 
-                positions = [vec3(0, 0, 0)]
-                ratio: float = -1.0
-                self.shader.render(self.screen, positions, 1.0, ratio, dt, False)
-                pygame.display.flip()
-            # save only the last recording
-            # self.recorder.save_recording(SCREENSHOTS_DIR / "intro.mp4")
+        positions = [vec3(0, 0, 0)]
+        ratio: float = -1.0
+        self.shader.render(self.screen, positions, 1.0, ratio, self.clock.tick(
+            FPS_CAP) / 1000, USE_SHADERS, save_frame=self.save_frame)
+        pygame.display.flip()
+        self.rec_process.wait()
 
-            # save all recordings in provided folder
-            # mp4 extension defaults to h264/AVC1
-            self.recorder.save_recordings(self.recordings_names, SCREENSHOTS_DIR)
-            # save all recordings with default file naming (recording_{N}.mp4)
-            # self.recorder.save_recordings("mp4", SCREENSHOTS_DIR)
+    #############################################################################################################
+    def start_recording(self) -> None:
+        self.save_frame = True
 
-    ###################################################################################################################
-    def prepare_recording(self) -> None:
-        if not IS_WEB:
-            # encoder is determined by recording file extension (see save_recordings below)
-            self.recorder = ScreenRecorder(RECORDING_FPS, compress=0)
-            self.recordings_names = []
+        time_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_name = SCREENSHOTS_DIR / f"recording_{time_str}.mp4"
+        print(f"Recording started: {file_name}")
 
-    ###################################################################################################################
+        self.rec_process = (
+            ffmpeg
+            .input('pipe:', format='rawvideo', pix_fmt='rgba', s='{}x{}'.format(WIDTH, HEIGHT), r=FPS_CAP)
+            .vflip()
+            .output(str(file_name), pix_fmt='rgb24', loglevel="quiet", r=RECORDING_FPS)
+            .overwrite_output()
+            .run_async(pipe_stdin=True)
+        )
+
+    #############################################################################################################
     def show_pause_message(self) -> None:
         self.render_text(
             "PAUSED",
-                        (WIDTH * SCALE // 2, HEIGHT * SCALE // 2),
+            (WIDTH * SCALE // 2, HEIGHT * SCALE // 2),
             font_size=FONT_SIZE_LARGE,
             centred=True,
             bg_color=PANEL_BG_COLOR
         )
 
-    ###################################################################################################################
+    #############################################################################################################
     def postprocessing(self, dt: float) -> None:
         # shaders are used for postprocessing special effects
         # the whole Surface is used as texture on rect that fills to a full screen
@@ -521,17 +517,22 @@ class Game:
             ratio: float = -1.0
             scale = 1.0
 
-        self.shader.render(self.screen, positions, scale, ratio, dt, USE_SHADERS, blit_surface=self.save_frame)
+        res = self.shader.render(self.screen, positions, scale, ratio, dt, USE_SHADERS, save_frame=self.save_frame)
 
-    ###################################################################################################################
+        if self.save_frame:
+            if INPUTS["screenshot"]:
+                self.save_screenshot(res)
+            else:
+                self.rec_process.stdin.write(res)
+    #############################################################################################################
+
     async def loop(self):
         # MARK: loop
-        self.prepare_recording()
         self.fps: float = 0.0
-        self.avg_fps_3s: float = 0.0
-        self.avg_fps_10s: float = 0.0
-        self.fps_data_3s = deque([], 3 * FPS_CAP)
-        self.fps_data_10s = deque([], 10 * FPS_CAP)
+        # self.avg_fps_3s: float = 0.0
+        # self.avg_fps_10s: float = 0.0
+        # self.fps_data_3s = deque([], 3 * FPS_CAP)
+        # self.fps_data_10s = deque([], 10 * FPS_CAP)
 
         try:
             while self.is_running:
@@ -540,10 +541,10 @@ class Game:
                 # slow down
                 # dt *= 0.5
                 self.fps = self.clock.get_fps()
-                self.fps_data_3s.append(self.fps)
-                self.fps_data_10s.append(self.fps)
-                self.avg_fps_3s = sum(self.fps_data_3s) / len(self.fps_data_3s)
-                self.avg_fps_10s = sum(self.fps_data_10s) / len(self.fps_data_10s)
+                # self.fps_data_3s.append(self.fps)
+                # self.fps_data_10s.append(self.fps)
+                # self.avg_fps_3s = sum(self.fps_data_3s) / len(self.fps_data_3s)
+                # self.avg_fps_10s = sum(self.fps_data_10s) / len(self.fps_data_10s)
                 # events = []
                 events = self.get_inputs()
 
@@ -569,5 +570,5 @@ class Game:
                 pygame.display.flip()
                 await asyncio.sleep(0)
         finally:
-            self.save_recordings(dt)
+            self.save_recording()
             pygame.quit()

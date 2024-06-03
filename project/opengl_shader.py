@@ -176,8 +176,8 @@ const int MAX_LIGHTS_CNT = {MAX_LIGHTS_COUNT};
         ratio: float,
         dt: float = 0.0,
         use_shaders: bool = True,
-        blit_surface: bool = False
-    ) -> None:
+        save_frame: bool = False
+    ) -> bytes | None:
         """
         Add postprocessing effects to the surface using shaders with lighting.
 
@@ -188,8 +188,7 @@ const int MAX_LIGHTS_CNT = {MAX_LIGHTS_COUNT};
             ratio (float): The day/night ration (`0.0` ==> `day`, `1.0` ==> `night`).
             dt (float, optional): The time delta since last frame. Defaults to `0.0`.
             use_shaders (bool, optional): Whether to use shaders or not. Defaults to `True`.
-            blit_surface (bool, optional): Whether to blit the rendered surface back to the original.
-                                            Defaults to `False`.
+            save_frame (bool, optional): Whether to return the rendered image. Defaults to `False`.
 
         """
         self.ctx.new_frame()
@@ -203,6 +202,7 @@ const int MAX_LIGHTS_CNT = {MAX_LIGHTS_COUNT};
         # line 172 in render
         # self.lights_pos_buffer.write(data, offset= (i * 16))
         self.timestamp += dt
+        res = None
 
         if use_shaders:
             for i, p in enumerate(lights_pos):
@@ -219,16 +219,13 @@ const int MAX_LIGHTS_CNT = {MAX_LIGHTS_COUNT};
                 # since we use framebuffer we need to blit
                 self.image.blit()
 
-                # blit back to source surface (e.g. screen)
+                # return back image as bytes
                 # useful only for screenshots and gameplay recording
                 # otherwise saved screen doesn't reflect shaders effect
-                # WARNING: very slow, can decrease the number of FPS by 33%
-                if blit_surface:
-                    rendered_buffer = np.frombuffer(self.image.read(), 'u1').reshape(
-                        surface.get_width(), surface.get_height(), 4)
-                    rendered_img = pygame.image.frombytes(
-                        rendered_buffer.tobytes(), surface.get_size(), "RGBA", flipped=True)
-                    surface.blit(rendered_img, (0, 0))
+                if save_frame:
+                    res = self.image.read()
         else:
             self.image.blit()
         self.ctx.end_frame()
+
+        return res
