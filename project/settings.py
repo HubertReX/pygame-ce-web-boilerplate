@@ -76,6 +76,7 @@ GAME_TIME_SPEED = 0.25
 
 
 TRANSPARENT_COLOR = (0, 0, 0, 0)
+FONT_COLOR = "white"
 BLACK_COLOR = (0, 0, 0, 255)
 # background fill color
 BG_COLOR = (0, 0, 0, 0)
@@ -103,6 +104,7 @@ ACTIONS = {
     "run":            {"show": ["CTRL"],     "msg": "toggle run",  "keys": [pygame.K_LSHIFT, pygame.K_RSHIFT]},
     "jump":           {"show": ["SPACE"],    "msg": "jump",        "keys": [pygame.K_SPACE]},
     "fly":            {"show": ["SHIFT"],    "msg": "toggle fly",  "keys": [pygame.K_LALT, pygame.K_RALT]},
+    "attack":         {"show": ["attack"],   "msg": "attack",      "keys": [pygame.K_SPACE]},
     "pick_up":        {"show": ["e"],        "msg": "pick up item", "keys": [pygame.K_e]},
     "drop":           {"show": ["x"],        "msg": "drop item",   "keys": [pygame.K_x]},
     "next_item":      {"show": [">"],        "msg": "next item",   "keys": [pygame.K_PERIOD]},
@@ -219,7 +221,15 @@ SPRITE_SHEET_DEFINITION = {
     "bored":        [(4, 0), (4, 1), (4, 2), (4, 3), (4, 4), (4, 5)],
 }
 
+WEAPON_DIRECTION_OFFSET = {
+    "up": vec(0, -1.5 * TILE_SIZE),
+    "down": vec(0, -4 + TILE_SIZE // 2),
+    "left": vec(-TILE_SIZE + 2, -TILE_SIZE // 2),
+    "right": vec(TILE_SIZE - 2, -TILE_SIZE // 2)
+}
 
 # make loading images a little easier
+
+
 def load_image(filename: PathLike) -> Any:
     return pygame.image.load(str(RESOURCES_DIR / filename))

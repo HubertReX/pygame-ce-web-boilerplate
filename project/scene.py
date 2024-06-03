@@ -1,5 +1,4 @@
 import random
-
 import game
 import menus
 import pygame
@@ -18,6 +17,7 @@ from pytmx.util_pygame import load_pygame
 from particles import ParticleSystem
 from state import State
 from transition import Transition, TransitionCircle
+from ui import UI
 
 from settings import (
     ACTIONS, BG_COLOR, CIRCLE_GRADIENT, CUTSCENE_BG_COLOR,
@@ -92,7 +92,7 @@ class Scene(State):
         # self.circle_gradient: pygame.Surface = (CIRCLE_GRADIENT).convert_alpha()
 
         self.load_map()
-
+        self.ui = UI(self.game.canvas, self.game.fonts[FONT_SIZE_MEDIUM])
         # self.set_camera_on_player()
 
     ###################################################################################################################
@@ -604,12 +604,19 @@ class Scene(State):
 
         # check if the Player is colliding with an NPC
         if not self.player.is_flying:
+            # collision with body of NPC
             collided_index = self.player.feet.collidelist(self.NPC)
             if collided_index > -1:
                 # engage fight with enemy or push back friendly NPC
                 self.player.encounter(self.NPC[collided_index])
                 # slide along wall or do a step_back
                 self.player.slide(self.NPC)
+            # collision of weapon with other NPC
+            if self.player.is_attacking:
+                collided_index = self.player.selected_weapon.rect.collidelist(self.NPC)
+                if collided_index > -1:
+                    # deal damage with weapon to enemy or nothing if friendly NPC
+                    self.player.hit(self.NPC[collided_index])
 
         colliders = self.walls
         # if self.player.is_flying:
@@ -669,7 +676,7 @@ class Scene(State):
 
         if INPUTS["drop"]:
             # drop item from inventory to ground
-            if len(self.player.items) > 0:
+            if len(self.player.items) > 0 and not self.player.is_attacking and not self.player.is_stunned:
                 res = item = self.player.drop_item()
                 if res:
                     item.pos = self.player.pos
@@ -682,7 +689,7 @@ class Scene(State):
             INPUTS["drop"] = False
 
         if INPUTS["pick_up"]:
-            if not self.player.is_flying:
+            if not self.player.is_flying and not self.player.is_attacking and not self.player.is_stunned:
                 items: list[ItemSprite] = self.item_sprites.sprites()
                 collided_index = self.player.feet.collidelist(items)
                 if collided_index > -1:
@@ -705,7 +712,7 @@ class Scene(State):
 
         if INPUTS["jump"]:
             # self.player.is_jumping = not self.player.is_jumping
-            if not self.player.is_flying:
+            if not self.player.is_flying and not self.player.is_attacking and not self.player.is_stunned:
                 if not self.player.is_jumping:
                     self.player.is_jumping = True
                     self.player.jump()
@@ -716,7 +723,7 @@ class Scene(State):
 
         if INPUTS["fly"]:
             # toggle flying mode
-            if not self.player.is_jumping:
+            if not self.player.is_jumping and not self.player.is_attacking and not self.player.is_stunned:
                 self.player.is_flying = not self.player.is_flying
                 if self.player.is_flying:
                     # when airborn move one layer above so it's not colliding with obstacles on the ground
@@ -737,9 +744,6 @@ class Scene(State):
             menus.MainMenuScreen(self.game, "MainMenu").enter_state()
             # self.game.reset_inputs()
             INPUTS["menu"] = False
-
-        if INPUTS["screenshot"]:
-            INPUTS["screenshot"] = not self.game.save_screenshot()
 
         # live reload map
         if INPUTS["reload"]:
@@ -834,7 +838,7 @@ class Scene(State):
             weapon = f"{self.player.selected_weapon.model.name}[{
                 self.player.selected_weapon.model.damage}]" if self.player.selected_weapon else "n/a"
 
-            self.debug([fps, stats, f"Items[{weight}]: {inventory}", f"Weapon: {weapon}"])
+            # self.debug([fps, stats, f"Items[{weight}]: {inventory}", f"Weapon: {weapon}"])
 
         if SHOW_HELP_INFO:
             self.show_help()
@@ -845,6 +849,8 @@ class Scene(State):
                 shadow = True,
                 centred = True
             )
+
+        self.ui.display(self.player, self.game.time_elapsed)
     ###################################################################################################################
 
     def apply_time_of_day_filter(self, screen: pygame.Surface):

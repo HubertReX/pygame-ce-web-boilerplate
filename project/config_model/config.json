@@ -6,7 +6,15 @@
             "type": "weapon",
             "weight": 5.0,
             "damage": 35,
-            "cooldown_time": 1.5,
+            "cooldown_time": 0.4,
+            "value": 150
+        },
+        "lance": {
+            "name": "Lance",
+            "type": "weapon",
+            "weight": 2.5,
+            "damage": 20,
+            "cooldown_time": 0.3,
             "value": 150
         },
         "sword_long": {
@@ -14,7 +22,7 @@
             "type": "weapon",
             "weight": 3.0,
             "damage": 25,
-            "cooldown_time": 1.0,
+            "cooldown_time": 0.3,
             "value": 200
         },
         "sword_short": {
@@ -22,7 +30,7 @@
             "type": "weapon",
             "weight": 1.0,
             "damage": 15,
-            "cooldown_time": 0.3,
+            "cooldown_time": 0.1,
             "value": 50
         },
         "staff_violet": {
@@ -30,7 +38,7 @@
             "type": "weapon",
             "weight": 0.8,
             "damage": 20,
-            "cooldown_time": 0.6,
+            "cooldown_time": 0.2,
             "value": 150
         },
         "golden_coin": {

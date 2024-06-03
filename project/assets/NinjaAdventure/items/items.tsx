@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <tileset version="1.10" tiledversion="1.10.2" name="items" tilewidth="16" tileheight="16" tilecount="90" columns="10">
- <image source="items_trans.png" width="160" height="156"/>
+ <image source="items_trans_weapons.png" width="160" height="156"/>
  <tile id="11">
   <properties>
    <property name="item_name" value="beaf"/>
@@ -138,17 +138,29 @@
  </tile>
  <tile id="44">
   <properties>
-   <property name="item_name" value=""/>
+   <property name="item_name" value="golden_coin"/>
   </properties>
+  <animation>
+   <frame tileid="44" duration="180"/>
+   <frame tileid="45" duration="180"/>
+   <frame tileid="46" duration="180"/>
+   <frame tileid="47" duration="180"/>
+  </animation>
  </tile>
  <tile id="45">
   <properties>
    <property name="item_name" value=""/>
   </properties>
+  <animation>
+   <frame tileid="44" duration="180"/>
+   <frame tileid="45" duration="180"/>
+   <frame tileid="46" duration="180"/>
+   <frame tileid="47" duration="180"/>
+  </animation>
  </tile>
  <tile id="46">
   <properties>
-   <property name="item_name" value="golden_coin"/>
+   <property name="item_name" value=""/>
   </properties>
  </tile>
  <tile id="47">
@@ -158,7 +170,7 @@
  </tile>
  <tile id="48">
   <properties>
-   <property name="item_name" value="golden_key"/>
+   <property name="item_name" value=""/>
   </properties>
  </tile>
  <tile id="51">
@@ -193,7 +205,7 @@
  </tile>
  <tile id="57">
   <properties>
-   <property name="item_name" value=""/>
+   <property name="item_name" value="golden_key"/>
   </properties>
  </tile>
  <tile id="58">
@@ -208,12 +220,12 @@
  </tile>
  <tile id="62">
   <properties>
-   <property name="item_name" value=""/>
+   <property name="item_name" value="pitchfork"/>
   </properties>
  </tile>
  <tile id="63">
   <properties>
-   <property name="item_name" value=""/>
+   <property name="item_name" value="sai"/>
   </properties>
  </tile>
  <tile id="64">
@@ -223,22 +235,62 @@
  </tile>
  <tile id="65">
   <properties>
-   <property name="item_name" value=""/>
+   <property name="item_name" value="lance"/>
   </properties>
  </tile>
  <tile id="66">
   <properties>
-   <property name="item_name" value=""/>
+   <property name="item_name" value="hammer"/>
   </properties>
  </tile>
  <tile id="67">
   <properties>
-   <property name="item_name" value=""/>
+   <property name="item_name" value="katana"/>
   </properties>
  </tile>
  <tile id="68">
   <properties>
+   <property name="item_name" value="rapier"/>
+  </properties>
+ </tile>
+ <tile id="71">
+  <properties>
+   <property name="item_name" value="stick"/>
+  </properties>
+ </tile>
+ <tile id="72">
+  <properties>
+   <property name="item_name" value="club"/>
+  </properties>
+ </tile>
+ <tile id="73">
+  <properties>
    <property name="item_name" value=""/>
+  </properties>
+ </tile>
+ <tile id="74">
+  <properties>
+   <property name="item_name" value=""/>
+  </properties>
+ </tile>
+ <tile id="75">
+  <properties>
+   <property name="item_name" value=""/>
+  </properties>
+ </tile>
+ <tile id="76">
+  <properties>
+   <property name="item_name" value=""/>
+  </properties>
+ </tile>
+ <tile id="77">
+  <properties>
+   <property name="item_name" value="sword_short"/>
+  </properties>
+ </tile>
+ <tile id="78">
+  <properties>
+   <property name="item_name" value="big_sword"/>
   </properties>
  </tile>
 </tileset>

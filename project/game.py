@@ -14,7 +14,7 @@ import sys
 
 import random
 from rich import print, traceback
-from settings import ACTIONS, BG_COLOR, CONFIG_FILE, CUTSCENE_BG_COLOR, DEFAULT_SHADER, FONT_SIZE_DEFAULT, \
+from settings import ACTIONS, BG_COLOR, CONFIG_FILE, CUTSCENE_BG_COLOR, DEFAULT_SHADER, FONT_COLOR, FONT_SIZE_DEFAULT, \
     FONT_SIZE_LARGE, FONT_SIZE_MEDIUM, FONT_SIZE_SMALL, FONT_SIZE_TINY, FPS_CAP, GAME_NAME, HEIGHT, INPUTS, \
     IS_FULLSCREEN, IS_WEB, MAIN_FONT, MOUSE_CURSOR_IMG, PANEL_BG_COLOR, PROGRAM_ICON, RECORDING_FPS, SCALE, \
     SCREENSHOTS_DIR, SHADERS_NAMES, TEXT_ROW_SPACING, TILE_SIZE, USE_CUSTOM_MOUSE_CURSOR, USE_SOD, WIDTH, \
@@ -171,7 +171,7 @@ class Game:
             self,
             texts:     list[str],
             pos:       list[int],
-            color:     ColorValue = "white",
+            color:     ColorValue = FONT_COLOR,
             bg_color:  ColorValue = 0,
             shadow:    ColorValue = CUTSCENE_BG_COLOR,
             font_size: int = 0,
@@ -184,7 +184,7 @@ class Game:
         Args:
             texts (list[str]): list of strings to render
             pos (list[int]): position of first row
-            color (ColorValue, optional): text color. Defaults to `"white"`.
+            color (ColorValue, optional): text color. Defaults to `FONT_COLOR`.
             bg_color (ColorValue, optional): draw background panel. Defaults to `0` == no bg.
             shadow (ColorValue, optional): draw outline of text with black color. Defaults to `CUTSCENE_BG_COLOR`.
             font_size (int, optional): font size from `FONT_SIZES_DICT` list. Defaults to `0` == `FONT_SIZE_DEFAULT`
@@ -203,7 +203,7 @@ class Game:
             self,
             text:      str,
             pos:       list[int],
-            color:     ColorValue = "white",
+            color:     ColorValue = FONT_COLOR,
             bg_color:  ColorValue = 0,
             shadow:    ColorValue = CUTSCENE_BG_COLOR,
             font_size: int = 0,
@@ -216,7 +216,7 @@ class Game:
         Args:
             text (str): _description_
             pos (list[int]): _description_
-            color (ColorValue, optional): _description_. Defaults to `"white"`.
+            color (ColorValue, optional): _description_. Defaults to `FONT_COLOR`.
             bg_color (ColorValue, optional): _description_. Defaults to `0` == no bg.
             shadow (ColorValue, optional): _description_. Defaults to `CUTSCENE_BG_COLOR`.
             font_size (int, optional): _description_. Defaults to `0` == `FONT_SIZE_DEFAULT`.

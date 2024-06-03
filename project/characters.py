@@ -1,5 +1,6 @@
 import copy
 from enum import StrEnum, auto
+import math
 import os
 import random
 import pygame
@@ -9,7 +10,7 @@ from maze_generator.maze_utils import a_star, a_star_cached
 from settings import (
     ANIMATION_SPEED, CHARACTERS_DIR,
     HEIGHT, MONSTER_WAKE_DISTANCE, PUSHED_TIME, RECALCULATE_PATH_DISTANCE,
-    SPRITE_SHEET_DEFINITION, STUNNED_COLOR, STUNNED_TIME, TILE_SIZE,
+    SPRITE_SHEET_DEFINITION, STUNNED_COLOR, STUNNED_TIME, TILE_SIZE, WEAPON_DIRECTION_OFFSET,
     Point, INPUTS, IS_WEB
 )
 if IS_WEB:
@@ -19,18 +20,20 @@ else:
 import game
 import scene
 import npc_state
-from objects import HealthBar, Shadow, ItemSprite
+from objects import HealthBar, HealthBarUI, Shadow, ItemSprite
 import splash_screen
 
 
-########################################################################################################################
+#################################################################################################################
 class NPCEventActionEnum(StrEnum):
     stunned  = auto()
     pushed   = auto()
     standard = auto()
+    attacking = auto()
+    switching_weapon = auto()
 
 
-###################################################################################################################
+#################################################################################################################
 # MARK: NPC
 class NPC(pygame.sprite.Sprite):
     def __init__(
@@ -52,6 +55,7 @@ class NPC(pygame.sprite.Sprite):
         self.model: Character = game.conf.characters[name]
         self.shadow = self.create_shadow(shadow_group)
         self.health_bar = self.create_health_bar(label_group, pos)
+        # self.weapon_group = groups[-1]
         # hide health bar at start (negative value makes it transparent)
         self.health_bar.set_bar(-1.0, self.game)
         self.items: list[ItemSprite] = []
@@ -78,6 +82,17 @@ class NPC(pygame.sprite.Sprite):
         # list of targets to follow
         self.target: vec = vec(0, 0)
         self.targets: list[vec] = []
+
+        # is in attacking state
+        self.is_attacking: bool = False
+        # game time (time_elapsed) when last attack was made
+        self.attack_time: float  = 0.0
+        # how long to wait before next attack (in mili seconds)
+        self.attack_cooldown: int = 200
+
+        self.can_switch_weapon: bool = True
+        # how long to wait before next weapon switch (in mili seconds)
+        self.switch_duration_cooldown: int = 400
 
         # basic planar (N,E, S, W) physics
         # speed in pixels per second
@@ -111,19 +126,19 @@ class NPC(pygame.sprite.Sprite):
         self.state: npc_state.NPC_State = npc_state.Idle()
         self.state.enter_time = self.scene.game.time_elapsed
 
-    ###################################################################################################################
+    #############################################################################################################
     def create_health_bar(self, label_group: pygame.sprite.Group, pos: list[int]):
         return HealthBar(self.model, label_group, pos)
 
-    ###################################################################################################################
+    #############################################################################################################
     def create_shadow(self, shadow_group: pygame.sprite.Group):
         return Shadow(shadow_group, (0, 0), [TILE_SIZE - 2, 6])
 
-    ###################################################################################################################
+    #############################################################################################################
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.name})"
 
-    ###################################################################################################################
+    #############################################################################################################
     def get_tileset_coord(self, pos: vec | None = None) -> Point:
         """
         map position in world coordinates to tileset grid
@@ -134,7 +149,7 @@ class NPC(pygame.sprite.Sprite):
         # shift up by 4 pixels since perceived location is different than actual Sprite position on screen
         return Point(int(pos.x // TILE_SIZE), int((pos.y - 4) // TILE_SIZE))
 
-    ###################################################################################################################
+    #############################################################################################################
     def import_sprite_sheet(self, path: str):
         """
         Load sprite sheet and cut it into animation names and frames using SPRITE_SHEET_DEFINITION dict.
@@ -175,7 +190,7 @@ class NPC(pygame.sprite.Sprite):
                 if direction not in key:
                     self.animations[f"{key}_{direction}"] = self.animations[key]
 
-    ###################################################################################################################
+    #############################################################################################################
     def import_image(self, path: str):
         """
         old implementation used with separate img per frame (e.g. monochrome_ninja)
@@ -195,7 +210,7 @@ class NPC(pygame.sprite.Sprite):
                     self.animations[f"{animation}_right"].append(converted)
                     self.animations[f"{animation}_left"].append(pygame.transform.flip(converted, True, False))
 
-    ###################################################################################################################
+    #############################################################################################################
     # MARK: animate
     def animate(self, state, dt: float, loop=True):
         self.frame_index += dt
@@ -211,9 +226,17 @@ class NPC(pygame.sprite.Sprite):
         if self.is_stunned:
             red_filter = pygame.Surface(self.image.get_size(), pygame.SRCALPHA)
             red_filter.fill(STUNNED_COLOR)
-            self.image.blit(red_filter, (0, 0))
+            # self.image.blit(red_filter, (0, 0))
+            # red_filter.blit(self.image, (0, 0))
+            # self.image = red_filter
 
-    ###################################################################################################################
+            value = math.sin(self.game.time_elapsed * 200.0)
+            value = 255 if value >= 0 else 0
+            self.image.set_alpha(value)
+        else:
+            self.image.set_alpha(255)
+
+    #############################################################################################################
     def get_direction_360(self) -> str:
         angle = self.vel.angle_to(vec(0, 1))
         angle = (angle + 360) % 360
@@ -227,7 +250,7 @@ class NPC(pygame.sprite.Sprite):
         else:
             return "down"
 
-    ###################################################################################################################
+    #############################################################################################################
     def get_direction_horizontal(self) -> str:
         angle = self.vel.angle_to(vec(0, 1))
         angle = (angle + 360) % 360
@@ -237,7 +260,7 @@ class NPC(pygame.sprite.Sprite):
         else:
             return "left"
 
-    ###################################################################################################################
+    #############################################################################################################
     # MARK: movement
     def movement(self):
         if self.is_stunned:
@@ -265,7 +288,7 @@ class NPC(pygame.sprite.Sprite):
 
         self.follow_waypoints()
 
-    ###################################################################################################################
+    #############################################################################################################
     def follow_waypoints(self):
         if self.waypoints_cnt > 0:
             npc_pos = self.pos
@@ -293,7 +316,7 @@ class NPC(pygame.sprite.Sprite):
             self.acc.x = direction.x
             self.acc.y = direction.y
 
-    ###################################################################################################################
+    #############################################################################################################
     def find_path(self):
         start = (self.tileset_coord.y, self.tileset_coord.x)
         target = self.get_tileset_coord(self.target)
@@ -331,17 +354,17 @@ class NPC(pygame.sprite.Sprite):
             self.acc = vec(0, 0)
             self.vel = vec(0, 0)
 
-    ###################################################################################################################
+    #############################################################################################################
     def jump(self):
         self.is_jumping = True
         self.up_acc = self.up_force
         # self.up_vel = 50
         self.jumping_offset = 1
 
-    ###################################################################################################################
+    #############################################################################################################
     # MARK: physics
     def physics(self, dt: float):
-        if self.is_stunned:
+        if self.is_stunned or self.is_attacking:
             return
 
         self.prev_pos = self.pos.copy()
@@ -392,21 +415,21 @@ class NPC(pygame.sprite.Sprite):
 
         self.adjust_rect()
 
-    ###################################################################################################################
+    #############################################################################################################
     def change_state(self):
         new_state = self.state.enter_state(self)
         if new_state:
             new_state.enter_time = self.scene.game.time_elapsed
             self.state = new_state
 
-    ###################################################################################################################
+    #############################################################################################################
     def check_scene_exit(self):
         for exit in self.scene.exit_sprites:
             if self.feet.colliderect(exit.rect):
                 self.die()
                 # TODO NPC goes to another map
 
-    ###################################################################################################################
+    #############################################################################################################
     def die(self):
         self.scene.NPC = [npc for npc in self.scene.NPC if not npc == self]
         self.shadow.kill()
@@ -417,12 +440,13 @@ class NPC(pygame.sprite.Sprite):
             splash_screen.SplashScreen(self.game, "GAME OVER").enter_state()
         self.kill()
 
-    ###################################################################################################################
+    #############################################################################################################
     def update(self, dt: float):
         self.state.update(dt, self)
         self.change_state()
 
-    ###################################################################################################################
+    #############################################################################################################
+
     def slide(self, colliders) -> None:
         move_vec = self.pos - self.prev_pos
         # can't move by full vector,
@@ -448,7 +472,7 @@ class NPC(pygame.sprite.Sprite):
         # slide is not possible, block movement
         self.move_back()
 
-    ###################################################################################################################
+    #############################################################################################################
     # MARK: process_custom_event
     def process_custom_event(self, **kwargs):
         # print(self.model.name, kwargs)
@@ -462,10 +486,20 @@ class NPC(pygame.sprite.Sprite):
             # show health bar
             self.health_bar.set_bar(-1.0, self.game)
             self.is_stunned = False
+            if self.model.health == 0:
+                self.die()
+
+        elif kwargs.get("action", "") ==  NPCEventActionEnum.attacking.value:
+            # attack cool off end
+            self.is_attacking = False
+            self.scene.group.remove(self.selected_weapon)
+        elif kwargs.get("action", "") ==  NPCEventActionEnum.switching_weapon.value:
+            # switching weapon cool off end
+            self.can_switch_weapon = True
         else:
             print("unknown action", self.model.name, kwargs)
 
-    ###################################################################################################################
+    #############################################################################################################
     # MARK: encounter
     def encounter(self, oponent: "NPC"):
         if oponent.model.attitude == AttitudeEnum.enemy.value:
@@ -484,8 +518,8 @@ class NPC(pygame.sprite.Sprite):
             if self.model.health == 0:
                 self.die()
 
-            if oponent.model.health == 0:
-                oponent.die()
+            # if oponent.model.health == 0:
+            #     oponent.die()
 
             self.is_stunned = True
             self.set_event_timer(self, NPCEventActionEnum.stunned, STUNNED_TIME, 1)
@@ -494,7 +528,7 @@ class NPC(pygame.sprite.Sprite):
             self.set_event_timer(oponent, NPCEventActionEnum.stunned, STUNNED_TIME, 1)
 
             # show health bar (for STUNNED_TIME ms)
-            self.health_bar.set_bar(self.model.health / self.model.max_health, self.game)
+            # self.health_bar.set_bar(self.model.health / self.model.max_health, self.game)
             oponent.health_bar.set_bar(oponent.model.health / oponent.model.max_health, self.game)
 
             # push the npc
@@ -521,15 +555,60 @@ class NPC(pygame.sprite.Sprite):
             self.set_event_timer(oponent, NPCEventActionEnum.pushed, PUSHED_TIME, 1)
 
             # show health bar (for PUSHED_TIME ms)
-            self.health_bar.set_bar(self.model.health / self.model.max_health, self.game)
+            # self.health_bar.set_bar(self.model.health / self.model.max_health, self.game)
             oponent.health_bar.set_bar(oponent.model.health / oponent.model.max_health, self.game)
 
-    ###################################################################################################################
+    #############################################################################################################
+    # MARK: hit
+    def hit(self, oponent: "NPC"):
+        if oponent.model.attitude == AttitudeEnum.enemy.value and self.is_attacking:
+            # deal damage to oponent only since we hit wit weapon
+            damage = self.selected_weapon.model.damage
+            oponent.model.health -= damage
+            oponent.model.health = max(0, oponent.model.health)
+
+            # print(f"{self.name}: {self.model.health} opponent {oponent.name} {oponent.model.health}")
+            # if oponent.model.health == 0:
+            #     oponent.die()
+
+            oponent.is_stunned = True
+            self.set_event_timer(oponent, NPCEventActionEnum.stunned, STUNNED_TIME, 1)
+
+            # show health bar (for STUNNED_TIME ms)
+            # self.health_bar.set_bar(self.model.health / self.model.max_health, self.game)
+            oponent.health_bar.set_bar(oponent.model.health / oponent.model.max_health, self.game)
+
+            # push the npc
+            player_move = self.pos - oponent.pos
+            if not player_move == vec(0, 0):
+                # self.pos += player_move.normalize() * 8
+                oponent.pos -= player_move.normalize() * 8
+
+            # self.acc = vec(0, 0)
+            oponent.acc = vec(0, 0)
+            # self.adjust_rect()
+            oponent.adjust_rect()
+        else:
+            pass
+            # push the npc
+            # player_move = self.pos - self.prev_pos
+            # if player_move != vec(0, 0):
+            #     oponent.pos += player_move.normalize() * TILE_SIZE
+            # oponent.adjust_rect()
+
+            # self.set_event_timer(self,    NPCEventActionEnum.pushed, PUSHED_TIME, 1)
+            # self.set_event_timer(oponent, NPCEventActionEnum.pushed, PUSHED_TIME, 1)
+
+            # # show health bar (for PUSHED_TIME ms)
+            # self.health_bar.set_bar(self.model.health / self.model.max_health, self.game)
+            # oponent.health_bar.set_bar(oponent.model.health / oponent.model.max_health, self.game)
+
+    #############################################################################################################
     def set_event_timer(self, npc: "NPC", action: NPCEventActionEnum, interval: int, repeat: int) -> None:
         event = pygame.event.Event(npc.custom_event_id, action=action.value)
         pygame.time.set_timer(event, interval, repeat)
 
-    ###################################################################################################################
+    #############################################################################################################
     def move_back(self) -> None:
         """
         If called after an update, the sprite can move back
@@ -540,7 +619,7 @@ class NPC(pygame.sprite.Sprite):
 
         self.adjust_rect()
 
-    ###################################################################################################################
+    #############################################################################################################
     def adjust_rect(self):
         self.tileset_coord = self.get_tileset_coord()
         # display sprite n pixels above position so the shadow doesn't stick out from the bottom
@@ -548,19 +627,22 @@ class NPC(pygame.sprite.Sprite):
         # 'hitbox' for collisions
         self.feet.midbottom = self.pos
         # shadow
-        # + vec(0, -1)
         self.shadow.rect.midbottom = self.pos
-        # + vec(0, -TILE_SIZE - 4)
         self.health_bar.rect.midtop = self.pos
 
-    ###################################################################################################################
+        if self.selected_weapon:
+            direction = self.get_direction_360()
+            self.selected_weapon.rect.center = self.pos + WEAPON_DIRECTION_OFFSET[direction]
+            self.selected_weapon.image = self.selected_weapon.image_directions[direction]
+
+    #############################################################################################################
     def debug(self, msgs: list[str]):
         if scene.SHOW_DEBUG_INFO:
             for i, msg in enumerate(msgs):
                 self.game.render_text(msg, (0, HEIGHT - 25 - i * 25))
 
 
-#######################################################################################################################
+#################################################################################################################
 # MARK: Player
 class Player(NPC):
     def __init__(
@@ -578,11 +660,19 @@ class Player(NPC):
         self.speed_run  *= 1.5
         self.speed_walk *= 1.2
         self.speed = self.speed_run
+        self.health_bar_ui = self.create_health_bar_ui(label_group, pos, 8)
+        label_group.remove(self.health_bar)
 
-    ###################################################################################################################
+    #############################################################################################################
+    def create_health_bar_ui(self, label_group: pygame.sprite.Group, pos: list[int], scale: int = 1):
+        return HealthBarUI(self.model, label_group, pos, scale)
+
+    #############################################################################################################
     def movement(self):
-        global INPUTS
+        if self.is_stunned or self.is_attacking:
+            return
 
+        global INPUTS
         if not self.target == vec(0, 0):
             self.follow_waypoints()
 
@@ -620,6 +710,18 @@ class Player(NPC):
             self.waypoints_cnt = 0
             self.waypoints = ()
 
+        if INPUTS["attack"]:
+            if not self.is_attacking and self.selected_weapon:
+                self.is_attacking = True
+                self.attack_time = self.game.time_elapsed
+                self.scene.group.add(self.selected_weapon)
+                weapon_cooldown = int(self.selected_weapon.model.cooldown_time * 1000.0) if self.selected_weapon else 0
+                self.set_event_timer(
+                    self,
+                    NPCEventActionEnum.attacking,
+                    self.attack_cooldown + weapon_cooldown,
+                    1)
+
         if INPUTS["left"]:
             self.acc.x = -self.force
             self.target = vec(0, 0)
@@ -640,7 +742,7 @@ class Player(NPC):
             if self.target == vec(0, 0):
                 self.acc.y = 0
 
-    ###################################################################################################################
+    #############################################################################################################
     def check_scene_exit(self):
         for exit in self.scene.exit_sprites:
             if self.feet.colliderect(exit.rect):
@@ -650,7 +752,7 @@ class Player(NPC):
                 self.scene.transition.exiting = True
                 # self.scene.go_to_scene()
 
-    ###################################################################################################################
+    #############################################################################################################
     def use_item(self) -> None:
         if not self.items or not self.selected_item_idx >= 0 or self.selected_item_idx > len(self.items) - 1:
             return None
@@ -660,15 +762,23 @@ class Player(NPC):
             self.model.health += item.model.health_impact
             self.model.health = max(0, min(self.model.health, self.model.max_health))
         elif item.model.type == ItemTypeEnum.weapon:
-            if self.selected_weapon:
-                if self.selected_weapon.model.name == item.model.name:
-                    self.selected_weapon = None
+            if self.can_switch_weapon and not self.is_attacking and not self.is_stunned:
+                self.can_switch_weapon = False
+                self.set_event_timer(self, NPCEventActionEnum.switching_weapon, self.switch_duration_cooldown, 1)
+
+                if self.selected_weapon:
+                    if self.selected_weapon.model.name == item.model.name:
+                        # self.scene.group.remove(self.selected_weapon)
+                        self.selected_weapon = None
+                    else:
+                        # self.scene.group.remove(self.selected_weapon)
+                        self.selected_weapon = item
+                        # self.scene.group.add(self.selected_weapon)
                 else:
                     self.selected_weapon = item
-            else:
-                self.selected_weapon = item
+                    # self.scene.group.add(self.selected_weapon)
 
-    ###################################################################################################################
+    #############################################################################################################
     def pick_up(self, item: ItemSprite) -> bool:
         result: bool = False
 
@@ -696,7 +806,7 @@ class Player(NPC):
 
         return result
 
-    ###################################################################################################################
+    #############################################################################################################
     def drop_item(self) -> ItemSprite | None:
         if not self.items or not self.selected_item_idx >= 0 or self.selected_item_idx > len(self.items) - 1:
             return None
