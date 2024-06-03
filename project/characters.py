@@ -761,6 +761,12 @@ class Player(NPC):
         if item.model.type == ItemTypeEnum.consumable:
             self.model.health += item.model.health_impact
             self.model.health = max(0, min(self.model.health, self.model.max_health))
+            item.model.count -= 1
+            self.total_items_weight -= item.model.weight
+            if item.model.count <= 0:
+                self.items.remove(item)
+                if self.selected_item_idx >= len(self.items):
+                    self.selected_item_idx -= 1
         elif item.model.type == ItemTypeEnum.weapon:
             if self.can_switch_weapon and not self.is_attacking and not self.is_stunned:
                 self.can_switch_weapon = False
@@ -786,7 +792,7 @@ class Player(NPC):
             self.model.money += item.model.value
             result = True
         else:
-            item_total_weight = item.model.weight * item.model.count
+            item_total_weight = item.model.weight  # * item.model.count
             if self.total_items_weight + item_total_weight <= self.model.max_carry_weight:
                 self.total_items_weight += item_total_weight
                 found = False
@@ -812,16 +818,21 @@ class Player(NPC):
             return None
 
         selected_item = self.items[self.selected_item_idx]
-        self.total_items_weight -= selected_item.model.weight * selected_item.model.count
+        self.total_items_weight -= selected_item.model.weight  # * selected_item.model.count
 
         if selected_item.model.count > 1:
             org_item = selected_item
             org_item.model.count -= 1
+
             selected_item = copy.copy(org_item)
             selected_item.rect = org_item.rect.copy()
             selected_item.model = copy.copy(org_item.model)
             selected_item.model.count = 1
         else:
+            if selected_item.model.type == ItemTypeEnum.weapon and self.selected_weapon:
+                if self.selected_weapon.model.name == selected_item.model.name:
+                    self.selected_weapon = None
+
             self.items.remove(selected_item)
             if self.selected_item_idx >= len(self.items):
                 self.selected_item_idx -= 1

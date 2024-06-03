@@ -696,8 +696,12 @@ class Scene(State):
                     # try to pick up item
                     res = self.player.pick_up(items[collided_index])
                     if res:
-                        self.group.remove(items[collided_index])
-                        self.item_sprites.remove(items[collided_index])
+                        try:
+                            # if self.group.has(items[collided_index]):
+                            self.group.remove(items[collided_index])
+                            self.item_sprites.remove(items[collided_index])
+                        except KeyError:
+                            pass
                     else:
                         print(f"You can't pick up '{items[collided_index].model.name}' - it's too heavy.")
             INPUTS["pick_up"] = False

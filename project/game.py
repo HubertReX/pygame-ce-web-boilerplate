@@ -1,4 +1,3 @@
-import ffmpeg
 from PIL import Image
 from opengl_shader import OpenGL_shader
 import pygame
@@ -10,7 +9,6 @@ import numpy as np
 
 import asyncio
 import os
-import sys
 
 import random
 from rich import print, traceback
@@ -23,6 +21,7 @@ if IS_WEB:
     from config_model.config import load_config
 else:
     from config_model.config_pydantic import load_config
+    import ffmpeg
 
 environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 

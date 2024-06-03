@@ -65,7 +65,7 @@ class UI:
 
     def display(self, player, elapsed_time: float):
         # UI semitransparent background panel
-        self.box(TILE_SIZE, TILE_SIZE, 320, 100)
+        self.box(TILE_SIZE, TILE_SIZE, 450, 125)
 
         self.display_text("Health", (TILE_SIZE + 10, TILE_SIZE + 20))
         hb = player.health_bar_ui
@@ -76,8 +76,15 @@ class UI:
         self.display_text(
             f"Weight  {player.total_items_weight:4.2f}/{player.model.max_carry_weight:4.2f}",
             (TILE_SIZE + 10, TILE_SIZE + 45))
+        if player.selected_item_idx >= 0:
+            item_model = player.items[player.selected_item_idx].model
+            item = f"{item_model.name}[{item_model.count}]"
+        else:
+            item = "N/A"
         self.display_text(
-            f"Money   {player.model.money}", (TILE_SIZE + 10, TILE_SIZE + 70))
+            f"Item    < {item} >", (TILE_SIZE + 10, TILE_SIZE + 70))
+        self.display_text(
+            f"Money   {player.model.money}", (TILE_SIZE + 10, TILE_SIZE + 95))
 
         # weapon panel
         if player.is_attacking:

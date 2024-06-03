@@ -54,14 +54,14 @@
             "value": 500
         },
         "flask_health": {
-            "name": "Life restore flask",
+            "name": "Life flask",
             "type": "consumable",
             "health_impact": 50,
             "weight": 0.15,
             "value": 300
         },
         "life_pot": {
-            "name": "Life restore potion",
+            "name": "Life potion",
             "type": "consumable",
             "health_impact": 50,
             "weight": 0.15,

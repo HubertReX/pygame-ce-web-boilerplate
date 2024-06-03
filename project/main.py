@@ -17,6 +17,7 @@
 #  "zengl",
 #  "struct",
 #  "pathlib",
+#  "pillow"
 # ]
 # ///
 import random
