@@ -13,7 +13,7 @@ You can play it online:
 
 - [![GitHub Pages](https://img.shields.io/badge/github_pages-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](https://hubertrex.github.io/pygame-ce-web-boilerplate/NinjaAdventure)
 
-- [![Itch.io](https://img.shields.io/badge/Itch-%23FF0B34.svg?style=for-the-badge&logo=Itch.io&logoColor=white)](https://itch.io)
+- [![Itch.io](https://img.shields.io/badge/Itch-%23FF0B34.svg?style=for-the-badge&logo=Itch.io&logoColor=white)](https://hubertnafalski.itch.io/top-down-rpg)
 
 Build using:
 ![Pygame-ce](https://raw.githubusercontent.com/pygame/pygame/main/docs/reST/_static/pygame_logo.svg)
@@ -43,14 +43,14 @@ Build using:
 - semi-transparent panels and text with background (alpha blending)
 - full-screen **color filtering** (alpha blending, e.g.: warm sunny light, dark blue at night)
 - postprocessing OpenGL/WebGL **shaders** ([zengl](https://github.com/szabolcsdombi/zengl)): _saturated_, _black&white_, _retro CRT monitor_
-- **day** and **night** cycle (implementation moved from alpha blending to shaders for better performance)
+- **day** and **night** cycle (implemented using shaders for better performance)
 - functionality that allows **animate** any numerical value of the game like camera position, time of day allowing to create custom **cutscenes**
   - non-numerical values and any other game function can be scheduled for execution at given time (_chain_, _delay_)
   - complete workflow to create `json` with **cutscene** definition and automatic execution - separation from core game logic
   - different kinds of **transitions** between changed values (_linear_, _quad_, _sin_, _anticipation_, _overshoot_  with '_in_', '_out_', '_in&out_' and more)
   - **PoC** of exemplary game **intro** can be tested by pressing **F4**
   - based on [Bitcraft's](https://github.com/bitcraft) genius [animation](https://github.com/bitcraft/animation) module
-- particle system (_falling leaves_, _rain_ (`WIP`), more to come)
+- particle system (_falling leaves_, _rain_, more to come)
 - game manual and auto **pause** (if the game window is out of focus)
 - pixel style **monospace font**
 - **animated sprites** with static mockup shadows, and health bar - NPCs animations can be customized for new asset pack, by changing `SPRITE_SHEET_DEFINITION` in [settings.py](./project/settings.py#L165)
@@ -66,21 +66,22 @@ Build using:
 - separation of **key bindings** from **actions** - easy to customize in one file
 - scene **transitions** (_fade in/out_, _circle shutter close/open_)
 - build-in **screenshots** saving (in both **desktop** and **Web** modes)
-- build-in gameplay **recordings** saving (_.mp4,_.avi, *.webm, series of png files) thanks to [pygame_screen_record](https://github.com/theRealProHacker/PyGameRecorder) (patched "ScreenRecorder.py", line 570) - only in **desktop** mode
-- automatic **build** and **deploy** from selected branch to **GitHub Pages** using [GitHub action](.github/workflows/pygbag.yml)
+- build-in gameplay **recordings** saving (*.mp4) thanks to [ffmpeg-python](https://github.com/kkroening/ffmpeg-python) - only in **desktop** mode
+- automatic **build** and **deploy** from selected branch to [GitHub Pages](.github/workflows/pygbag.yml) and [itch.io](.github/workflows/itch_io.yml) using **GitHub action**
 
 ## Known bugs
 
 - ✅ ~~screenshot of menu not working (showing only part of menu)~~ - `done`
 - ✅ ~~some key events are lost (action is repeated even key is not pressed in menus)~~ - `done`
-- after transition between game **Scenes**, game state is not preserved
+- ✅ ~~after transition between game **Scenes**, game state is not preserved~~ - `done`
 - ✅ ~~low performance of **A**_function - delaying of **A**_ calls (no need to do it every frame)~~ - `done`
 - ✅ ~~very low performance of **color filtering** (alpha blending) on **Windows** (heavy on **CPU**), although works well on **Macbook** - to be moved into **shader**~~ - `done`
-- **pydantic** not imported properly in **WEB** (problem with **pygbag**)
+- ✅ ~~**pydantic** not imported properly in **WEB** (problem with **pygbag**)~~ - as workaround **WEB** version uses static dataclasses - `done`
 - **camera** randomly stops **following** the **Player**
 - game not loading on **Firefox**
 - Player shouldn't move after **colliding** with **map exit**
-- **leafs** particles are moving in screen coordinates, but should move according to game world coordinates
+- ✅ ~~**leafs** particles are moving in screen coordinates, but should move according to game world coordinates~~ - `done`
+- ✅ ~~gameplay recording flickering when night shader is applied~~ - switched to **ffmpeg-python** lib - `done`
 
 ## Ideas for future
 
@@ -89,20 +90,20 @@ Build using:
 - ✅ ~~list key bindings~~ - `done`
 - ✅ ~~create global **config** `json` with `schema`~~ -  `done`
 - ⏳ add UI (~~**health bar**~~ ✅, player stats) -  `WIP`
-- ⏳ ~~add **particles** system~~ ✅ (~~leafs~~ ✅, ~~wind~~ ✅, _rain_ ⏳, _footsteps_, _smoke_) - `WIP`
+- ⏳ ~~add **particles** system~~ ✅ (~~leafs~~ ✅, ~~wind~~ ✅, _rain_ ✅, _footsteps_, _smoke_) - `WIP`
 - ✅ ~~add **day/night** cycle~~ - `done`
-- add **weather** conditions (e.g.: _rain_)
+- add **weather** conditions changing over time (e.g.: _rain_)
 - add **fog of war** and/or **line of sight** - try [this](https://www.redblobgames.com/grids/circle-drawing/)
-- ⏳ add **light** sources (~~_around NPCs_~~ ✅, _camp fire_, _torch_, _houses_) - `WIP`
+- ⏳ add **light** sources (~~_around NPCs_~~ ✅, _camp fire_, _torch_, _houses_ ✅) - `WIP`
 - ✅ ~~add NPC, enemies with movements (add shadows)~~ - `done`
 - add **animals**
 - add NPC and Player the ability to move on different **ground levels** (_hills_, _valley_, _bridge_ over lower level)
 - add separate `walls` layer used for collision detection when **Player** is **airborn** (e.g.: _jump_, _flying_)
 - add **movable** objects
 - add object **destruction**
-- add item **drop/pickup** and **inventory** system
+- ✅ ~~add item **drop/pickup** and **inventory** system~~ - `done`
 - add **items spawning** on the map
-- separate **Scene** state from currently loaded **map**
+- ✅ ~~separate **Scene** state from currently loaded **map**~~ - `done`
 - 💡 add procedurally generated, natural looking **animations**/**movements** (using **Second Order Dynamics**) - `POC`
 - ⏳ add **fighting** system - `WIP`
 - add **gamepad** controller mapping - useful on handhelds like **SteamDeck**
@@ -122,7 +123,7 @@ Build using:
 
 ### Tools and experiments
 
-- add **animated gif** with gameplay for promotion (use ezGif or [DaVinci Resolve](https://www.blackmagicdesign.com/products/davinciresolve/))
+- add **animated gif** with gameplay for promotion (use ezGif or [DaVinci Resolve](https://www.blackmagicdesign.com/products/davinciresolve/) or simply **ffmpeg** from CLI)
 - test **pixel editors**:
   - [Pyxel Edit](https://pyxeledit.com/get.php) - `$9`
   - [Piskel](https://www.piskelapp.com/) - `free`, online
@@ -139,10 +140,10 @@ Build using:
   - customize sprite animation config `SPRITE_SHEET_DEFINITION` in [settings.py](./project/settings.py#L165) to new layout, add missing options (mirror, copy default)
   - create new copy of maze template [MazeTileset_clean.tmx](./project/assets/MazeTileset/MazeTileset_clean.tmx) maze map using new tile sheets
   - change tiles IDs in [maze_utils.py](./project/maze_generator/maze_utils.py)
-- add game page on [itch.io](https://itch.io) and customize `CSS` (see [link](https://www.youtube.com/watch?v=VM3cnMU4A-M&list=WL&index=11&pp=gAQBiAQB))
-- add **GitHub action** to automatically deploy to [itch.io](https://itch.io) - use [this](https://github.com/marketplace/actions/itch-io-publish) and [this](https://www.youtube.com/watch?v=TXROTe0ASeM)
+- ⏳ add game page on [itch.io](https://hubertnafalski.itch.io/top-down-rpg) and customize `CSS` (see [link](https://www.youtube.com/watch?v=VM3cnMU4A-M&list=WL&index=11&pp=gAQBiAQB)) - `WIP`
+- ✅ ~~add **GitHub action** to automatically deploy to [itch.io](https://itch.io) - use [this](https://github.com/marketplace/actions/itch-io-publish) and [this](https://www.youtube.com/watch?v=TXROTe0ASeM)~~ - `done`
 - 💡 animation/movement with the use of `Second Order Dynamics` (**SOD**) - movement with **anticipation** and **overshoot** `proof of concept`ready (see [project/game.py#L89](https://github.com/HubertReX/pygame-ce-web-boilerplate/blob/2ef2c9b98881a237c375b02b0027f6f95fc5ae4d/project/game.py#L89)) - `POC`
-- 💡 live **recording** of animation generated by **OpenGL** directly to **mp4** file (see side script [utils/ffmpeg_recorder.py](utils/ffmpeg_recorder.py)) using: **zengl**, **pil**, **numpy**, **ffmpeg** - `POC`
+- ✅ ~~live **recording** of animation generated by **OpenGL** directly to **mp4** file (see side script [utils/ffmpeg_recorder.py](utils/ffmpeg_recorder.py)) using: **zengl**, **pil**, **numpy**, **ffmpeg**~~ - `done`
 - **build** and **distribute** standalone **executables** for 3 major platforms using [NW.js](https://github.com/nwjs/nw.js) - see [link](https://dev.to/jacklehamster/releasing-a-web-game-onto-steam-47cd) - might be useful when releasing on **Steam**
 - try out the `Level Designer toolkit` [LDtk](https://ldtk.io/) as supplement or substitution of [Tiled](https://www.mapeditor.org/)
 - try out the [Thorpy](https://www.thorpy.org/doc.html) for **UI/HUD** - as full replacement of current **menus** or at least the **heterogeneous texts** for mixed text and formatting (see [doc](https://www.thorpy.org/examples/heterogeneous_texts.html)) - can be useful in **dialogs**
