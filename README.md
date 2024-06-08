@@ -133,6 +133,7 @@ Build using:
     - [PixelLab](https://www.pixellab.ai/) - `free` tier, plugin for Aseprite to generate pixel art, rendered in cloud
     - [RetroDiffusion](https://astropulse.itch.io/retrodiffusion) - `$60` plugins for Aseprite to generate pixel art using Stable Diffusion
   - [PixelVive](https://beta.pixelvibe.com/) - `free` online asset generator
+  - [OpenPoseAI](https://openposeai.com/) - use **OpenPoseAI** with SD to get best pose - see [video](https://www.youtube.com/watch?v=849xBkgpF3E&list=PLEAS_zp3JXpuYxEsXiazPGSMa260ahuYP&ab_channel=Mickmumpitz)
 - create **workflow** to quickly create **new assets** (_characters_, _animations_, _tiles_):
   - use **Stable Diffusion**
   - find pixelation filter and apply to images found on net (eg.: for different types of trees)
