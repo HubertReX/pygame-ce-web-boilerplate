@@ -13,8 +13,10 @@ import os
 import random
 from rich import print, traceback
 from settings import ACTIONS, BG_COLOR, CONFIG_FILE, CUTSCENE_BG_COLOR, DEFAULT_SHADER, FONT_COLOR, FONT_SIZE_DEFAULT, \
-    FONT_SIZE_LARGE, FONT_SIZE_MEDIUM, FONT_SIZE_SMALL, FONT_SIZE_TINY, FPS_CAP, GAME_NAME, HEIGHT, INPUTS, \
-    IS_FULLSCREEN, IS_WEB, MAIN_FONT, MOUSE_CURSOR_IMG, PANEL_BG_COLOR, PROGRAM_ICON, RECORDING_FPS, SCALE, \
+    FONT_SIZE_LARGE, FONT_SIZE_MEDIUM, FONT_SIZE_SMALL, FONT_SIZE_TINY, FPS_CAP, GAME_NAME, GAMEPAD_XBOX_AXIS2ACTIONS, \
+    GAMEPAD_XBOX_BUTTON2ACTIONS, GAMEPAD_XBOX_CONTROL_NAMES, HEIGHT, INPUTS, \
+    IS_FULLSCREEN, IS_WEB, JOY_COOLDOWN, JOY_DRIFT, JOY_MOVE_MULTIPLIER, MAIN_FONT, MOUSE_CURSOR_IMG, PANEL_BG_COLOR, \
+    PROGRAM_ICON, RECORDING_FPS, SCALE, \
     SCREENSHOTS_DIR, SHADERS_NAMES, TEXT_ROW_SPACING, TILE_SIZE, USE_CUSTOM_MOUSE_CURSOR, USE_SOD, WIDTH, \
     ColorValue, vec, vec3, USE_SHADERS
 if IS_WEB:
@@ -24,6 +26,8 @@ else:
     import ffmpeg
 
 environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
+# https://www.reddit.com/r/pygame/comments/12twl0e/cannot_rumble_dualshock_4_via_bluetooth_in_pygame/
+environ["SDL_JOYSTICK_HIDAPI_PS4_RUMBLE"] = "1"
 
 if USE_SOD:
     from second_order_dynamics import SecondOrderDynamics
@@ -44,6 +48,15 @@ class Game:
     def __init__(self) -> None:
         self.conf = load_config(CONFIG_FILE)
         pygame.init()
+
+        # initialise the joystick module
+        pygame.joystick.init()
+
+        # create empty list to store joysticks
+        self.joysticks: list[pygame.joystick.JoystickType] = []
+        self.is_joystick_in_use: bool = False
+        self.joy_actions_cooldown: dict[str, float] = {}
+
         self.clock: pygame.time.Clock = pygame.time.Clock()
         # time elapsed in seconds (milliseconds as fraction) without pause time
         self.time_elapsed: float = 0.0
@@ -377,10 +390,12 @@ class Game:
                 handler = self.custom_events[event.type]
                 handler(**event.dict)
             elif event.type == pygame.KEYDOWN:
+                self.is_joystick_in_use = False
                 for action, definition in ACTIONS.items():
                     if event.key in definition["keys"]:
                         INPUTS[action] = True
             elif event.type == pygame.KEYUP:
+                self.is_joystick_in_use = False
                 for action, definition in ACTIONS.items():
                     if event.key in definition["keys"]:
                         INPUTS[action] = False
@@ -409,6 +424,54 @@ class Game:
                 elif event.button == 4:
                     INPUTS["scroll_click"] = False
 
+            elif event.type == pygame.JOYDEVICEADDED:
+                joy = pygame.joystick.Joystick(event.device_index)
+                self.joysticks.append(joy)
+                self.is_joystick_in_use = True
+
+        for joystick in self.joysticks:
+            for i in range(joystick.get_numbuttons()):
+                if joystick.get_button(i):
+                    self.is_joystick_in_use = True
+                    break
+            else:
+                for i in range(joystick.get_numaxes()):
+                    if joystick.get_axis(i) > JOY_DRIFT:
+                        self.is_joystick_in_use = True
+                        break
+            break
+
+        if self.is_joystick_in_use:
+            for joystick in self.joysticks:
+
+                for button_name, action in GAMEPAD_XBOX_BUTTON2ACTIONS.items():
+                    pressed = joystick.get_button(GAMEPAD_XBOX_CONTROL_NAMES["buttons"][button_name])
+                    if pressed:
+                        print(button_name)
+
+                    if not pressed:
+                        INPUTS[action] = pressed
+                    elif self.time_elapsed - self.joy_actions_cooldown.get(action, 0.0) >= JOY_COOLDOWN:
+                        self.joy_actions_cooldown[action] = self.time_elapsed
+                        if pressed:
+                            print("   ", action)
+                        INPUTS[action] = pressed
+                        # joystick.get_button(GAMEPAD_XBOX_CONTROL_NAMES["buttons"][button_name])
+
+                for axis_name, actions in GAMEPAD_XBOX_AXIS2ACTIONS.items():
+                    value = joystick.get_axis(GAMEPAD_XBOX_CONTROL_NAMES["axis"][axis_name])
+                    if abs(value) > JOY_DRIFT:
+                        if value > 0.0:
+                            # e.g. left/up
+                            INPUTS[actions[0]] = False
+                            # eg. right/down
+                            INPUTS[actions[1]] = True
+                            INPUTS[f"{actions[1]}_value"] = abs(value)
+                        else:
+                            INPUTS[actions[0]] = True
+                            INPUTS[f"{actions[0]}_value"] = abs(value)
+                            INPUTS[actions[1]] = False
+
         global USE_SHADERS
         # global IS_PAUSED
         if INPUTS["pause"]:
@@ -427,6 +490,11 @@ class Game:
 
         if INPUTS["screenshot"]:
             INPUTS["screenshot"] = not self.save_screenshot()
+
+        if INPUTS["run"]:
+            for joystick in self.joysticks:
+                joystick.rumble(1, 0, 450)
+                joystick.rumble(0, 1, 250)
 
         # if INPUTS["shaders_toggle"]:
         #     USE_SHADERS = not USE_SHADERS

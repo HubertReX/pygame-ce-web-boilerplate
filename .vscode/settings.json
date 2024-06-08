@@ -21,6 +21,7 @@
         "gids",
         "glsl",
         "hitbox",
+        "JOYDEVICEADDED",
         "KEYDOWN",
         "KEYUP",
         "LALT",
@@ -29,6 +30,8 @@
         "midtop",
         "MOUSEBUTTONDOWN",
         "MOUSEBUTTONUP",
+        "numaxes",
+        "numbuttons",
         "opengl",
         "permonitorv",
         "pydantic",
@@ -37,6 +40,7 @@
         "pyscroll",
         "pytmx",
         "RALT",
+        "rawvideo",
         "SRCALPHA",
         "THECOLORS",
         "tileset",
@@ -44,6 +48,7 @@
         "topleft",
         "underdamped",
         "unorm",
+        "vflip",
         "vsync",
         "WINDOWFOCUSGAINED",
         "WINDOWFOCUSLOST",
@@ -53,5 +58,6 @@
         "WINDOWRESTORED",
         "WINDOWSHOWN",
         "zengl"
-    ]
+    ],
+    "python.analysis.typeCheckingMode": "off"
 }

@@ -104,7 +104,7 @@ ACTIONS = {
     "run":            {"show": ["CTRL"],     "msg": "toggle run",  "keys": [pygame.K_LSHIFT, pygame.K_RSHIFT]},
     "jump":           {"show": ["SPACE"],    "msg": "jump",        "keys": [pygame.K_SPACE]},
     "fly":            {"show": ["SHIFT"],    "msg": "toggle fly",  "keys": [pygame.K_LALT, pygame.K_RALT]},
-    "attack":         {"show": ["attack"],   "msg": "attack",      "keys": [pygame.K_SPACE]},
+    "attack":         {"show": ["SPACE"],    "msg": "attack",      "keys": [pygame.K_SPACE]},
     "pick_up":        {"show": ["e"],        "msg": "pick up item", "keys": [pygame.K_e]},
     "drop":           {"show": ["x"],        "msg": "drop item",   "keys": [pygame.K_x]},
     "next_item":      {"show": [">"],        "msg": "next item",   "keys": [pygame.K_PERIOD]},
@@ -137,6 +137,83 @@ INPUTS = {}
 for key in ACTIONS.keys():
     INPUTS[key] = False
 
+JOY_DRIFT: float = 0.25
+JOY_MOVE_MULTIPLIER: float = 5
+GAMEPAD_XBOX_CONTROL_NAMES: dict[str, dict[str, int]] = {
+    "buttons": {
+        "A":              0,
+        "B":              1,
+        "X":              2,
+        "Y":              3,
+        "context":        4,
+        "xbox":           5,
+        "settings":       6,
+        "leftjoy_click":  7,
+        "rightjoy_click": 8,
+        "LB":             9,
+        "RB":             10,
+        "dpad_up":        11,
+        "dpad_down":      12,
+        "dpad_left":      13,
+        "dpad_right":     14,
+
+    },
+    "axis": {
+        "leftjoy_horizontal":  0,
+        "leftjoy_vertical":    1,
+        "rightjoy_horizontal": 2,
+        "rightjoy_vertical":   3,
+        "LT":                  4,
+        "RT":                  5,
+    }
+}
+# GAMEPAD_XBOX_CONTROL_NAMES_REV: dict[str, dict[int, str]] = {
+#     "buttons": {
+#         0:  "A",
+#         1:  "B",
+#         2:  "X",
+#         3:  "Y",
+#         4:  "context",
+#         5:  "xbox",
+#         6:  "settings",
+#         7:  "leftjoy_click",
+#         8:  "rightjoy_click",
+#         9:  "LB",
+#         10: "RB",
+#         11: "dpad_up",
+#         12: "dpad_down",
+#         13: "dpad_left",
+#         14: "dpad_right",
+
+#     },
+#     "axis": {
+#         0: "leftjoy_horizontal",
+#         1: "leftjoy_vertical",
+#         2: "rightjoy_horizontal",
+#         3: "rightjoy_vertical",
+#         4: "LT",
+#         5: "RT",
+#     }
+# }
+GAMEPAD_XBOX_BUTTON2ACTIONS: dict[str, str] = {
+    "A":          "attack",
+    "B":          "use_item",
+    "X":          "pick_up",
+    "Y":          "drop",
+    "context":    "run",
+    "settings":   "quit",
+    "LB":         "prev_item",
+    "RB":         "next_item",
+    "dpad_up":    "up",
+    "dpad_down":  "down",
+    "dpad_left":  "left",
+    "dpad_right": "right",
+}
+GAMEPAD_XBOX_AXIS2ACTIONS: dict[str, tuple[str, str]] = {
+    "leftjoy_horizontal": ("left", "right"),
+    "leftjoy_vertical":   ("up",   "down"),
+}
+JOY_COOLDOWN: float = 0.15
 
 # define configuration variables here
 CURRENT_DIR = Path(__file__).parent
