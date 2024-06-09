@@ -94,7 +94,7 @@ class Scene(State):
         # self.circle_gradient: pygame.Surface = (CIRCLE_GRADIENT).convert_alpha()
 
         self.load_map()
-        self.ui = UI(self.game.canvas, self.game.fonts[FONT_SIZE_MEDIUM])
+        self.ui = UI(self.game, self.game.canvas, self.game.fonts[FONT_SIZE_MEDIUM])
         # self.set_camera_on_player()
 
     #############################################################################################################
@@ -793,7 +793,7 @@ class Scene(State):
         # render semitransparent panel in background
         rect = pygame.Rect(
             WIDTH - 400 - 4,
-            -10 + FONT_SIZE_MEDIUM * TEXT_ROW_SPACING,
+            30 + FONT_SIZE_MEDIUM * TEXT_ROW_SPACING,
             400 - 2,
             (len(show_actions) + 1) * FONT_SIZE_MEDIUM * TEXT_ROW_SPACING
         )
@@ -803,7 +803,7 @@ class Scene(State):
         for i, action in enumerate(show_actions, start=1):
             self.game.render_text(
                 f"{', '.join(action['show']):>11} - {action['msg']}",
-                (WIDTH - 400, int(i * FONT_SIZE_MEDIUM * TEXT_ROW_SPACING)),
+                (WIDTH - 400, 40 + int(i * FONT_SIZE_MEDIUM * TEXT_ROW_SPACING)),
                 shadow = True
             )
 

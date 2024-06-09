@@ -193,6 +193,36 @@ GAMEPAD_XBOX_CONTROL_NAMES: dict[str, dict[str, int]] = {
         "RT":                  5,
     }
 }
+GAMEPAD_WEB_CONTROL_NAMES: dict[str, dict[str, int]] = {
+    "buttons": {
+        "A":              0,
+        "B":              1,
+        "X":              2,
+        "Y":              3,
+        "context":        8,
+        "xbox":           16,
+        "settings":       9,
+        "leftjoy_click":  10,
+        "rightjoy_click": 11,
+        "LB":             4,
+        "RB":             5,
+        "LT":             6,
+        "RT":             7,
+        "dpad_up":        12,
+        "dpad_down":      13,
+        "dpad_left":      14,
+        "dpad_right":     15,
+
+    },
+    "axis": {
+        "leftjoy_horizontal":  0,
+        "leftjoy_vertical":    1,
+        "rightjoy_horizontal": 2,
+        "rightjoy_vertical":   3,
+        "LT":                  4,
+        "RT":                  5,
+    }
+}
 # GAMEPAD_XBOX_CONTROL_NAMES_REV: dict[str, dict[int, str]] = {
 #     "buttons": {
 #         0:  "A",

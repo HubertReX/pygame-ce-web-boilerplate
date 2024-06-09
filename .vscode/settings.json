@@ -22,6 +22,7 @@
         "glsl",
         "hitbox",
         "JOYDEVICEADDED",
+        "JOYDEVICEREMOVED",
         "KEYDOWN",
         "KEYUP",
         "LALT",
@@ -59,5 +60,5 @@
         "WINDOWSHOWN",
         "zengl"
     ],
-    "python.analysis.typeCheckingMode": "basic"
+    "python.analysis.typeCheckingMode": "off"
 }

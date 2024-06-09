@@ -4,11 +4,13 @@ from objects import ItemSprite
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from characters import Player
+    from game import Game
 from settings import FONT_COLOR, PANEL_BG_COLOR, TILE_SIZE, WIDTH, HEIGHT
 
 
 class UI:
-    def __init__(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
+    def __init__(self, game: Game, screen: pygame.Surface, font: pygame.font.Font) -> None:
+        self.game = game
         self.display_surface = screen
         self.font = font
 
@@ -90,6 +92,10 @@ class UI:
             f"Item    < {item} >", (TILE_SIZE + 10, TILE_SIZE + 70))
         self.display_text(
             f"Money   {player.model.money}", (TILE_SIZE + 10, TILE_SIZE + 95))
+
+        # upper right corner
+        self.box(WIDTH - 200, TILE_SIZE, 180, 10 + (25 * 1))
+        self.display_text(f"FPS: {self.game.fps:4.2f}", (WIDTH - 200 + 10, TILE_SIZE + 10))
 
         # weapon panel
         if player.is_attacking:

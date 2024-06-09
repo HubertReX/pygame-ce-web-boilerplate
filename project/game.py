@@ -13,7 +13,8 @@ import os
 import random
 from rich import print, traceback
 from settings import ACTIONS, BG_COLOR, CONFIG_FILE, CUTSCENE_BG_COLOR, DEFAULT_SHADER, FONT_COLOR, FONT_SIZE_DEFAULT, \
-    FONT_SIZE_LARGE, FONT_SIZE_MEDIUM, FONT_SIZE_SMALL, FONT_SIZE_TINY, FPS_CAP, GAME_NAME, GAMEPAD_XBOX_AXIS2ACTIONS, \
+    FONT_SIZE_LARGE, FONT_SIZE_MEDIUM, FONT_SIZE_SMALL, FONT_SIZE_TINY, FPS_CAP, GAME_NAME, \
+    GAMEPAD_WEB_CONTROL_NAMES, GAMEPAD_XBOX_AXIS2ACTIONS, \
     GAMEPAD_XBOX_BUTTON2ACTIONS, GAMEPAD_XBOX_CONTROL_NAMES, HEIGHT, INPUTS, \
     IS_FULLSCREEN, IS_WEB, JOY_COOLDOWN, JOY_DRIFT, JOY_MOVE_MULTIPLIER, MAIN_FONT, MOUSE_CURSOR_IMG, PANEL_BG_COLOR, \
     PROGRAM_ICON, RECORDING_FPS, SCALE, \
@@ -53,7 +54,7 @@ class Game:
         pygame.joystick.init()
 
         # create empty list to store joysticks
-        self.joysticks: list[pygame.joystick.JoystickType] = []
+        self.joysticks: dict[int, pygame.joystick.JoystickType] = {}
         self.is_joystick_in_use: bool = False
         self.joy_actions_cooldown: dict[str, float] = {}
 
@@ -427,12 +428,16 @@ class Game:
 
             elif event.type == pygame.JOYDEVICEADDED:
                 joy = pygame.joystick.Joystick(event.device_index)
-                self.joysticks.append(joy)
+                self.joysticks[joy.get_instance_id()] = joy
                 self.is_joystick_in_use = True
+            elif event.type == pygame.JOYDEVICEREMOVED:
+                del self.joysticks[event.instance_id]
+                self.is_joystick_in_use = False
 
-        for joystick in self.joysticks:
+        for joystick in self.joysticks.values():
             for i in range(joystick.get_numbuttons()):
                 if joystick.get_button(i):
+                    # print(f"{i} pressed")
                     self.is_joystick_in_use = True
                     break
             else:
@@ -443,20 +448,25 @@ class Game:
             break
 
         if self.is_joystick_in_use:
-            for joystick in self.joysticks:
-
+            for joystick in self.joysticks.values():
+                if IS_WEB:
+                    gamepad_controls = GAMEPAD_WEB_CONTROL_NAMES
+                else:
+                    gamepad_controls = GAMEPAD_XBOX_CONTROL_NAMES
                 for button_name, action in GAMEPAD_XBOX_BUTTON2ACTIONS.items():
-                    pressed = joystick.get_button(GAMEPAD_XBOX_CONTROL_NAMES["buttons"][button_name])
+                    pressed = joystick.get_button(gamepad_controls["buttons"][button_name])
+                    # if pressed:
+                    #     print(f"{button_name} pressed")
 
                     if not pressed:
                         INPUTS[action] = pressed
                     elif self.time_elapsed - self.joy_actions_cooldown.get(action, 0.0) >= JOY_COOLDOWN:
                         self.joy_actions_cooldown[action] = self.time_elapsed
                         INPUTS[action] = pressed
-                        # joystick.get_button(GAMEPAD_XBOX_CONTROL_NAMES["buttons"][button_name])
+                        # joystick.get_button(b2a["buttons"][button_name])
 
                 for axis_name, actions in GAMEPAD_XBOX_AXIS2ACTIONS.items():
-                    value = joystick.get_axis(GAMEPAD_XBOX_CONTROL_NAMES["axis"][axis_name])
+                    value = joystick.get_axis(gamepad_controls["axis"][axis_name])
                     if abs(value) > JOY_DRIFT:
                         if value > 0.0:
                             # e.g. left/up
@@ -489,7 +499,7 @@ class Game:
             INPUTS["screenshot"] = not self.save_screenshot()
 
         if INPUTS["run"]:
-            for joystick in self.joysticks:
+            for joystick in self.joysticks.values():
                 joystick.rumble(1, 0, 450)
                 joystick.rumble(0, 1, 250)
 
