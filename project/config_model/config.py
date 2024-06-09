@@ -68,7 +68,7 @@ class Character():
     damage:       Annotated[int,          field(repr=False)]
 
     @classmethod
-    def from_dict(cls, data):
+    def from_dict(cls, data) -> "Character":
         return cls(
             name = data.get('name'),
             sprite = data.get('sprite'),
@@ -95,7 +95,7 @@ class Item():
     cooldown_time: Annotated[float,        field(repr=False)]
 
     @classmethod
-    def from_dict(cls, data):
+    def from_dict(cls, data) -> "Item":
         return cls(
             name          = data.get('name'),
             type          = ItemTypeEnum(data.get('type')),
@@ -123,7 +123,7 @@ class Config():
     items: Dict[str, Item]
 
     @classmethod
-    def build(cls, data):
+    def build(cls, data) -> "Config":
         chars = {}
         for name, chr in data["characters"].items():
             # print(name, chr)

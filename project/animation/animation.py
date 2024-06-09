@@ -1,3 +1,4 @@
+from __future__ import annotations
 from __future__ import division
 from __future__ import print_function
 
@@ -38,7 +39,7 @@ def is_number(value):
     return True
 
 
-def remove_animations_of(target, group):
+def remove_animations_of(target: Any, group: pygame.sprite.Group) -> list[Any]:
     """ Find animations that target objects and remove those animations
 
     :param target: any
@@ -58,13 +59,13 @@ def remove_animations_of(target, group):
 class AnimBase(pygame.sprite.Sprite):
     _valid_schedules = []
 
-    def __init__(self, _name: str = "", _description: str = ""):
+    def __init__(self, _name: str = "", _description: str = "") -> None:
         super(AnimBase, self).__init__()
         self._name        = _name
         self._description = _description
         self._callbacks   = defaultdict(list)
 
-    def schedule(self, func, when=None):
+    def schedule(self, func: Callable, when: str | None = None) -> None:
         """ Schedule a callback during operation of Task or Animation
 
         The callback is any callable object.  You can specify different
@@ -77,7 +78,7 @@ class AnimBase(pygame.sprite.Sprite):
         If when is not passed, it will be "on finish":
 
         :type func: callable
-        :type when: basestring
+        :type when: str
         :return:
         """
         if DEBUG:
@@ -92,7 +93,7 @@ class AnimBase(pygame.sprite.Sprite):
             raise ValueError
         self._callbacks[when].append(func)
 
-    def _execute_callbacks(self, when):
+    def _execute_callbacks(self, when: str) -> None:
         if DEBUG and when != "on update":
             print(self._name, "execute_callbacks", when)
 
@@ -127,7 +128,7 @@ class Task(AnimBase):
         task_group = pygame.sprite.Group()
 
         # like a delay
-        def call_later():
+        def call_later() -> None:
             pass
         task = Task(call_later, 1000)
         task_group.add(task)
@@ -154,7 +155,14 @@ class Task(AnimBase):
     """
     _valid_schedules = ("on interval", "on finish", "on abort")
 
-    def __init__(self, callback, interval=0, times=1, _name: str = "task", _description: str = "n/a"):
+    def __init__(
+        self,
+        callback: Callable,
+        interval: int = 0,
+        times: int = 1,
+        _name: str = "task",
+        _description: str = "n/a"
+    ) -> None:
         if not callable(callback):
             raise ValueError
 
@@ -165,14 +173,14 @@ class Task(AnimBase):
         self._interval = interval
         self._loops = times
         self._duration = 0
-        self._chain = list()
+        self._chain: list[Task] = []
         self._state = ANIMATION_RUNNING
         self._name = _name
         self._description = _description
 
         self.schedule(callback)
 
-    def chain(self, *others):
+    def chain(self, *others: Task) -> tuple[Task, ...]:
         """ Schedule Task(s) to execute when this one is finished
 
         If you attempt to chain a task that will never end (loops=-1),
@@ -191,7 +199,7 @@ class Task(AnimBase):
         # self._execute_callbacks("on start")
         return others
 
-    def update(self, dt):
+    def update(self, dt: int) -> None:
         """ Update the Task
 
         The unit of time passed must match the one used in the
@@ -219,7 +227,7 @@ class Task(AnimBase):
             else:   # loops == -1, run forever
                 self._execute_callbacks("on interval")
 
-    def finish(self):
+    def finish(self) -> None:
         """ Force task to finish, while executing callbacks
         """
         if self._state is ANIMATION_RUNNING:
@@ -229,18 +237,18 @@ class Task(AnimBase):
             self._execute_chain()
             self._cleanup()
 
-    def abort(self):
+    def abort(self) -> None:
         """Force task to finish, without executing callbacks
         """
         self._state = ANIMATION_FINISHED
         self.kill()
 
-    def _cleanup(self):
-        self._chain = None
+    def _cleanup(self) -> None:
+        self._chain = []
         # Added by HN
         self.kill()
 
-    def _execute_chain(self):
+    def _execute_chain(self) -> None:
         groups = self.groups()
         for task in self._chain:
             task.add(*groups)
@@ -315,10 +323,10 @@ class Animation(AnimBase):
     default_duration = 1000.
     default_transition = "linear"
 
-    def __init__(self, *targets, **kwargs):
+    def __init__(self, *targets, **kwargs) -> None:
         super(Animation, self).__init__()
-        self._targets = list()
-        self._pre_targets = list()
+        self._targets: list[Any] = []
+        self._pre_targets: list[Any] = []
         self._delay = kwargs.get("delay", 0)
         self._state = ANIMATION_NOT_STARTED
         self._round_values = kwargs.get("round_values", False)
@@ -328,7 +336,7 @@ class Animation(AnimBase):
         self._relative = kwargs.get("relative", False)
         self._name = kwargs.get("_name", False)
         self._description = kwargs.get("_description", False)
-        if isinstance(self._transition, string_types):
+        if isinstance(self._transition, str):
             self._transition = getattr(AnimationTransition, self._transition)
         self._elapsed = 0.
         for key in ("duration", "transition", "round_values", "delay",
@@ -344,10 +352,10 @@ class Animation(AnimBase):
         # self._execute_callbacks("on start")
 
     @property
-    def targets(self):
+    def targets(self) -> list[Any]:
         return list(self._targets)
 
-    def _get_value(self, target, name):
+    def _get_value(self, target: Any, name: str) -> int | float | Callable:
         """ Get value of an attribute, even if it is callable
 
         :param target: object than contains attribute
@@ -364,7 +372,7 @@ class Animation(AnimBase):
 
         return value
 
-    def _set_value(self, target, name, value):
+    def _set_value(self, target: Any, name: str, value: int | float | Callable) -> None:
         """ Set a value on some other object
 
         If the name references a callable type, then
@@ -381,17 +389,17 @@ class Animation(AnimBase):
         :param value: value
         :returns: None
         """
-        if self._round_values:
-            value = int(round(value, 0))
 
         attr = getattr(target, name)
         if callable(attr):
             attr(value)
         else:
+            if self._round_values:
+                value = int(round(value, 0))
             setattr(target, name, value)
 
-    def _gather_initial_values(self):
-        self._targets = list()
+    def _gather_initial_values(self) -> None:
+        self._targets = []
         for target in self._pre_targets:
             props = dict()
             if isinstance(target, pygame.Rect):
@@ -407,7 +415,7 @@ class Animation(AnimBase):
 
         self.update(0)  # required to "prime" initial values of callable targets
 
-    def update(self, dt):
+    def update(self, dt: int) -> None:
         """ Update the animation
 
         The unit of time passed must match the one used in the
@@ -453,7 +461,7 @@ class Animation(AnimBase):
         if p >= 1:
             self.finish()
 
-    def finish(self):
+    def finish(self) -> None:
         """ Force animation to finish, apply transforms, and execute callbacks
 
         Update callback will be called because the value is changed
@@ -485,7 +493,7 @@ class Animation(AnimBase):
 
         self._execute_callbacks("on finish")
 
-    def abort(self):
+    def abort(self) -> None:
         """ Force animation to finish, without any cleanup
 
         Update callback will not be executed
@@ -505,11 +513,11 @@ class Animation(AnimBase):
         #     raise RuntimeError
 
         self._state = ANIMATION_FINISHED
-        self._targets = None
+        self._targets = []
         self.kill()
         self._execute_callbacks("on finish")
 
-    def start(self, *targets):
+    def start(self, *targets) -> None:
         """ Start the animation on a target sprite/object
 
         Targets must have the attributes that were set when
@@ -537,7 +545,7 @@ class Animation(AnimBase):
 #######################################################################################################################
 # MARK: sum_delays
 def sum_delays(cutscene_def: dict[str, Any], step_name: str) -> int:
-    delay: float = 0.0
+    delay: int = 0
 
     for step in cutscene_def["steps"]:
         if step["name"] == step_name:

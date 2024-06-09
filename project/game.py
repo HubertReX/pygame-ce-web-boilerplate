@@ -4,7 +4,7 @@ import pygame
 from collections import deque
 from datetime import datetime
 from os import environ
-from typing import Any
+from typing import Any, Callable, cast, TYPE_CHECKING
 import numpy as np
 
 import asyncio
@@ -93,7 +93,7 @@ class Game:
         self.shader = OpenGL_shader(size, DEFAULT_SHADER)
         self.save_frame: bool = False
 
-        self.fonts = {}
+        self.fonts: dict[int, pygame.font.Font] = {}
         font_sizes = [FONT_SIZE_TINY, FONT_SIZE_SMALL, FONT_SIZE_MEDIUM, FONT_SIZE_LARGE]
         for font_size in font_sizes:
             self.fonts[font_size] = pygame.font.Font(MAIN_FONT, font_size)
@@ -106,11 +106,12 @@ class Game:
         # self.loading_screen()
 
         # stacked game states (e.g. Scene, Menu)
-        from state import State
+        if TYPE_CHECKING:
+            from state import State
         self.states: list[State] = []
         # dict of custom events with callable functions
         # (not used for now since pygame.time.set_timer is not implemented in pygbag)
-        self.custom_events: dict[int, callable] = {}
+        self.custom_events: dict[int, Callable] = {}
         # moved imports here to avoid circular imports
         # import menus
         # start_state = menus.MainMenuScreen(self, "MainMenu")
@@ -161,7 +162,7 @@ class Game:
         self.SOD = SecondOrderDynamics(f, z, r, x0=pos)
 
     #############################################################################################################
-    def render_panel(self, rect: pygame.Rect, color: ColorValue, surface: pygame.Surface = None) -> None:
+    def render_panel(self, rect: pygame.Rect, color: ColorValue, surface: pygame.Surface | None = None) -> None:
         # MARK: render
         """
         Renders semitransparent (if `alpha` provided) rect using provided color on `game.canvas`
@@ -182,20 +183,20 @@ class Game:
     def render_texts(
             self,
             texts:     list[str],
-            pos:       list[int],
+            pos:       tuple[int, int],
             color:     ColorValue = FONT_COLOR,
             bg_color:  ColorValue = 0,
             shadow:    ColorValue = CUTSCENE_BG_COLOR,
             font_size: int = 0,
             centred:   bool = False,
-            surface:   pygame.Surface = None
+            surface:   pygame.Surface | None = None
     ) -> None:
         """
         Blit several lines of text on surface or on `game.canvas` if surface is not provided, one under other,
 
         Args:
             texts (list[str]): list of strings to render
-            pos (list[int]): position of first row
+            pos (tuple[int, int]): position of first row
             color (ColorValue, optional): text color. Defaults to `FONT_COLOR`.
             bg_color (ColorValue, optional): draw background panel. Defaults to `0` == no bg.
             shadow (ColorValue, optional): draw outline of text with black color. Defaults to `CUTSCENE_BG_COLOR`.
@@ -207,27 +208,27 @@ class Game:
         for line_no, text in enumerate(texts):
             if font_size == 0:
                 font_size = FONT_SIZE_SMALL
-            new_pos = [pos[0], pos[1] + line_no * font_size * TEXT_ROW_SPACING]
+            new_pos = (pos[0], pos[1] + int(line_no * font_size * TEXT_ROW_SPACING))
             self.render_text(text, new_pos, color, bg_color, shadow, font_size, centred, surface)
 
     #############################################################################################################
     def render_text(
             self,
             text:      str,
-            pos:       list[int],
+            pos:       tuple[int, int],
             color:     ColorValue = FONT_COLOR,
             bg_color:  ColorValue = 0,
             shadow:    ColorValue = CUTSCENE_BG_COLOR,
             font_size: int = 0,
             centred:   bool = False,
-            surface:   pygame.Surface = None
+            surface:   pygame.Surface | None = None
     ) -> None:
         """
         Blit line of text on `surface` or on `game.canvas` if `surface` is not provided
 
         Args:
             text (str): _description_
-            pos (list[int]): _description_
+            pos (tuple[int, int]): _description_
             color (ColorValue, optional): _description_. Defaults to `FONT_COLOR`.
             bg_color (ColorValue, optional): _description_. Defaults to `0` == no bg.
             shadow (ColorValue, optional): _description_. Defaults to `CUTSCENE_BG_COLOR`.
@@ -313,7 +314,7 @@ class Game:
         return images
 
     #############################################################################################################
-    def get_animations(self, path: str) -> dict[str, list[str]]:
+    def get_animations(self, path: str) -> dict[str, list[pygame.Surface]]:
         """
         read sprite animations from given folder
 
@@ -321,7 +322,7 @@ class Game:
         :type path: str
         :return: dictionary with animation name (subfolder) as keys and empty list as value
         """
-        animations = {}
+        animations: dict[str, list[pygame.Surface]] = {}
         for file in os.listdir(path):
             if os.path.isdir(os.path.join(path, file)):
                 animations.update({file: []})
@@ -341,7 +342,7 @@ class Game:
             time_str = datetime.now().strftime("%Y%m%d_%H%M%S")
             file_name = SCREENSHOTS_DIR / f"screenshot_{time_str}.png"
             # pygame.image.save(self.screen, file_name)
-            Image.frombuffer('RGBA', (WIDTH, HEIGHT), data, 'raw', 'RGBA', 0, -1).save(file_name)
+            Image.frombuffer("RGBA", (WIDTH, HEIGHT), data, "raw", "RGBA", 0, -1).save(file_name)
             if IS_WEB:
                 import platform
                 platform.window.download_from_browser_fs(file_name.as_posix(), "image/png")
@@ -354,7 +355,7 @@ class Game:
             return False
 
     #############################################################################################################
-    def register_custom_event(self, custom_event_id: int, handle_function: callable) -> None:
+    def register_custom_event(self, custom_event_id: int, handle_function: Callable) -> None:
         """
         Registers a custom event with a specific ID and associates it with a handler function.
 
@@ -446,15 +447,11 @@ class Game:
 
                 for button_name, action in GAMEPAD_XBOX_BUTTON2ACTIONS.items():
                     pressed = joystick.get_button(GAMEPAD_XBOX_CONTROL_NAMES["buttons"][button_name])
-                    if pressed:
-                        print(button_name)
 
                     if not pressed:
                         INPUTS[action] = pressed
                     elif self.time_elapsed - self.joy_actions_cooldown.get(action, 0.0) >= JOY_COOLDOWN:
                         self.joy_actions_cooldown[action] = self.time_elapsed
-                        if pressed:
-                            print("   ", action)
                         INPUTS[action] = pressed
                         # joystick.get_button(GAMEPAD_XBOX_CONTROL_NAMES["buttons"][button_name])
 
@@ -554,9 +551,9 @@ class Game:
 
         self.rec_process = (
             ffmpeg
-            .input('pipe:', format='rawvideo', pix_fmt='rgba', s='{}x{}'.format(WIDTH, HEIGHT), r=FPS_CAP)
+            .input("pipe:", format="rawvideo", pix_fmt="rgba", s="{}x{}".format(WIDTH, HEIGHT), r=FPS_CAP)
             .vflip()
-            .output(str(file_name), pix_fmt='rgb24', loglevel="quiet", r=RECORDING_FPS)
+            .output(str(file_name), pix_fmt="rgb24", loglevel="quiet", r=RECORDING_FPS)
             .overwrite_output()
             .run_async(pipe_stdin=True)
         )
@@ -576,6 +573,9 @@ class Game:
         # shaders are used for postprocessing special effects
         # the whole Surface is used as texture on rect that fills to a full screen
         if hasattr(self.states[-1], "player"):
+            # if TYPE_CHECKING:
+            #     from scene import Scene
+            # scene = cast(Scene, self.states[-1])
             scene = self.states[-1]
             positions, ratio = scene.get_lights()
             scale = scene.camera.zoom
@@ -593,7 +593,7 @@ class Game:
                 self.rec_process.stdin.write(res)
     #############################################################################################################
 
-    async def loop(self):
+    async def loop(self) -> None:
         # MARK: loop
         self.fps: float = 0.0
         # self.avg_fps_3s: float = 0.0

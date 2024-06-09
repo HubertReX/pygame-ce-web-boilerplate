@@ -59,8 +59,10 @@ MARGIN = 3
 
 TILE_SIZE = 16
 
-
-_CACHE = {}
+# dict of results of a_star function
+# key is a tuple of start and goal coordinates
+# value is a list of coordinates to go through
+_CACHE: dict[tuple[tuple[int, int], tuple[int, int]], list[tuple[int, int]]] = {}
 _sum: float = 0.0
 _cnt: int = 0
 
@@ -92,18 +94,19 @@ def timeit(func):
 # @timeit
 
 
-def a_star_cached(grid, start, goal, fps):
+def a_star_cached(grid, start: tuple[int, int], goal: tuple[int, int], fps: str) -> list[tuple[int, int]]:
     global _CACHE  # , _sum, _cnt
 
     key = (start, goal)  # create_key(start, goal)
 
     if key not in _CACHE:
         res = a_star(grid, start, goal)
-        _CACHE[key] = res
-        for i, wp in enumerate(res):
-            new_key = (wp, goal)
-            # if new_key not in _CACHE:
-            _CACHE[new_key] = res[i:]
+        if res:
+            _CACHE[key] = res
+            for i, wp in enumerate(res):
+                new_key = (wp, goal)
+                # if new_key not in _CACHE:
+                _CACHE[new_key] = res[i:]
     #     fps += "\t[red]miss[/]"
     # else:
     #     fps += "\t[green]hit[/]"
@@ -123,9 +126,9 @@ def clear_maze_cache():
 #######################################################################################################################
 
 
-def a_star(grid, start, goal):
+def a_star(grid: list[list[int]], start: tuple[int, int], goal: tuple[int, int]) -> list[tuple[int, int]] | None:
     # MARK: A*
-    def heuristic(point, goal):
+    def heuristic(point: tuple[int, int], goal: tuple[int, int]) -> int:
         # Manhattan distance heuristic
         return abs(point[0] - goal[0]) + abs(point[1] - goal[1])
 
@@ -135,7 +138,7 @@ def a_star(grid, start, goal):
     # Priority queue with (F-score, node)
     heapq.heappush(open_set, (0, start))
     came_from = {}
-    g_score = {start: 0}
+    g_score: dict[tuple[int, int], int] = {start: 0}
 
     while open_set:
         _, current = heapq.heappop(open_set)
@@ -395,7 +398,7 @@ def build_tileset_map_from_maze(clean_tileset_map: pytmx.TiledMap, maze: Maze, t
             walls_decors_gids[tile["walls_decors"]] = gid
 
     # collectable items (flask health, golden key, coin)
-    items_gids: dict[str: int] = {}
+    items_gids: dict[str, int] = {}
     items_props = clean_tileset_map.get_tile_properties_by_layer(layer_names["items"])
     for prop in items_props:
         gid, tile = prop

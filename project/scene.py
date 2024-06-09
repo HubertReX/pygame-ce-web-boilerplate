@@ -1,4 +1,5 @@
 import random
+from typing import cast
 import game
 import menus
 import pygame
@@ -14,6 +15,7 @@ from camera import Camera
 from objects import Collider, ItemSprite
 from pyscroll.group import PyscrollGroup
 from pytmx.util_pygame import load_pygame
+from pytmx import TiledMap, TiledTileLayer, TiledObjectGroup
 from particles import ParticleSystem
 from state import State
 from transition import Transition, TransitionCircle
@@ -26,11 +28,11 @@ from settings import (
     NIGHT_FILTER, PANEL_BG_COLOR, PARTICLES,
     SHADERS_NAMES, TEXT_ROW_SPACING, USE_SHADERS,
     WAYPOINTS_LINE_COLOR, WIDTH, ZOOM_LEVEL,
-    ColorValue, vec, vec3, INPUTS, SHOW_DEBUG_INFO, SHOW_HELP_INFO, USE_ALPHA_FILTER
+    ColorValue, Point, to_point, to_vector, vec, vec3, INPUTS, SHOW_DEBUG_INFO, SHOW_HELP_INFO, USE_ALPHA_FILTER
 )
 
 
-#######################################################################################################################
+################################################################################################################
 # MARK: Scene
 class Scene(State):
     def __init__(
@@ -47,18 +49,19 @@ class Scene(State):
         self.game.time_elapsed = 0.0
         self.current_scene = current_scene
         self.entry_point = entry_point
-        self.new_scene: Collider = None
+        self.new_scene: Collider | None = None
         self.is_maze = is_maze
         self.maze_cols = maze_cols
         self.maze_rows = maze_rows
+        self.waypoints: dict[str, tuple[Point, ...]] = {}
 
-        self.label_sprites = pygame.sprite.Group()
-        self.shadow_sprites = pygame.sprite.Group()
-        self.draw_sprites = pygame.sprite.Group()
-        self.block_sprites = pygame.sprite.Group()
-        self.exit_sprites = pygame.sprite.Group()
-        self.item_sprites = pygame.sprite.Group()
-        self.animations = pygame.sprite.Group()
+        self.label_sprites: pygame.sprite.Group = pygame.sprite.Group()
+        self.shadow_sprites: pygame.sprite.Group = pygame.sprite.Group()
+        self.draw_sprites: pygame.sprite.Group = pygame.sprite.Group()
+        self.block_sprites: pygame.sprite.Group = pygame.sprite.Group()
+        self.exit_sprites: pygame.sprite.Group = pygame.sprite.Group()
+        self.item_sprites: pygame.sprite.Group = pygame.sprite.Group()
+        self.animations: pygame.sprite.Group = pygame.sprite.Group()
 
         # self.transition = Transition(self)
         self.transition = TransitionCircle(self)
@@ -68,15 +71,14 @@ class Scene(State):
         self.player: Player = Player(
             self.game,
             self,
-            [self.draw_sprites],
+            self.draw_sprites,
             self.shadow_sprites,
             self.label_sprites,
-            (WIDTH / 2, HEIGHT / 2),
+            (WIDTH // 2, HEIGHT // 2),
             "Player"
         )
         # view target for camera
-        self.camera = Camera()
-        self.camera.scene = self
+        self.camera = Camera(self)
         # self.camera.target = vec(1 * TILE_SIZE, 1 * TILE_SIZE)
         # self.camera.zoom   = ZOOM_LEVEL
         # self.map_view.zoom = self.camera.zoom
@@ -95,7 +97,7 @@ class Scene(State):
         self.ui = UI(self.game.canvas, self.game.fonts[FONT_SIZE_MEDIUM])
         # self.set_camera_on_player()
 
-    ###################################################################################################################
+    #############################################################################################################
 
     def load_map(self) -> None:
         # MARK: load_map
@@ -114,7 +116,7 @@ class Scene(State):
             # generate new maze
             self.maze = hunt_and_kill_maze.HuntAndKillMaze(self.maze_cols, self.maze_rows)
             self.maze.generate()
-            tileset_map = load_pygame(MAZE_DIR / "MazeTileset_clean.tmx")
+            tileset_map: TiledMap = load_pygame(str(MAZE_DIR / "MazeTileset_clean.tmx"))
             # combine tileset clean template with maze grid into final map
             build_tileset_map_from_maze(
                 tileset_map,
@@ -124,7 +126,7 @@ class Scene(State):
             )
         else:
             # load data from pytmx
-            tileset_map = load_pygame(MAPS_DIR / f"{self.current_scene}.tmx")
+            tileset_map: TiledMap = load_pygame(str(MAPS_DIR / f"{self.current_scene}.tmx"))
 
         # setup level geometry with simple pygame rectangles, loaded from pytmx
         self.layers = []
@@ -135,7 +137,7 @@ class Scene(State):
 
         self.walls = []
         if "walls" in self.layers:
-            walls = tileset_map.get_layer_by_name("walls")
+            walls = cast(TiledTileLayer, tileset_map.get_layer_by_name("walls"))
             walls_width = walls.width
             walls_height = walls.height
             # path finding uses only grid build of tiles and not world coordinates in pixels
@@ -143,7 +145,7 @@ class Scene(State):
             # 100 => wall (not walkable)
             self.path_finding_grid = [[0 for _ in range(walls_width)] for _ in range(walls_height)]
 
-            for x, y, surf in tileset_map.get_layer_by_name("walls").tiles():
+            for x, y, surf in cast(TiledTileLayer, tileset_map.get_layer_by_name("walls")).tiles():
                 rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, surf.get_width(), surf.get_height())
                 self.walls.append(rect)
                 # blocked from walking (wall)
@@ -158,13 +160,13 @@ class Scene(State):
         self.items = []
         self.item_sprites.empty()
         if "items" in self.layers:
-            items_layer = tileset_map.get_layer_by_name("items")
+            items_layer = cast(TiledTileLayer, tileset_map.get_layer_by_name("items"))
 
             for x, y, tile in items_layer.tiles():
                 gid = items_layer.data[y][x]
                 name = tileset_map.tile_properties[gid]["item_name"]
                 item = ItemSprite(
-                    [self.item_sprites],
+                    self.item_sprites,
                     gid,
                     (x * TILE_SIZE, y * TILE_SIZE),
                     # (tile.width, tile.height),
@@ -177,9 +179,9 @@ class Scene(State):
             items_layer.visible = False
 
         if "exits" in self.layers:
-            for obj in tileset_map.get_layer_by_name("exits"):
+            for obj in cast(TiledObjectGroup, tileset_map.get_layer_by_name("exits")):
                 Collider(
-                    [self.exit_sprites],
+                    self.exit_sprites,
                     (obj.x, obj.y),
                     (obj.width, obj.height),
                     obj.name,
@@ -191,16 +193,15 @@ class Scene(State):
                     getattr(obj, "return_entry_point", ""),
                 )
 
-        self.waypoints = {}
         # layer of invisible objects consisting of points that layout a list waypoints to follow by NPCs
         if "waypoints" in self.layers:
-            for obj in tileset_map.get_layer_by_name("waypoints"):
-                self.waypoints[obj.name] = (obj.points if hasattr(obj, "points") else obj.as_points)
-
+            for obj in cast(TiledObjectGroup, tileset_map.get_layer_by_name("waypoints")):
+                # self.waypoints[obj.name] = (obj.points if hasattr(obj, "points") else obj.as_points)
+                self.waypoints[obj.name] = tuple(to_point(point) for point in obj.points)
         self.entry_points = {}
         # layer of invisible objects being single points on map where NPCs show up coming from linked map
         if "entry_points" in self.layers:
-            for obj in tileset_map.get_layer_by_name("entry_points"):
+            for obj in cast(TiledObjectGroup, tileset_map.get_layer_by_name("entry_points")):
                 self.entry_points[obj.name] = vec(obj.x, obj.y)
 
         # moved here to avoid circular imports
@@ -209,13 +210,13 @@ class Scene(State):
         self.NPC: list[NPC] = []
         # layer of invisible objects being single points determining where NPCs will spawn
         if "spawn_points" in self.layers:
-            for obj in tileset_map.get_layer_by_name("spawn_points"):
+            for obj in cast(TiledObjectGroup, tileset_map.get_layer_by_name("spawn_points")):
                 # list of waypoints attached by NPCs name
                 waypoint = self.waypoints.get(obj.name, ())
                 npc = NPC(
                     self.game,
                     self,
-                    [self.draw_sprites],
+                    self.draw_sprites,
                     self.shadow_sprites,
                     self.label_sprites,
                     (obj.x, obj.y),
@@ -237,7 +238,7 @@ class Scene(State):
                 npc = NPC(
                     self.game,
                     self,
-                    [self.draw_sprites],
+                    self.draw_sprites,
                     self.shadow_sprites,
                     self.label_sprites,
                     pos,
@@ -332,13 +333,13 @@ class Scene(State):
                 self.particles.append(particle_class(self.game.canvas, self.group, self.camera))
                 self.game.register_custom_event(self.particles[-1].custom_event_id, self.particles[-1].add)
 
-    ###################################################################################################################
+    #############################################################################################################
     def __repr__(self) -> str:
         # MARK: __repr__
         return f"{__class__.__name__}: {self.current_scene}"
 
-    ###################################################################################################################
-    def start_intro(self):
+    #############################################################################################################
+    def start_intro(self) -> None:
         # MARK: start_intro
 
         self.set_camera_free()
@@ -516,20 +517,23 @@ class Scene(State):
         }
         animator(self.intro_cutscene, self.animations)
 
-    ###################################################################################################################
-    def set_camera_on_player(self):
+    #############################################################################################################
+    def set_camera_on_player(self) -> None:
         self.camera.target = self.player.pos
         self.camera.zoom = ZOOM_LEVEL
         # TODO fix zoom
         # self.map_view.zoom = self.camera.zoom
 
-    ###################################################################################################################
-    def set_camera_free(self):
+    #############################################################################################################
+    def set_camera_free(self) -> None:
         # release reference to self.player.pos by coping only value
         self.camera.target = self.camera.target.copy()
 
-    ###################################################################################################################
-    def go_to_scene(self):
+    #############################################################################################################
+    def go_to_scene(self) -> None:
+        if not self.new_scene:
+            return
+
         self.transition.exiting = False
         new_scene = Scene(
             self.game,
@@ -542,8 +546,11 @@ class Scene(State):
         self.exit_state(quit=False)
         new_scene.enter_state()
 
-    ###################################################################################################################
-    def go_to_map(self):
+    #############################################################################################################
+    def go_to_map(self) -> None:
+        if not self.new_scene:
+            return
+
         self.transition.exiting = False
         self.return_scene = self.current_scene
         self.return_entry_point = self.new_scene.return_entry_point
@@ -572,8 +579,8 @@ class Scene(State):
         # self.exit_state(quit=False)
         # new_scene.enter_state()
 
-    ###################################################################################################################
-    def update(self, dt: float, events: list[pygame.event.EventType]):
+    #############################################################################################################
+    def update(self, dt: float, events: list[pygame.event.EventType]) -> None:
         # MARK: update
         global INPUTS
 
@@ -612,7 +619,7 @@ class Scene(State):
                 # slide along wall or do a step_back
                 self.player.slide(self.NPC)
             # collision of weapon with other NPC
-            if self.player.is_attacking:
+            if self.player.is_attacking and self.player.selected_weapon:
                 collided_index = self.player.selected_weapon.rect.collidelist(self.NPC)
                 if collided_index > -1:
                     # deal damage with weapon to enemy or nothing if friendly NPC
@@ -677,8 +684,8 @@ class Scene(State):
         if INPUTS["drop"]:
             # drop item from inventory to ground
             if len(self.player.items) > 0 and not self.player.is_attacking and not self.player.is_stunned:
-                res = item = self.player.drop_item()
-                if res:
+                item = self.player.drop_item()
+                if item:
                     item.pos = self.player.pos
                     item.rect.center = self.player.pos
                     self.item_sprites.add(item)
@@ -779,8 +786,8 @@ class Scene(State):
             # self.map_view.zoom = self.camera.zoom
             INPUTS["zoom_out"] = False
 
-    ###################################################################################################################
-    def show_help(self):
+    #############################################################################################################
+    def show_help(self) -> None:
         # list actions to be displayed by the property "show"
         show_actions = [action for action in ACTIONS.values() if action["show"]]
         # render semitransparent panel in background
@@ -796,12 +803,12 @@ class Scene(State):
         for i, action in enumerate(show_actions, start=1):
             self.game.render_text(
                 f"{', '.join(action['show']):>11} - {action['msg']}",
-                (WIDTH - 400, i * FONT_SIZE_MEDIUM * TEXT_ROW_SPACING),
+                (WIDTH - 400, int(i * FONT_SIZE_MEDIUM * TEXT_ROW_SPACING)),
                 shadow = True
             )
 
-    ###################################################################################################################
-    def draw(self, screen: pygame.Surface, dt: float):
+    #############################################################################################################
+    def draw(self, screen: pygame.Surface, dt: float) -> None:
         # MARK: draw
         # center map on player
         # self.group.center(self.player.pos)
@@ -826,21 +833,23 @@ class Scene(State):
         if SHOW_DEBUG_INFO:
             self.show_debug()
         else:
-            fps = f"FPS: {self.game.fps: 6.1f}"  # 3s: {self.game.avg_fps_3s: 6.1f} 10s: {self.game.avg_fps_10s: 6.1f}"
-            stats = f"Health: {
-                self.player.model.health}/{self.player.model.max_health} Money: {self.player.model.money}"
+            pass
+            # fps = f"FPS: {self.game.fps: 6.1f}"
+            # # 3s: {self.game.avg_fps_3s: 6.1f} 10s: {self.game.avg_fps_10s: 6.1f}"
+            # stats = f"Health: {
+            #     self.player.model.health}/{self.player.model.max_health} Money: {self.player.model.money}"
 
-            inventory_list = []
-            for idx, item in enumerate(self.player.items):
-                label = f"{item.model.name}[{item.model.type.value[0].upper()}][{item.model.count}]"
-                if idx == self.player.selected_item_idx:
-                    label = f"-->{label}<--"
-                inventory_list.append(label)
+            # inventory_list = []
+            # for idx, item in enumerate(self.player.items):
+            #     label = f"{item.model.name}[{item.model.type.value[0].upper()}][{item.model.count}]"
+            #     if idx == self.player.selected_item_idx:
+            #         label = f"-->{label}<--"
+            #     inventory_list.append(label)
 
-            weight = f"{self.player.total_items_weight:4.2f}/{self.player.model.max_carry_weight:4.2f}"
-            inventory = ", ".join(inventory_list)
-            weapon = f"{self.player.selected_weapon.model.name}[{
-                self.player.selected_weapon.model.damage}]" if self.player.selected_weapon else "n/a"
+            # weight = f"{self.player.total_items_weight:4.2f}/{self.player.model.max_carry_weight:4.2f}"
+            # inventory = ", ".join(inventory_list)
+            # weapon = f"{self.player.selected_weapon.model.name}[{
+            #     self.player.selected_weapon.model.damage}]" if self.player.selected_weapon else "n/a"
 
             # self.debug([fps, stats, f"Items[{weight}]: {inventory}", f"Weapon: {weapon}"])
 
@@ -849,70 +858,54 @@ class Scene(State):
         else:
             self.game.render_text(
                 "press [h] for help",
-                (WIDTH // 2, HEIGHT - FONT_SIZE_MEDIUM * TEXT_ROW_SPACING),
+                (WIDTH // 2, int(HEIGHT - FONT_SIZE_MEDIUM * TEXT_ROW_SPACING)),
                 shadow = True,
                 centred = True
             )
 
         self.ui.display(self.player, self.game.time_elapsed)
-    ###################################################################################################################
+    #############################################################################################################
 
-    def apply_time_of_day_filter(self, screen: pygame.Surface):
-        # MARK: apply_time_of_day_filter
-        # do not apply night and day filter indoors
-        if not self.outdoor and not self.is_maze:
-            return
+    # def apply_time_of_day_filter(self, screen: pygame.Surface) -> None:
+    #     # MARK: apply_time_of_day_filter
+    #     # do not apply night and day filter indoors
+    #     if not self.outdoor and not self.is_maze:
+    #         return
 
-        filter_surf = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+    #     filter_surf = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
 
-        filter: ColorValue = BG_COLOR
-        hour: float = self.hour + (self.minute / 60)
+    #     filter: ColorValue = BG_COLOR
+    #     hour: float = self.hour + (self.minute / 60)
 
-        if self.is_maze:
-            filter = NIGHT_FILTER
-        else:
-            if hour < 6 or hour >= 20:
-                filter = NIGHT_FILTER
-            elif 6 <= hour < 9:
-                weight = (hour - 6) / (9 - 6)
-                for i in range(4):
-                    filter[i] = pygame.math.lerp(NIGHT_FILTER[i], DAY_FILTER[i], weight)
-            elif 9 <= hour < 17:
-                filter = DAY_FILTER
-            elif 17 <= hour < 20:
-                weight = (hour - 17) / (20 - 17)
-                for i in range(4):
-                    filter[i] = pygame.math.lerp(DAY_FILTER[i], NIGHT_FILTER[i], weight)
+    #     if self.is_maze:
+    #         filter = NIGHT_FILTER
+    #     else:
+    #         if hour < 6 or hour >= 20:
+    #             filter = NIGHT_FILTER
+    #         elif 6 <= hour < 9:
+    #             weight = (hour - 6) / (9 - 6)
+    #             for i in range(4):
+    #                 filter[i] = pygame.math.lerp(NIGHT_FILTER[i], DAY_FILTER[i], weight)
+    #         elif 9 <= hour < 17:
+    #             filter = DAY_FILTER
+    #         elif 17 <= hour < 20:
+    #             weight = (hour - 17) / (20 - 17)
+    #             for i in range(4):
+    #                 filter[i] = pygame.math.lerp(DAY_FILTER[i], NIGHT_FILTER[i], weight)
 
-        filter_surf.fill(filter)
+    #     filter_surf.fill(filter)
 
-        if filter == NIGHT_FILTER or self.is_maze:
-            for npc in self.NPC + [self.player]:
-                pos = self.map_view.translate_point(npc.pos + vec(0, -8))
-                pygame.draw.circle(filter_surf, DAY_FILTER, pos, 196)
-            if "intro" in self.waypoints:
-                village_pos = self.waypoints["intro"][0]
-                pos = self.map_view.translate_point(village_pos + vec(0, 0))
-                pygame.draw.circle(filter_surf, DAY_FILTER, pos, 256)
+    #     if filter == NIGHT_FILTER or self.is_maze:
+    #         for npc in self.NPC + [self.player]:
+    #             pos = self.map_view.translate_point(npc.pos + vec(0, -8))
+    #             pygame.draw.circle(filter_surf, DAY_FILTER, pos, 196)
+    #         if "intro" in self.waypoints:
+    #             village_pos = self.waypoints["intro"][0]
+    #             pos = self.map_view.translate_point(village_pos + vec(0, 0))
+    #             pygame.draw.circle(filter_surf, DAY_FILTER, pos, 256)
 
-        #         village_pos = self.waypoints["intro"][-1]
-        #         pos = self.map_view.translate_point(village_pos + vec(0, 0))
-        #         pygame.draw.circle(filter_surf, DAY_FILTER, pos, 256)
+    #############################################################################################################
 
-        # rect = self.circle_gradient.get_frect(center = pos)
-
-        # light_surf = pygame.Surface(rect.size, pygame.SRCALPHA)
-        # light_surf.fill(f)
-        # self.circle_gradient.set_alpha(128)
-        # light_surf.blit(self.circle_gradient, (0,0))
-        # filter_surf.blit(self.circle_gradient, rect)
-
-        # screen.blit(filter_surf, (0, 0))
-
-        # screen.blit(self.circle_gradient, rect)
-        # screen.blit(light_surf, rect)
-
-    ###################################################################################################################
     def get_lights(self) -> tuple[list[vec3], float]:
         # return list of light source coordinates with sizes and day/night ratio as float
         # in range [0.0, 1.0] (0.0 ==> day)
@@ -951,12 +944,12 @@ class Scene(State):
                     light_sources.append(light)
                     # pygame.draw.circle(filter_surf, DAY_FILTER, pos, 196)
                 if "intro" in self.waypoints:
-                    village_pos = self.waypoints["intro"][0]
+                    village_pos = self.waypoints["intro"][0].as_vector
                     pos = self.map_view.translate_point(village_pos + vec(0, 0))
                     light = vec3(pos[0], HEIGHT - pos[1], 64.0)
                     light_sources.append(light)
 
-                    village_pos = self.waypoints["intro"][-1]
+                    village_pos = self.waypoints["intro"][-1].as_vector
                     pos = self.map_view.translate_point(village_pos + vec(0, 0))
                     light = vec3(pos[0], HEIGHT - pos[1], 64.0)
                     light_sources.append(light)
@@ -964,12 +957,12 @@ class Scene(State):
 
         return (light_sources, ratio)
 
-    ###################################################################################################################
-    def apply_alpha_filter(self, screen: pygame.Surface):
+    #############################################################################################################
+    def apply_alpha_filter(self, screen: pygame.Surface) -> None:
         # MARK: apply_alpha_filter
         h = HEIGHT // 2
-        self.game.render_text("Day",   (0, h - FONT_SIZE_MEDIUM * TEXT_ROW_SPACING))
-        self.game.render_text("Night", (0, h +                    TEXT_ROW_SPACING))
+        self.game.render_text("Day",   (0, int(h - FONT_SIZE_MEDIUM * TEXT_ROW_SPACING)))
+        self.game.render_text("Night", (0, int(h +                    TEXT_ROW_SPACING)))
 
         # sunny, warm yellow light during daytime
         half_screen = pygame.Surface((WIDTH, h), pygame.SRCALPHA)
@@ -980,8 +973,8 @@ class Scene(State):
         half_screen.fill(NIGHT_FILTER)
         screen.blit(half_screen, (0, h))
 
-    ###################################################################################################################
-    def apply_cutscene_framing(self, screen: pygame.Surface, percentage: float):
+    #############################################################################################################
+    def apply_cutscene_framing(self, screen: pygame.Surface, percentage: float) -> None:
         # MARK: apply_cutscene_framing
         if percentage <= 0.001:
             return
@@ -996,8 +989,8 @@ class Scene(State):
         # blit a black rect at the bottom of the screen
         screen.blit(half_screen, (0, HEIGHT - framing_offset))
 
-    ###################################################################################################################
-    def show_debug(self):
+    #############################################################################################################
+    def show_debug(self) -> None:
         # MARK: show_debug
         # prepare shader info
         shader_index = SHADERS_NAMES.index(self.game.shader.shader_name)
@@ -1037,13 +1030,13 @@ class Scene(State):
             ]
             # draw lines connecting waypoints
             if npc.waypoints_cnt > 0:
-                curr_wp = npc.waypoints[npc.current_waypoint_no]
+                # curr_wp = npc.waypoints[npc.current_waypoint_no]
                 # add current waypoint as text under NPC
-                texts.append(f"cw={npc.get_tileset_coord(curr_wp).x:3} {npc.get_tileset_coord(curr_wp).y:3}")
-                prev_point = (npc.pos.x, npc.pos.y - 4)
+                # texts.append(f"cw={npc.get_tileset_coord(curr_wp).x:3} {npc.get_tileset_coord(curr_wp).y:3}")
+                prev_point = Point(int(npc.pos.x), int(npc.pos.y - 4))
                 for point in list(npc.waypoints)[npc.current_waypoint_no:]:
-                    from_p = self.map_view.translate_point(vec(prev_point[0], prev_point[1]))
-                    to_p = self.map_view.translate_point(vec(point[0], point[1]))
+                    from_p = self.map_view.translate_point(vec(prev_point.x, prev_point.y))
+                    to_p = self.map_view.translate_point(vec(point.x, point.y))
                     pygame.draw.line(self.game.canvas, WAYPOINTS_LINE_COLOR, from_p, to_p, width=2)
                     prev_point = point
 

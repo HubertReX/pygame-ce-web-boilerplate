@@ -1,12 +1,16 @@
+from __future__ import annotations
 from dataclasses import dataclass, field
 from settings import ZOOM_LEVEL, vec
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from scene import Scene
 
 
 @dataclass
 class Camera():
+    scene: Scene
     target: vec = field(default_factory=lambda: vec(0, 0))
     _zoom: float = ZOOM_LEVEL
-    scene: "Scene" = None  # noqa: F821
 
     @property
     def zoom(self) -> float:

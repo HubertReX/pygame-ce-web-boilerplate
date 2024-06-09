@@ -14,7 +14,7 @@ zengl.init()
 try:
     CSI("test")  # noqa: F821
 except NameError:
-    def CSI(param):
+    def CSI(param) -> None:
         pass
 
 #######################################################################################################################
@@ -23,7 +23,7 @@ except NameError:
 class OpenGL_shader():
     def __init__(self, size: tuple[int, int], shader_name: str = "") -> None:
 
-        def compile_error_debug(shader: bytes, shader_type: int, log: bytes):
+        def compile_error_debug(shader: bytes, shader_type: int, log: bytes) -> None:
             name = {0x8B31: "Vertex Shader", 0x8B30: "Fragment Shader"}[shader_type]
             print("=" * 30, name, "=" * 30)
             try:
@@ -67,7 +67,7 @@ class OpenGL_shader():
         self.pipeline = None
 
     ###################################################################################################################
-    def create_pipeline(self, shader_name: str = ""):
+    def create_pipeline(self, shader_name: str = "") -> None:
         # if provided new shader_name then use it (otherwise use shader_name provided in constructor)
         if shader_name:
             self.shader_name = shader_name
@@ -161,7 +161,7 @@ const int MAX_LIGHTS_CNT = {MAX_LIGHTS_COUNT};
         return f_name
 
     ###################################################################################################################
-    def read_shader_from_file(self, file_name: Path):
+    def read_shader_from_file(self, file_name: Path) -> str:
         with open(file_name, encoding="UTF-8") as f:
             shader = "".join(f.readlines())
 

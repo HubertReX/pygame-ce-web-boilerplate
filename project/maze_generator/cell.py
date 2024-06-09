@@ -9,7 +9,7 @@ CELL_WEST  = 1  # 4
 
 class Cell:
 
-    def __init__(self, x: int, y: int):
+    def __init__(self, x: int, y: int) -> None:
         self.x = x
         self.y = y
         self.links: list[Cell] = []
@@ -20,11 +20,11 @@ class Cell:
     def add_neighbor(self, direction: int, cell: "Cell") -> None:
         self.neighbors[direction] = cell
 
-    def get_neighbor(self, direction: int) -> "Cell":
-        if direction in self.neighbors:
-            return self.neighbors[direction]
-        else:
-            return None
+    # def get_neighbor(self, direction: int) -> "Cell" | None:
+    #     if direction in self.neighbors:
+    #         return self.neighbors[direction]
+    #     else:
+    #         return None
 
     def get_random_neighbor(self) -> "Cell":
         cell_list = list(self.neighbors.values())

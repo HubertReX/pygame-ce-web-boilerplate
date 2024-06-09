@@ -13,9 +13,9 @@ else:
 class Collider(pygame.sprite.Sprite):
     def __init__(
         self,
-        groups: list[pygame.sprite.Group],
-        pos: list[int],
-        size: list[int],
+        groups: pygame.sprite.Group,
+        pos: tuple[int, int],
+        size: tuple[int, int],
         name: str,
         to_map: str,
         entry_point: str,
@@ -40,7 +40,7 @@ class Collider(pygame.sprite.Sprite):
 
 
 class Shadow(pygame.sprite.Sprite):
-    def __init__(self, groups: list[pygame.sprite.Group], pos: list[int], size: list[int]):
+    def __init__(self, groups: pygame.sprite.Group, pos: tuple[int, int], size: tuple[int, int]) -> None:
         super().__init__(groups)
         self.image: pygame.Surface = pygame.Surface((size)).convert_alpha()
         self.rect: pygame.FRect = self.image.get_frect(topleft = pos)
@@ -52,7 +52,7 @@ class Shadow(pygame.sprite.Sprite):
 
 
 class HealthBarUI(pygame.sprite.Sprite):
-    def __init__(self, model: Character, groups: list[pygame.sprite.Group], pos: list[int], scale: int):
+    def __init__(self, model: Character, groups: pygame.sprite.Group, pos: tuple[int, int], scale: int) -> None:
         super().__init__(groups)
         # self.image: pygame.Surface = pygame.Surface((70 * scale * TILE_SIZE, 16 * scale * TILE_SIZE)).convert_alpha()
         self.model = model
@@ -82,7 +82,7 @@ class HealthBarUI(pygame.sprite.Sprite):
             self.color = "pink"
 
     #############################################################################################################
-    def set_bar(self, percentage: float, pos: list[int]) -> None:
+    def set_bar(self, percentage: float, pos: tuple[int, int]) -> None:
         self.rect.topleft = pos
         self.rect_full.topleft = pos
         # self.rect_full.left += 50
@@ -108,7 +108,7 @@ class HealthBarUI(pygame.sprite.Sprite):
 
 
 class HealthBar(pygame.sprite.Sprite):
-    def __init__(self, model: Character, groups: list[pygame.sprite.Group], pos: list[int]):
+    def __init__(self, model: Character, groups: pygame.sprite.Group, pos: tuple[int, int]) -> None:
         super().__init__(groups)
         self.image: pygame.Surface = pygame.Surface((70, 16)).convert_alpha()
         self.image.fill(TRANSPARENT_COLOR)
@@ -162,8 +162,8 @@ class HealthBar(pygame.sprite.Sprite):
 class Object(pygame.sprite.Sprite):
     def __init__(
         self,
-        groups: list[pygame.sprite.Group],
-        pos: list[int],
+        groups: pygame.sprite.Group,
+        pos: tuple[int, int],
         image=pygame.Surface((TILE_SIZE, TILE_SIZE)),
         # z: str = "blocks",
     ) -> None:
@@ -181,9 +181,9 @@ class Object(pygame.sprite.Sprite):
 class ItemSprite(Object):
     def __init__(
         self,
-        groups: list[pygame.sprite.Group],
+        groups: pygame.sprite.Group,
         gid: int,
-        pos: list[int],
+        pos: tuple[int, int],
         # z: str = "blocks",
         name: str,
         model: Item,

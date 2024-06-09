@@ -5,12 +5,12 @@ from .maze import Maze
 
 class HuntAndKillMaze(Maze):
 
-    def __init__(self, cols, rows):
+    def __init__(self, cols, rows) -> None:
         super().__init__(cols, rows)
 
     # Hunt and kill maze generation algorithm
 
-    def generate_interactive(self, maze_drawer):
+    def generate_interactive(self, maze_drawer) -> None:
         maze_drawer.draw()
         current_cell = self.get_random_cell()
 
@@ -46,7 +46,7 @@ class HuntAndKillMaze(Maze):
 
     # Hunt and kill generation algorithm
 
-    def generate(self):
+    def generate(self) -> None:
         current_cell = self.get_random_cell()
 
         while current_cell is not None:

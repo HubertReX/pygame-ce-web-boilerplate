@@ -1,9 +1,12 @@
+from __future__ import annotations
 from settings import ANIMATION_SPEED, BORED_TIME, RUN_SPEED
-import characters
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from characters import NPC
 
 
 #################################################################################################################
-def get_new_state(current_npc_state: "NPC_State", character: "characters.NPC"):
+def get_new_state(current_npc_state: NPC_State, character: NPC) -> NPC_State | None:
     # MARK: get_new_state
     if character.is_stunned:
         return (Stunned() if str(current_npc_state) != "Stunned" else None)
@@ -42,14 +45,15 @@ class NPC_State():
         self.enter_time: float = 0.0
 
     #############################################################################################################
-    def enter_state(self, character: "characters.NPC"):
+    def enter_state(self, character: NPC) -> NPC_State | None:
         # raise NotImplemented(f"'enter_state' is not implemented. NPC_State should be used only as abstract class")
         return get_new_state(self, character)
 
     #############################################################################################################
-    def update(self, dt: float, character: "characters.NPC"):
+    def update(self, dt: float, character: NPC) -> None:
         # raise NotImplemented(f"'update' is not implemented. NPC_State should be used only as abstract class")
         # animation key has 2 parts: action (e.g.: run) and direction player is facing (e.g. left) => "run_left"
+        character.check_cooldown()
         character.animate(f"{self.action}_{character.get_direction_360()}", character.animation_speed * dt)
         character.movement()
         character.physics(dt)
@@ -63,21 +67,21 @@ class NPC_State():
 
 
 class Idle(NPC_State):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
 #################################################################################################################
 
 
 class Bored(NPC_State):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
 #################################################################################################################
 
 
 class Walk(NPC_State):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.action = "run"
 
@@ -85,21 +89,21 @@ class Walk(NPC_State):
 
 
 class Run(NPC_State):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
 #################################################################################################################
 
 
 class Jump(NPC_State):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
 #################################################################################################################
 
 
 class Fly(NPC_State):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         # no separate animation for fly - using jump
         self.action = "jump"
@@ -108,7 +112,7 @@ class Fly(NPC_State):
 
 
 class Stunned(NPC_State):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         # no separate animation for stunned - using idle
         self.action = "idle"
@@ -117,7 +121,7 @@ class Stunned(NPC_State):
 
 
 class Attacking(NPC_State):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         # no separate animation for stunned - using idle
         self.action = "weapon"

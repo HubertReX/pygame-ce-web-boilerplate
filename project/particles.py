@@ -23,7 +23,6 @@ def import_sprite_sheet(path: str, tile_size: int, sprite_sheet_definition: list
     """
     img: pygame.Surface = pygame.image.load(path).convert_alpha()
     img_rect: pygame.Rect = img.get_rect()
-    tile_size: int  = 8
     animation: list[pygame.Surface] = []
 
     for coord in sprite_sheet_definition:
@@ -42,14 +41,14 @@ def import_sprite_sheet(path: str, tile_size: int, sprite_sheet_definition: list
 # MARK: Particle
 class Particle():
     # MARK: Particle
-    start_view: pygame.Rect = None
+    start_view: pygame.Rect | None = None
     x: int = 0
     y: int = 0
     speed_x: int = 0
     speed_y: int = 0
     scale: float = 1.0
     rotation: float = 0.0
-    alpha: float = 255
+    alpha: int = 255
     # 1 = 1 second
     lifetime: float = 1.0
     time_elapsed: float = 0.0
@@ -97,8 +96,8 @@ class ParticleImageBased:
         self.center = self.rect.center
 
         # amount of new particles per second
-        self.rate = rate
-        self.custom_event_id  = pygame.event.custom_type()
+        self.rate: int = rate
+        self.custom_event_id: int  = pygame.event.custom_type()
 
         self.interval: int = int(1000 / rate)
         pygame.time.set_timer(pygame.event.Event(self.custom_event_id), self.interval)
@@ -119,7 +118,10 @@ class ParticleImageBased:
 
     ###################################################################################################################
     # MAR: animate
-    def animate(self, time_elapsed: float, loop=True):
+    def animate(self, time_elapsed: float, loop=True) -> None:
+        if not self.animation:
+            return
+
         self.frame_index = (self.animation_speed * time_elapsed)
 
         if int(self.frame_index) >= len(self.animation):
@@ -143,8 +145,8 @@ class ParticleImageBased:
                     self.animate(particle.time_elapsed)
 
                 if int(self.frame_index) < self.freeze_after_nth_frame:
-                    particle.x += (particle.speed_x * dt) + self.x_oscillation(particle.time_elapsed)
-                    particle.y += particle.speed_y * dt
+                    particle.x += int((particle.speed_x * dt) + self.x_oscillation(particle.time_elapsed))
+                    particle.y += int(particle.speed_y * dt)
 
                 particle.lifetime -= dt
 
@@ -156,7 +158,7 @@ class ParticleImageBased:
                 particle.rotation += self.rotation_speed * 360 * dt
                 particle.rotation = particle.rotation % 360
 
-                particle.alpha -= self.alpha_speed * 255 * dt
+                particle.alpha -= int(self.alpha_speed * 255 * dt)
                 if particle.alpha < 0:
                     particle.alpha = 0
                 self.image.set_alpha(particle.alpha)
@@ -181,7 +183,7 @@ class ParticleImageBased:
     # MARK: add_particles
     def add_particles(
         self,
-        start_pos: list[int] | None = None,
+        start_pos: tuple[int, int] | None = None,
         move_speed: float = 100.0,
         move_dir: int = 180,
         rotation: int = 0,
@@ -199,12 +201,12 @@ class ParticleImageBased:
         if self.spawn_rect:
             pos_x = self.spawn_rect.x + random.randint(0, self.spawn_rect.width)
             pos_y = self.spawn_rect.y + random.randint(0, self.spawn_rect.height)
-        else:
-            pos_x = start_pos[0] - self.width / 2
-            pos_y = start_pos[1] - self.height / 2
+        elif start_pos:
+            pos_x = int(start_pos[0] - self.width / 2)
+            pos_y = int(start_pos[1] - self.height / 2)
         dir_vec = vec(0, -1).rotate(move_dir).normalize() * move_speed
-        direction_x = dir_vec.x  # random.randint(-3,3)
-        direction_y = dir_vec.y  # random.randint(-3,3)
+        direction_x = int(dir_vec.x)  # random.randint(-3,3)
+        direction_y = int(dir_vec.y)  # random.randint(-3,3)
         # compensate the camera zoom level change
         p = Particle(self.group.view, pos_x, pos_y, direction_x, direction_y,
                      scale * (self.camera.zoom / ZOOM_LEVEL), rotation, alpha, lifetime)
@@ -215,7 +217,7 @@ class ParticleImageBased:
 
     ###################################################################################################################
     # MARK: delete_particles
-    def delete_old_particles(self):
+    def delete_old_particles(self) -> None:
         particle_copy = [particle for particle in self.particles if particle.lifetime > 0.0]
         self.particles = particle_copy
 
@@ -225,7 +227,7 @@ class ParticleImageBased:
 class ParticleSystem(ABC):
     @abstractmethod
     def __init__(self, canvas: pygame.Surface, group: PyscrollGroup, camera: Camera) -> None:
-        ...
+        self.custom_event_id: int = 0
 
     @abstractmethod
     def add(self, **kwargs) -> None:
@@ -260,13 +262,13 @@ class ParticleLeafs(ParticleSystem):
         )
         self.custom_event_id = self.particle.custom_event_id
 
-    @ cache
-    @ staticmethod
-    def x_oscillation(self, time_elapsed: float):
+    @cache
+    @staticmethod
+    def x_oscillation(self, time_elapsed: float) -> float:
         return math.sin(time_elapsed * 10.0) * 4.0
 
     ###################################################################################################################
-    def add(self, **kwargs):
+    def add(self, **kwargs) -> None:
         # move 80 pixels/seconds into south-west (down-left) +/- 30 degree, enlarge 5 x, kill after 4 seconds
         self.particle.add_particles(
             start_pos=pygame.mouse.get_pos(),
@@ -277,7 +279,7 @@ class ParticleLeafs(ParticleSystem):
         )
 
     ###################################################################################################################
-    def emit(self, dt: float):
+    def emit(self, dt: float) -> None:
         self.particle.emit(dt)
 
 #####################################################################################################################
@@ -290,8 +292,8 @@ class ParticleRain(ParticleSystem):
         spawn_rect = pygame.Rect(0, -HEIGHT // 2, WIDTH + 256, HEIGHT)
         # leaf_img = pygame.image.load(PARTICLES_DIR / "Rain.png").convert_alpha()
         sprite_sheet_definition = [(0, 0), (1, 0), (2, 0)]
-        animation = import_sprite_sheet(PARTICLES_DIR / "Rain.png", 8, sprite_sheet_definition)
-        animation += import_sprite_sheet(PARTICLES_DIR / "RainOnFloor.png", 8, sprite_sheet_definition)
+        animation = import_sprite_sheet(str(PARTICLES_DIR / "Rain.png"), 8, sprite_sheet_definition)
+        animation += import_sprite_sheet(str(PARTICLES_DIR / "RainOnFloor.png"), 8, sprite_sheet_definition)
         # emit: 1 particle/second
         self.particle = ParticleImageBased(
             screen=canvas,
@@ -310,7 +312,7 @@ class ParticleRain(ParticleSystem):
         self.custom_event_id = self.particle.custom_event_id
 
     ###################################################################################################################
-    def add(self, **kwargs):
+    def add(self, **kwargs) -> None:
         # move 1500 pixels/seconds into south-west (down-left) enlarge 5 x, kill after half a second
         self.particle.add_particles(
             start_pos=pygame.mouse.get_pos(),
@@ -321,5 +323,5 @@ class ParticleRain(ParticleSystem):
         )
 
     ###################################################################################################################
-    def emit(self, dt: float):
+    def emit(self, dt: float) -> None:
         self.particle.emit(dt)

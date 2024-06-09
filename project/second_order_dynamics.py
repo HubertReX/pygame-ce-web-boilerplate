@@ -8,7 +8,7 @@ class SecondOrderDynamics:
     https://www.youtube.com/watch?v=KPoeNZZ6H4s&t=810s
     """
 
-    def __init__(self, f: float, z: float, r: float, x0: vec):
+    def __init__(self, f: float, z: float, r: float, x0: vec) -> None:
         """
         f: natural frequency of the system [Hz] == [cycles/s]
         z: zeta, damping coefficient (0 => infinite oscillation)
@@ -56,11 +56,11 @@ class SecondOrderDynamics:
         self.y = x0  # vec(x0)   # state variable
         self.yd = vec(0, 0)  # derivative of state variable
 
-    def reset(self, x0: vec):
+    def reset(self, x0: vec) -> None:
         self.xp = x0
         self.y  = x0
 
-    def update(self, T: float, x: vec, xd: vec | None = None):
+    def update(self, T: float, x: vec, xd: vec | None = None) -> vec:
         """
         get next position
 
@@ -88,7 +88,7 @@ def main():
     f = 0.01  # slow
     z = 0.3  # overshoot
     r = -2.0  # anticipation
-    SOD = SecondOrderDynamics(f, z, r, x0=[0, 0])
+    SOD = SecondOrderDynamics(f, z, r, x0=vec(0, 0))
     pos = vec(80, 0)
     # speed = vec(50, 0)
     print(f"{f=} {z=} {r=}")

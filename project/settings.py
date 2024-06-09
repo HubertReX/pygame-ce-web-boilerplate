@@ -3,13 +3,13 @@ from functools import partial
 from os import PathLike
 from pathlib import Path
 from typing import Any, Sequence, Union
-
+from dataclasses import dataclass
 import pygame
 from pygame.colordict import THECOLORS as COLORS
 from pygame.math import Vector2 as vec
 from pygame.math import Vector3 as vec3
 from rich import inspect, pretty, print, traceback
-
+from pytmx.pytmx import Point as pytmxPoint
 help = partial(inspect, help=True, methods=True)
 pretty.install()
 
@@ -23,7 +23,33 @@ ABOUT = [
 ]
 
 # custom type definition
-Point = namedtuple("Point", ["x", "y"])
+# Point = namedtuple("Point", ["x", "y"])
+
+
+@dataclass
+class Point:
+    x: int
+    y: int
+
+    @property
+    def as_vector(self) -> vec:
+        return vec(self.x, self.y)
+
+    def __repr__(self) -> str:
+        return f"MyPoint({self.x}, {self.y})"
+
+    # def __add__(self, other: "Point") -> "Point":
+    #     return Point(self.x + other.x, self.y + other.y)
+
+
+def to_point(p: pytmxPoint) -> Point:
+    return Point(int(p.x), int(p.y))
+
+
+def to_vector(p: pytmxPoint) -> vec:
+    return vec(int(p.x), int(p.y))
+
+
 # from pygame/_common.pyi
 ColorValue = Union[int, str, Sequence[int]]
 
@@ -89,9 +115,9 @@ WAYPOINTS_LINE_COLOR = (0, 0, 128, 32)
 # NPC stunned color
 STUNNED_COLOR = (200, 0, 0, 64)
 # cold, dark and bluish light at night
-NIGHT_FILTER: ColorValue = (0, 0, 30, 220)
+NIGHT_FILTER: tuple[int, int, int, int] = (0, 0, 30, 220)
 # sunny, warm yellow light during daytime
-DAY_FILTER: ColorValue = (152, 152, 0, 20)
+DAY_FILTER: tuple[int, int, int, int] = (152, 152, 0, 20)
 # amount of light sources passed to shader
 MAX_LIGHTS_COUNT: int = 16
 

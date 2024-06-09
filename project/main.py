@@ -30,7 +30,7 @@ random.seed(seed)
 np.random.seed(seed)
 
 
-def main():
+def main() -> None:
     game = Game()
     asyncio.run(game.loop())
 

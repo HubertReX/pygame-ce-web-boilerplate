@@ -1,5 +1,5 @@
 from state import State
-from settings import ABOUT, HEIGHT, INPUTS, FPS_CAP, IS_WEB, WIDTH
+from settings import ABOUT, HEIGHT, INPUTS, FPS_CAP, IS_WEB, WIDTH, SHOW_DEBUG_INFO
 import pygame
 import pygame_menu
 import game
@@ -21,7 +21,7 @@ class MenuScreen(State):
         self.menu.full_reset()
         # self.msgs = []
 
-    # def debug(self, msgs: list[str]):
+    # def debug(self, msgs: list[str]) -> None:
     #     return super().debug(msgs)
 
     def __repr__(self) -> str:
@@ -30,14 +30,14 @@ class MenuScreen(State):
     def create_menu() -> pygame_menu.Menu:
         raise NotImplementedError("Subclasses should implement this!")
 
-    def deactivate(self):
+    def deactivate(self) -> None:
         # self.menu.disable()
 
         # Scene(self.game, "grasslands", "start").enter_state()
         self.game.reset_inputs()
         self.exit_state()
 
-    def update(self, dt: float, events: list[pygame.event.EventType]):
+    def update(self, dt: float, events: list[pygame.event.EventType]) -> None:
         # .get_inputs()
         # events = pygame.event.get()
 
@@ -57,7 +57,7 @@ class MenuScreen(State):
         # if INPUTS["quit"]:
         #     self.deactivate()
 
-    def draw(self, screen: pygame.Surface, dt: float):
+    def draw(self, screen: pygame.Surface, dt: float) -> None:
         # screen.fill(COLORS["blue"])
         # self.game.render_text(f"{self.__class__.__name__}:
         # press space to continue", (WIDTH / 2, HEIGHT / 2), centred=True)
@@ -106,7 +106,7 @@ class MainMenuScreen(MenuScreen):
 
         return main_menu
 
-    def update(self, dt: float, events: list[pygame.event.EventType]):
+    def update(self, dt: float, events: list[pygame.event.EventType]) -> None:
         super().update(dt, events)
 
         if INPUTS["select"]:
@@ -161,7 +161,7 @@ class AboutMenuScreen(MenuScreen):
         # about_menu.add.button("Close menu", pygame_menu.events.BACK)
         return about_menu
 
-    def update(self, dt: float, events: list[pygame.event.EventType]):
+    def update(self, dt: float, events: list[pygame.event.EventType]) -> None:
         super().update(dt, events)
 
         if INPUTS["left_click"]:

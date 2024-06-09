@@ -1,19 +1,24 @@
+from __future__ import annotations
 import pygame
+from objects import ItemSprite
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from characters import Player
 from settings import FONT_COLOR, PANEL_BG_COLOR, TILE_SIZE, WIDTH, HEIGHT
 
 
 class UI:
-    def __init__(self, screen: pygame.Surface, font: pygame.Surface):
+    def __init__(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
         self.display_surface = screen
         self.font = font
 
-    def display_text(self, text: str, pos: tuple[int, int]):
+    def display_text(self, text: str, pos: tuple[int, int]) -> None:
         text_surf = self.font.render(str(text), False, FONT_COLOR)
         text_rect = text_surf.get_rect(topleft = pos)
 
         self.display_surface.blit(text_surf, text_rect)
 
-    def box(self, left, top, width, height):
+    def box(self, left: int, top: int, width: int, height: int) -> None:
         UI_BORDER_COLOR = '#111111'
 
         bg_rect = pygame.Rect(left, top, width, height)
@@ -24,7 +29,7 @@ class UI:
 
         pygame.draw.rect(self.display_surface, UI_BORDER_COLOR, bg_rect, 3)
 
-    def selection_box(self, left, top, has_switched, cooldown=100):
+    def selection_box(self, left: int, top: int, has_switched: bool, cooldown: int = 100) -> pygame.Rect:
         ITEM_BOX_SIZE = TILE_SIZE * 8
         UI_BORDER_COLOR = '#111111'
         UI_BORDER_COLOR_ACTIVE = 'gold'
@@ -48,7 +53,7 @@ class UI:
             pygame.draw.rect(self.display_surface, UI_BORDER_COLOR, bg_rect, 3)
         return bg_rect
 
-    def weapon_overlay(self, weapon, has_switched, cooldown):
+    def weapon_overlay(self, weapon: ItemSprite | None, has_switched: bool, cooldown: int) -> None:
         bg_rect = self.selection_box(TILE_SIZE, HEIGHT - (TILE_SIZE * 9), has_switched, cooldown)
         if weapon:
             weapon_surf = pygame.transform.scale(weapon.image_directions["up"], (TILE_SIZE * 7, TILE_SIZE * 7))
@@ -56,14 +61,14 @@ class UI:
 
             self.display_surface.blit(weapon_surf, weapon_rect)
 
-    # def magic_overlay(self, magic_index, has_switched):
+    # def magic_overlay(self, magic_index, has_switched) -> None:
     #     bg_rect = self.selection_box(80, 635, has_switched)
     #     magic_surf = self.magic_graphics[magic_index]
     #     magic_rect = magic_surf.get_rect(center = bg_rect.center)
 
     #     self.display_surface.blit(magic_surf, magic_rect)
 
-    def display(self, player, elapsed_time: float):
+    def display(self, player: Player, elapsed_time: float) -> None:
         # UI semitransparent background panel
         self.box(TILE_SIZE, TILE_SIZE, 450, 125)
 

@@ -54,6 +54,13 @@
                     "title": "Max Health",
                     "type": "integer"
                 },
+                "max_carry_weight": {
+                    "default": 15.0,
+                    "description": "maximal carrying weight in kg",
+                    "minimum": 0.0,
+                    "title": "Max Carry Weight",
+                    "type": "number"
+                },
                 "money": {
                     "default": 0,
                     "description": "initial amount of possessed money",
@@ -124,7 +131,7 @@
                 },
                 "weight": {
                     "default": 1.0,
-                    "description": "Weight of single item in the stack",
+                    "description": "Weight of single item in the stack in kg",
                     "minimum": 0.0,
                     "title": "Weight",
                     "type": "number"

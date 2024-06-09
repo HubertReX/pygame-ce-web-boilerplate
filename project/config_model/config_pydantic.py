@@ -41,7 +41,7 @@ class ItemTypeEnum(StrEnum):
 
 
 class Character(BaseModel):
-    name: str   = Field(min_length=3, rozen=True, description="Unique character name")
+    name: str   = Field(min_length=3, frozen=True, description="Unique character name")
     sprite: str = Field(
         min_length=3,
         description="Must be valid asset folder name (assets/[ASSET_PACK]/characters/[sprite])",
@@ -61,7 +61,7 @@ class Character(BaseModel):
 
 class Item(BaseModel):
     name: str   = Field(
-        min_length=3, rozen=True, description="Unique item name")
+        min_length=3, frozen=True, description="Unique item name")
     type:          Annotated[ItemTypeEnum, Field(
         description="Item type (e.g. weapon, tool, consumable)")]
     value:         Annotated[int,          Field(
@@ -84,32 +84,7 @@ class Item(BaseModel):
         1.0, ge=0.0,
         description="The amount of time in seconds it takes to use the weapon again",
         repr=False)]
-# dataclass version
 
-
-# @dataclass
-# class Character():
-#     name: str
-#     sprite: str = field(repr=False)
-#     race:         RaceEnum
-#     attitude:     AttitudeEnum
-#     health:       Annotated[int,          field(repr=False)]
-#     max_health:   Annotated[int,          field(repr=False)]
-#     money:        Annotated[int,          field(repr=False)]
-#     damage:       Annotated[int,          field(repr=False)]
-
-#     @classmethod
-#     def from_dict(cls, data):
-#         return cls(
-#             name = data.get('name'),
-#             sprite = data.get('sprite'),
-#             race = data.get('race'),
-#             attitude = data.get('attitude'),
-#             health = data.get('health', 30),
-#             max_health = data.get('max_health', 30),
-#             money = data.get('money', 0),
-#             damage = data.get('damage', 10),
-#         )
 
 ###################################################################################################################
 # MARK: Config
@@ -118,22 +93,6 @@ class Config(BaseModel):
     characters: Dict[str, Character]
     items: Dict[str, Item]
 
-# dataclass version
-
-
-# @dataclass
-# class Config():
-#     characters: Dict[str, Character]
-
-#     @classmethod
-#     def build(cls, data):
-#         chars = {}
-#         for name, chr in data["characters"].items():
-#             # print(name, chr)
-#             character = Character.from_dict(chr)
-#             chars[name] = character
-
-#         return cls(chars)
 ###################################################################################################################
 
 
@@ -153,11 +112,11 @@ def test():
 # MARK: Helper functions
 
 
-def generate_config_schema(model: BaseModel) -> dict[str, Any]:
+def generate_config_schema(model: Config) -> dict[str, Any]:
     return model.model_json_schema()
 
 
-def save_config_schema(model: BaseModel, file_name: PathLike) -> None:
+def save_config_schema(model: Config, file_name: PathLike) -> None:
     schema = generate_config_schema(model)
     with open(file_name, "w", encoding="utf-8") as f:
         json.dump(schema, f, ensure_ascii=False, indent=4)
@@ -165,7 +124,7 @@ def save_config_schema(model: BaseModel, file_name: PathLike) -> None:
 ###################################################################################################################
 
 
-def save_config(model: BaseModel, file_name: PathLike) -> None:
+def save_config(model: Config, file_name: PathLike) -> None:
     with open(file_name, "w", encoding="utf-8") as f:
         json.dump(model.model_dump_json(), f, ensure_ascii=False, indent=4)
 
@@ -181,7 +140,7 @@ def load_config(file_name: PathLike) -> "Config":
         config = Config(**config_json)
     # except ValidationError as e:
     except Exception as e:
-        print(e.errors())
+        print(e.args)
     # finally:
     #     print(config.characters)
     return config
