@@ -1,4 +1,5 @@
 import random
+
 # from cell import Cell
 from .maze import Maze
 

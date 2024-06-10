@@ -1,10 +1,10 @@
-from state import State
-from settings import ABOUT, HEIGHT, INPUTS, FPS_CAP, IS_WEB, WIDTH, SHOW_DEBUG_INFO
+import game
 import pygame
 import pygame_menu
-import game
-import splash_screen
 import scene
+import splash_screen
+from settings import ABOUT, FPS_CAP, HEIGHT, INPUTS, IS_WEB, SHOW_DEBUG_INFO, WIDTH
+from state import State
 
 #######################################################################################################################
 # MARK: MenuScreen

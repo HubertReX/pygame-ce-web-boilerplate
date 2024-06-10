@@ -1,6 +1,7 @@
 import random
 from typing import Any, Generator
-from .cell import Cell, CELL_EAST, CELL_SOUTH, CELL_WEST, CELL_NORTH
+
+from .cell import CELL_EAST, CELL_NORTH, CELL_SOUTH, CELL_WEST, Cell
 
 #################################################################################################################
 

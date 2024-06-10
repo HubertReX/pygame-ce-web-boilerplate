@@ -1,30 +1,63 @@
-from PIL import Image
-from opengl_shader import OpenGL_shader
-import pygame
-from collections import deque
-from datetime import datetime
-from os import environ
-from typing import Any, Callable, cast, TYPE_CHECKING
-import numpy as np
-
 import asyncio
 import os
-
 import random
+from datetime import datetime
+from os import environ
+from typing import TYPE_CHECKING, Any, Callable
+
+import pygame
+from opengl_shader import OpenGL_shader
+from PIL import Image
 from rich import print, traceback
-from settings import ACTIONS, BG_COLOR, CONFIG_FILE, CUTSCENE_BG_COLOR, DEFAULT_SHADER, FONT_COLOR, FONT_SIZE_DEFAULT, \
-    FONT_SIZE_LARGE, FONT_SIZE_MEDIUM, FONT_SIZE_SMALL, FONT_SIZE_TINY, FPS_CAP, GAME_NAME, \
-    GAMEPAD_WEB_CONTROL_NAMES, GAMEPAD_XBOX_AXIS2ACTIONS, \
-    GAMEPAD_XBOX_BUTTON2ACTIONS, GAMEPAD_XBOX_CONTROL_NAMES, HEIGHT, INPUTS, \
-    IS_FULLSCREEN, IS_WEB, JOY_COOLDOWN, JOY_DRIFT, JOY_MOVE_MULTIPLIER, MAIN_FONT, MOUSE_CURSOR_IMG, PANEL_BG_COLOR, \
-    PROGRAM_ICON, RECORDING_FPS, SCALE, \
-    SCREENSHOTS_DIR, SHADERS_NAMES, TEXT_ROW_SPACING, TILE_SIZE, USE_CUSTOM_MOUSE_CURSOR, USE_SOD, WIDTH, \
-    ColorValue, vec, vec3, USE_SHADERS
+from settings import (
+    ACTIONS,
+    BG_COLOR,
+    CONFIG_FILE,
+    CUTSCENE_BG_COLOR,
+    DEFAULT_SHADER,
+    FONT_COLOR,
+    FONT_SIZE_DEFAULT,
+    FONT_SIZE_LARGE,
+    FONT_SIZE_MEDIUM,
+    FONT_SIZE_SMALL,
+    FONT_SIZE_TINY,
+    FPS_CAP,
+    GAME_NAME,
+    GAMEPAD_WEB_CONTROL_NAMES,
+    GAMEPAD_XBOX_AXIS2ACTIONS,
+    GAMEPAD_XBOX_BUTTON2ACTIONS,
+    GAMEPAD_XBOX_CONTROL_NAMES,
+    HEIGHT,
+    INPUTS,
+    IS_FULLSCREEN,
+    IS_WEB,
+    JOY_COOLDOWN,
+    JOY_DRIFT,
+    JOY_MOVE_MULTIPLIER,
+    MAIN_FONT,
+    MOUSE_CURSOR_IMG,
+    PANEL_BG_COLOR,
+    PROGRAM_ICON,
+    RECORDING_FPS,
+    SCALE,
+    SCREENSHOTS_DIR,
+    SHADERS_NAMES,
+    TEXT_ROW_SPACING,
+    TILE_SIZE,
+    USE_CUSTOM_MOUSE_CURSOR,
+    USE_SHADERS,
+    USE_SOD,
+    WIDTH,
+    ColorValue,
+    vec,
+    vec3
+)
+
 if IS_WEB:
     from config_model.config import load_config
 else:
-    from config_model.config_pydantic import load_config
     import ffmpeg
+    from config_model.config_pydantic import load_config
 
 environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 # https://www.reddit.com/r/pygame/comments/12twl0e/cannot_rumble_dualshock_4_via_bluetooth_in_pygame/
@@ -36,7 +69,7 @@ if USE_SOD:
 # 101 0017 # 106 0021 # 107 0030 no left down
 seed = 107
 random.seed(seed)
-np.random.seed(seed)
+# np.random.seed(seed)
 traceback.install(show_locals=True, width=150)
 
 # os.environ["SDL_WINDOWS_DPI_AWARENESS"] = "permonitorv2"
@@ -437,7 +470,7 @@ class Game:
         for joystick in self.joysticks.values():
             for i in range(joystick.get_numbuttons()):
                 if joystick.get_button(i):
-                    # print(f"{i} pressed")
+                    print(f"{i} pressed")
                     self.is_joystick_in_use = True
                     break
             else:

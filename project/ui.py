@@ -1,11 +1,15 @@
 from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import pygame
 from objects import ItemSprite
-from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from characters import Player
     from game import Game
-from settings import FONT_COLOR, PANEL_BG_COLOR, TILE_SIZE, WIDTH, HEIGHT
+
+from settings import FONT_COLOR, HEIGHT, PANEL_BG_COLOR, TILE_SIZE, WIDTH
 
 
 class UI:

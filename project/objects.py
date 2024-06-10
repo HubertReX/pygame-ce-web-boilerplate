@@ -1,6 +1,14 @@
 import pygame
-from settings import BLACK_COLOR, FONT_SIZE_TINY, HUD_DIR, PANEL_BG_COLOR, \
-    TILE_SIZE, TRANSPARENT_COLOR, load_image, IS_WEB
+from settings import (
+    BLACK_COLOR,
+    FONT_SIZE_TINY,
+    HUD_DIR,
+    IS_WEB,
+    PANEL_BG_COLOR,
+    TILE_SIZE,
+    TRANSPARENT_COLOR,
+    load_image,
+)
 
 if IS_WEB:
     from config_model.config import AttitudeEnum, Character, Item, ItemTypeEnum

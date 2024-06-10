@@ -1,7 +1,10 @@
 from __future__ import annotations
+
 from dataclasses import dataclass, field
-from settings import ZOOM_LEVEL, vec
 from typing import TYPE_CHECKING
+
+from settings import ZOOM_LEVEL, vec
+
 if TYPE_CHECKING:
     from scene import Scene
 

@@ -1,12 +1,10 @@
-import _zengl
-from pathlib import Path
 import struct
-import zengl
-import pygame
+from pathlib import Path
 
-from settings import MAX_LIGHTS_COUNT, SHADERS_DIR, vec, vec3, IS_WEB
-# if not IS_WEB:
-import numpy as np
+import _zengl
+import pygame
+import zengl
+from settings import IS_WEB, MAX_LIGHTS_COUNT, SHADERS_DIR, vec, vec3
 
 zengl.init()
 

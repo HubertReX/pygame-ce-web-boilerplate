@@ -1,0 +1,10 @@
+[tool.isort] # https://pycqa.github.io/isort/docs/configuration/options.html
+py_version = "311"
+line_length = 80
+# wrap_length = 40
+# profile = "black"
+# split_on_trailing_comma = true
+skip_gitignore = true
+# force_grid_wrap = 1
+multi_line_output = 8
+# use_parentheses = true

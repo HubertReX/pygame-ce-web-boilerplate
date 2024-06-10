@@ -1,7 +1,10 @@
 from __future__ import annotations
-import pygame
-from settings import WIDTH, HEIGHT, COLORS
+
 from typing import TYPE_CHECKING
+
+import pygame
+from settings import COLORS, HEIGHT, WIDTH
+
 if TYPE_CHECKING:
     from scene import Scene
 

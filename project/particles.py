@@ -1,14 +1,15 @@
+import math
+import random
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import cache
-import math
 from typing import Callable
+
 import pygame
-import random
-from pyscroll.group import PyscrollGroup
-from pygame.math import Vector2 as vec
-from settings import PARTICLES_DIR, WIDTH, HEIGHT, ZOOM_LEVEL
 from camera import Camera
+from pygame.math import Vector2 as vec
+from pyscroll.group import PyscrollGroup
+from settings import HEIGHT, PARTICLES_DIR, WIDTH, ZOOM_LEVEL
 
 ###################################################################################################################
 

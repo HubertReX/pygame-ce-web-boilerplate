@@ -1,27 +1,40 @@
 import copy
-from enum import StrEnum, auto
 import math
 import os
 import random
-import pygame
-from pygame.math import Vector2 as vec
+from enum import StrEnum, auto
 
-from maze_generator.maze_utils import a_star, a_star_cached
+import pygame
+from maze_generator.maze_utils import a_star_cached
+from pygame.math import Vector2 as vec
 from settings import (
-    ANIMATION_SPEED, CHARACTERS_DIR,
-    HEIGHT, JOY_MOVE_MULTIPLIER, MONSTER_WAKE_DISTANCE, PUSHED_TIME, RECALCULATE_PATH_DISTANCE,
-    SPRITE_SHEET_DEFINITION, STUNNED_COLOR, STUNNED_TIME, TILE_SIZE, WEAPON_DIRECTION_OFFSET,
-    Point, INPUTS, IS_WEB
+    ANIMATION_SPEED,
+    CHARACTERS_DIR,
+    HEIGHT,
+    INPUTS,
+    IS_WEB,
+    JOY_MOVE_MULTIPLIER,
+    MONSTER_WAKE_DISTANCE,
+    PUSHED_TIME,
+    RECALCULATE_PATH_DISTANCE,
+    SPRITE_SHEET_DEFINITION,
+    STUNNED_COLOR,
+    STUNNED_TIME,
+    TILE_SIZE,
+    WEAPON_DIRECTION_OFFSET,
+    Point,
 )
+
 if IS_WEB:
-    from config_model.config import AttitudeEnum, Character, Item, ItemTypeEnum
+    from config_model.config import AttitudeEnum, Character, ItemTypeEnum
 else:
-    from config_model.config_pydantic import AttitudeEnum, Character, Item, ItemTypeEnum
+    from config_model.config_pydantic import AttitudeEnum, Character, ItemTypeEnum
+
 import game
-import scene
 import npc_state
-from objects import HealthBar, HealthBarUI, Shadow, ItemSprite
+import scene
 import splash_screen
+from objects import HealthBar, HealthBarUI, ItemSprite, Shadow
 
 #################################################################################################################
 

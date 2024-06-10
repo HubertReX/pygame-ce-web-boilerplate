@@ -1,10 +1,8 @@
-from __future__ import annotations
-from __future__ import division
-from __future__ import print_function
+from __future__ import annotations, division, print_function
 
-from functools import partial
 import sys
 from collections import defaultdict
+from functools import partial
 from typing import Any, Callable
 
 import pygame

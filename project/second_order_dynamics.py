@@ -1,6 +1,6 @@
-import pygame
-from pygame.math import Vector2 as vec
 from math import pi as PI
+
+from pygame.math import Vector2 as vec
 
 
 class SecondOrderDynamics:

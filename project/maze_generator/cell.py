@@ -1,6 +1,5 @@
 import random
 
-
 CELL_NORTH = 3  # 1
 CELL_EAST  = 0  # 2
 CELL_SOUTH = 2  # 3

@@ -1,4 +1,4 @@
-from math import sqrt, cos, sin, pi
+from math import cos, pi, sin, sqrt
 
 __all__ = ("AnimationTransition",)
 

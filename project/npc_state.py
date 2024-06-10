@@ -1,6 +1,9 @@
 from __future__ import annotations
-from settings import ANIMATION_SPEED, BORED_TIME, RUN_SPEED
+
 from typing import TYPE_CHECKING
+
+from settings import ANIMATION_SPEED, BORED_TIME, RUN_SPEED
+
 if TYPE_CHECKING:
     from characters import NPC
 

@@ -1,7 +1,7 @@
-from state import State
-from settings import FONT_SIZE_DEFAULT, FONT_SIZE_LARGE, HEIGHT, INPUTS, COLORS, TEXT_ROW_SPACING, WIDTH
-import pygame
 import game
+import pygame
+from settings import COLORS, FONT_SIZE_DEFAULT, FONT_SIZE_LARGE, HEIGHT, INPUTS, TEXT_ROW_SPACING, WIDTH
+from state import State
 
 
 class SplashScreen(State):

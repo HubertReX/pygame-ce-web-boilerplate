@@ -20,14 +20,15 @@
 #  "pillow"
 # ]
 # ///
-import random
-import numpy as np
 import asyncio
+import random
+
 from game import Game
+
 # 101 0017 # 106 0021 # 107 0030 no left down
 seed = 107
 random.seed(seed)
-np.random.seed(seed)
+# np.random.seed(seed)
 
 
 def main() -> None:

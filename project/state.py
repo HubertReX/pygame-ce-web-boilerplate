@@ -1,7 +1,8 @@
 from __future__ import annotations
-from settings import FONT_SIZE_MEDIUM, INPUTS, IS_WEB, TEXT_ROW_SPACING, SHOW_DEBUG_INFO, SHOW_HELP_INFO
-import pygame
+
 import game
+import pygame
+from settings import FONT_SIZE_MEDIUM, INPUTS, IS_WEB, SHOW_DEBUG_INFO, SHOW_HELP_INFO, TEXT_ROW_SPACING
 
 #################################################################################################################
 

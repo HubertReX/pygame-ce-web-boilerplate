@@ -1,15 +1,17 @@
 from collections import namedtuple
+from dataclasses import dataclass
 from functools import partial
 from os import PathLike
 from pathlib import Path
 from typing import Any, Sequence, Union
-from dataclasses import dataclass
+
 import pygame
 from pygame.colordict import THECOLORS as COLORS
 from pygame.math import Vector2 as vec
 from pygame.math import Vector3 as vec3
-from rich import inspect, pretty, print, traceback
 from pytmx.pytmx import Point as pytmxPoint
+from rich import inspect, pretty, print, traceback
+
 help = partial(inspect, help=True, methods=True)
 pretty.install()
 
@@ -320,6 +322,7 @@ DEFAULT_SHADER = "LIGHTING"
 
 # TODO: do not import particles (circular import) and use class name as string
 import particles  # noqa: E402
+
 PARTICLES = {
     "leafs": particles.ParticleLeafs,
     "rain": particles.ParticleRain,

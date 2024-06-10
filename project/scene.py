@@ -1,35 +1,60 @@
 import random
 from typing import cast
+
 import game
 import menus
 import pygame
 import pyscroll
 import pyscroll.data
 from animation import animator
+from camera import Camera
 from maze_generator import hunt_and_kill_maze
 from maze_generator.maze_utils import (
-    TILE_SIZE, build_tileset_map_from_maze,
-    clear_maze_cache, get_gid_from_tmx_id
+    TILE_SIZE,
+    build_tileset_map_from_maze,
+    clear_maze_cache,
+    get_gid_from_tmx_id
 )
-from camera import Camera
 from objects import Collider, ItemSprite
-from pyscroll.group import PyscrollGroup
-from pytmx.util_pygame import load_pygame
-from pytmx import TiledMap, TiledTileLayer, TiledObjectGroup
 from particles import ParticleSystem
+from pyscroll.group import PyscrollGroup
+from pytmx import TiledMap, TiledObjectGroup, TiledTileLayer
+from pytmx.util_pygame import load_pygame
+from settings import (
+    ACTIONS,
+    BG_COLOR,
+    CIRCLE_GRADIENT,
+    CUTSCENE_BG_COLOR,
+    DAY_FILTER,
+    FONT_SIZE_MEDIUM,
+    GAME_TIME_SPEED,
+    HEIGHT,
+    INITIAL_HOUR,
+    INPUTS,
+    MAPS_DIR,
+    MAZE_DIR,
+    NIGHT_FILTER,
+    PANEL_BG_COLOR,
+    PARTICLES,
+    SHADERS_NAMES,
+    SHOW_DEBUG_INFO,
+    SHOW_HELP_INFO,
+    TEXT_ROW_SPACING,
+    USE_ALPHA_FILTER,
+    USE_SHADERS,
+    WAYPOINTS_LINE_COLOR,
+    WIDTH,
+    ZOOM_LEVEL,
+    ColorValue,
+    Point,
+    to_point,
+    to_vector,
+    vec,
+    vec3
+)
 from state import State
 from transition import Transition, TransitionCircle
 from ui import UI
-
-from settings import (
-    ACTIONS, BG_COLOR, CIRCLE_GRADIENT, CUTSCENE_BG_COLOR,
-    DAY_FILTER, FONT_SIZE_MEDIUM, GAME_TIME_SPEED,
-    HEIGHT, INITIAL_HOUR, MAPS_DIR, MAZE_DIR,
-    NIGHT_FILTER, PANEL_BG_COLOR, PARTICLES,
-    SHADERS_NAMES, TEXT_ROW_SPACING, USE_SHADERS,
-    WAYPOINTS_LINE_COLOR, WIDTH, ZOOM_LEVEL,
-    ColorValue, Point, to_point, to_vector, vec, vec3, INPUTS, SHOW_DEBUG_INFO, SHOW_HELP_INFO, USE_ALPHA_FILTER
-)
 
 
 ################################################################################################################
@@ -206,6 +231,7 @@ class Scene(State):
 
         # moved here to avoid circular imports
         from characters import NPC
+
         # self.notify_npc_event_id  = pygame.event.custom_type()
         self.NPC: list[NPC] = []
         # layer of invisible objects being single points determining where NPCs will spawn

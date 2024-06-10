@@ -1,13 +1,14 @@
 import heapq
 import random
+import time
+from functools import partial, wraps
+
 import pytmx
 from pygame.math import Vector2 as vec
-from functools import wraps
-import time
+from rich import inspect, pretty, print, traceback
+
 from .maze import Maze
-from functools import partial
-from rich import inspect, pretty, print
-from rich import traceback
+
 help = partial(inspect, help=True, methods=True)
 pretty.install()
 
