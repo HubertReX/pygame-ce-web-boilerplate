@@ -45,6 +45,7 @@
         "SRCALPHA",
         "THECOLORS",
         "tileset",
+        "tilesets",
         "tobytes",
         "topleft",
         "underdamped",

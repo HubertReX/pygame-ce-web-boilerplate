@@ -106,7 +106,7 @@ Build using:
 - ✅ ~~separate **Scene** state from currently loaded **map**~~ - `done`
 - 💡 add procedurally generated, natural looking **animations**/**movements** (using **Second Order Dynamics**) - `POC`
 - ⏳ add **fighting** system - `WIP`
-- add **gamepad** controller mapping - useful on handhelds like **SteamDeck**
+- ✅ ~~add **gamepad** controller mapping~~ - `done` - not so easy on **SteamDeck**
 - add option to play using **touchscreen** - use [this](https://forums.raspberrypi.com/viewtopic.php?t=354101) - first check performance on **mobile** devices
 - add **dialog** system
 - add **quest** system
