@@ -10,7 +10,7 @@ class SplashScreen(State):
         self.name = name
 
     def __repr__(self) -> str:
-        return f"{__class__.__name__}: {self.name}"
+        return f"{self.__class__.__name__}: {self.name}"
 
     def update(self, dt: float, events: list[pygame.event.EventType]) -> None:
         if INPUTS["left_click"]:

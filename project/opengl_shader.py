@@ -1,5 +1,6 @@
 import struct
 from pathlib import Path
+from typing import Any, Iterable
 
 import _zengl
 import pygame
@@ -10,9 +11,9 @@ zengl.init()
 
 
 try:
-    CSI("test")  # noqa: F821
+    CSI("test")  # type: ignore[used-before-def]  # noqa: F821
 except NameError:
-    def CSI(param) -> None:
+    def CSI(param: Any) -> None:
         pass
 
 #######################################################################################################################
@@ -21,13 +22,13 @@ except NameError:
 class OpenGL_shader():
     def __init__(self, size: tuple[int, int], shader_name: str = "") -> None:
 
-        def compile_error_debug(shader: bytes, shader_type: int, log: bytes) -> None:
+        def compile_error_debug(shader: str, shader_type: int, log: str) -> None:
             name = {0x8B31: "Vertex Shader", 0x8B30: "Fragment Shader"}[shader_type]
             print("=" * 30, name, "=" * 30)
             try:
 
-                log = log.rstrip(b"\x00").decode(errors="ignore")
-                shader = shader.rstrip(b"\x00").decode()
+                log = log.rstrip(b"\x00").decode(errors="ignore")  # type: ignore[attr-defined, arg-type]
+                shader = shader.rstrip(b"\x00").decode()  # type: ignore[attr-defined, arg-type]
                 _, pos, msg  = log.split(": ", 2)
                 c, error_line_no = map(int, pos.split(":", 1))
                 # print( l,c,msg  )
@@ -62,10 +63,10 @@ class OpenGL_shader():
         self.lights_pos_buffer = self.ctx.buffer(size=float_size * floats_per_light * MAX_LIGHTS_COUNT)
 
         self.shader_name = shader_name
-        self.pipeline = None
+        self.pipeline: zengl.Pipeline = self.create_pipeline()
 
     ###################################################################################################################
-    def create_pipeline(self, shader_name: str = "") -> None:
+    def create_pipeline(self, shader_name: str = "") -> zengl.Pipeline:
         # if provided new shader_name then use it (otherwise use shader_name provided in constructor)
         if shader_name:
             self.shader_name = shader_name
@@ -82,7 +83,7 @@ const int MAX_LIGHTS_CNT = {MAX_LIGHTS_COUNT};
         '''
                     }
 
-        layout = [
+        layout: Iterable[zengl.LayoutBinding] = [
             {
                 "name": "Texture",
                 "binding": 0,
@@ -93,14 +94,14 @@ const int MAX_LIGHTS_CNT = {MAX_LIGHTS_COUNT};
             },
         ]
 
-        uniforms = {
+        uniforms: dict[str, Any] = {
             "time": 0.0,
             "scale": 0.0,
             "ratio": 0.0,
             "lights_cnt": 0,
         }
 
-        resources = [
+        resources: Iterable[zengl.BufferResource | zengl.SamplerResource] = [
             {
                 "type": "sampler",
                 "binding": 0,
@@ -129,7 +130,7 @@ const int MAX_LIGHTS_CNT = {MAX_LIGHTS_COUNT};
         #     "dst_color": "one_minus_src_alpha",
         # }
 
-        self.pipeline = self.ctx.pipeline(
+        return self.ctx.pipeline(
             vertex_shader = VS,
             fragment_shader = FS,
             includes=includes,
@@ -206,10 +207,11 @@ const int MAX_LIGHTS_CNT = {MAX_LIGHTS_COUNT};
             for i, p in enumerate(lights_pos):
                 data = struct.pack('3f4x', p.x, p.y, p.z)
                 self.lights_pos_buffer.write(data, offset= (i * 16))
-            self.pipeline.uniforms["time"][:] = struct.pack("f", self.timestamp / 100.0)
-            self.pipeline.uniforms["scale"][:] = struct.pack("f", scale)
-            self.pipeline.uniforms["ratio"][:] = struct.pack("f", ratio)
-            self.pipeline.uniforms["lights_cnt"][:] = struct.pack("i", len(lights_pos))
+            if self.pipeline.uniforms:
+                self.pipeline.uniforms["time"][:] = struct.pack("f", self.timestamp / 100.0)
+                self.pipeline.uniforms["scale"][:] = struct.pack("f", scale)
+                self.pipeline.uniforms["ratio"][:] = struct.pack("f", ratio)
+                self.pipeline.uniforms["lights_cnt"][:] = struct.pack("i", len(lights_pos))
             self.pipeline.render()
             # desktop rendering requires different handling in order to
             # record screen processed by shaders

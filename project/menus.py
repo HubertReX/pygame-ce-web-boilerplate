@@ -25,9 +25,9 @@ class MenuScreen(State):
     #     return super().debug(msgs)
 
     def __repr__(self) -> str:
-        return f"{__class__.__name__}: {self.name}"
+        return f"{self.__class__.__name__}: {self.name}"
 
-    def create_menu() -> pygame_menu.Menu:
+    def create_menu(self) -> pygame_menu.Menu:
         raise NotImplementedError("Subclasses should implement this!")
 
     def deactivate(self) -> None:
@@ -41,7 +41,7 @@ class MenuScreen(State):
         # .get_inputs()
         # events = pygame.event.get()
 
-        if self.menu.is_enabled:
+        if self.menu.is_enabled():
             is_updated = self.menu.update(events)
             if is_updated:
                 self.game.reset_inputs()
@@ -61,7 +61,7 @@ class MenuScreen(State):
         # screen.fill(COLORS["blue"])
         # self.game.render_text(f"{self.__class__.__name__}:
         # press space to continue", (WIDTH / 2, HEIGHT / 2), centred=True)
-        if self.menu.is_enabled:
+        if self.menu.is_enabled():
             self.menu.mainloop(screen, None, disable_loop=True, fps_limit=FPS_CAP)
         msgs = [
             f"Menu   : {self.name}",

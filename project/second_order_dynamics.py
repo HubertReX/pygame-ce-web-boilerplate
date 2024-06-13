@@ -84,7 +84,7 @@ class SecondOrderDynamics:
         return self.y
 
 
-def main():
+def main() -> None:
     f = 0.01  # slow
     z = 0.3  # overshoot
     r = -2.0  # anticipation

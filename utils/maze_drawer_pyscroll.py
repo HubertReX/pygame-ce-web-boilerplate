@@ -8,7 +8,7 @@ import pygame
 import pyscroll
 import pyscroll.data
 import pytmx
-from cell import Cell
+from cell import *
 from maze import Maze
 from maze_utils import build_tileset_map_from_maze, get_gid_from_tmx_id
 from pyscroll.group import PyscrollGroup
@@ -78,7 +78,7 @@ for key in ACTIONS.keys():
 
 class MazeDrawer:
 
-    def __init__(self) -> None:
+    def __init__(self):
         self.maze = hunt_and_kill_maze.HuntAndKillMaze(COLS, ROWS)
         pygame.init()
         self.clock: pygame.time.Clock = pygame.time.Clock()
@@ -103,7 +103,7 @@ class MazeDrawer:
         self.maze_offset_x = (WINDOW_WIDTH - self.maze.num_cols * CELLSIZE_SCALED) // 2
         self.maze_offset_y = (WINDOW_HEIGHT - self.maze.num_rows * CELLSIZE_SCALED) // 2
 
-        self.visited_cells: list[Cell] = []
+        self.visited_cells = []
         self.highlight_surface = pygame.Surface((CELLSIZE_SCALED, CELLSIZE_SCALED))
         self.highlight_surface.set_alpha(50)
         self.highlight_surface.fill("yellow")
@@ -119,7 +119,7 @@ class MazeDrawer:
             self.layers.append(layer.name)
 
         # clean_tileset_name = "MazeTileset_clean"
-        self.tileset_map = load_pygame(MAPS_DIR / "MazeTileset_clean.tmx")
+        self.tileset_map = load_pygame(MAPS_DIR / f"MazeTileset_clean.tmx")
         build_tileset_map_from_maze(self.tileset_map, self.maze)
         # self.convert_map()
 
@@ -140,11 +140,11 @@ class MazeDrawer:
         self.group = PyscrollGroup(map_layer=self.map_layer, default_layer=3)
         self.group.center(self.map_layer.map_rect.center)
 
-    def generate_map(self) -> None:
+    def generate_map(self):
         self.maze = hunt_and_kill_maze.HuntAndKillMaze(COLS, ROWS)
         self.maze.generate()
         # self.convert_map()
-        self.tileset_map = load_pygame(MAPS_DIR / "MazeTileset_clean.tmx")
+        self.tileset_map = load_pygame(MAPS_DIR / f"MazeTileset_clean.tmx")
         build_tileset_map_from_maze(self.tileset_map, self.maze)
 
         # create new renderer (camera)
@@ -164,7 +164,7 @@ class MazeDrawer:
         self.group = PyscrollGroup(map_layer=self.map_layer, default_layer=1)
         self.group.center(self.map_layer.map_rect.center)
 
-    def convert_map(self) -> None:
+    def convert_map(self):
         margin = 3
 
         new_rows = [[0 for _ in range(self.maze.num_cols + (2 * margin))] for _ in range(margin)]
@@ -207,7 +207,7 @@ class MazeDrawer:
         self.tileset_map.width = self.maze.num_cols + (2 * margin)
         self.tileset_map.height = self.maze.num_rows + (2 * margin)
 
-    def draw(self, select_cell: Cell | None = None, visit: bool = True) -> None:
+    def draw(self, select_cell: Cell | None = None, visit = True):
         if SHOW_OLD:
             self.draw_background()
             self.draw_cells(select_cell, visit)
@@ -215,7 +215,7 @@ class MazeDrawer:
         else:
             self.group.draw(self.display_surface)
 
-    def wait_key(self) -> None:
+    def wait_key(self):
         global SHOW_OLD
         events = pygame.event.get()
         for event in events:
@@ -238,12 +238,12 @@ class MazeDrawer:
                     pygame.quit()
                     exit()
 
-    def update(self, dt: float, events: list[pygame.event.EventType]) -> None:
+    def update(self, dt: float, events: list[pygame.event.EventType]):
         global INPUTS
         # self.update_sprites.update(dt)
         self.group.update(dt)
 
-    def draw_cells(self, select_cell: Cell | None = None, visit: bool = True) -> None:
+    def draw_cells(self, select_cell: Cell | None = None, visit = True):
         for cell in self.maze.get_all_cells():
             # Check which cell walls need to be drawn
 
@@ -266,21 +266,21 @@ class MazeDrawer:
                 if visit:
                     self.visited_cells.append(cell)
                 self.display_surface.blit(self.highlight_surface, (x + self.maze_offset_x, y + self.maze_offset_y))
-                self.display_surface.blit(self.wizard_image, (x + self.maze_offset_x +  # noqa: W504
+                self.display_surface.blit(self.wizard_image, (x + self.maze_offset_x +
                                           CELLSIZE_SCALED // 2, y + self.maze_offset_y  + CELLSIZE_SCALED // 2))
 
             # make unvisited cells darker
             # if cell not in self.visited_cells and self.interactive:
             #     self.display_surface.blit(self.darken_surface, (x + self.maze_offset_x, y + self.maze_offset_y))
 
-    def draw_background(self) -> None:
+    def draw_background(self):
         image = self.tilesheet.subsurface((512, 0, CELLSIZE, CELLSIZE))
         image = pygame.transform.scale_by(image, (SCALE_FACTOR, SCALE_FACTOR))
         for y in range(WINDOW_HEIGHT // CELLSIZE_SCALED + 1):
             for x in range(WINDOW_WIDTH // CELLSIZE_SCALED + 1):
                 self.display_surface.blit(image, (x * CELLSIZE_SCALED, y * CELLSIZE_SCALED))
 
-    def loop(self) -> None:
+    def loop(self):
         while True:
             dt = self.clock.tick(30) / 1000
             self.update(dt, [])

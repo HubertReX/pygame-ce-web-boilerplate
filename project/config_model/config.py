@@ -69,17 +69,17 @@ class Character():
     damage:       Annotated[int,          field(repr=False)]
 
     @classmethod
-    def from_dict(cls, data) -> "Character":
+    def from_dict(cls: type["Character"], data: dict[str, Any]) -> "Character":
         return cls(
-            name = data.get('name'),
-            sprite = data.get('sprite'),
-            race = RaceEnum(data.get('race')),
-            attitude = AttitudeEnum(data.get('attitude')),
-            health = data.get('health', 30),
-            max_health = data.get('max_health', 30),
-            max_carry_weight = data.get('max_carry_weight', 15.0),
-            money = data.get('money', 0),
-            damage = data.get('damage', 10),
+            name = data.get("name", ""),
+            sprite = data.get("sprite", ""),
+            race = RaceEnum(data.get("race", "")),
+            attitude = AttitudeEnum(data.get("attitude", "")),
+            health = data.get("health", 30),
+            max_health = data.get("max_health", 30),
+            max_carry_weight = data.get("max_carry_weight", 15.0),
+            money = data.get("money", 0),
+            damage = data.get("damage", 10),
         )
 
 
@@ -96,17 +96,17 @@ class Item():
     cooldown_time: Annotated[float,        field(repr=False)]
 
     @classmethod
-    def from_dict(cls, data) -> "Item":
+    def from_dict(cls, data: dict[str, Any]) -> "Item":
         return cls(
-            name          = data.get('name'),
-            type          = ItemTypeEnum(data.get('type')),
-            value         = data.get('value', 50),
-            health_impact = data.get('health_impact', 0),
-            in_use        = data.get('in_use', False),
-            damage        = data.get('damage', 10),
-            count         = data.get('count', 1),
-            weight        = data.get('weight', 1.0),
-            cooldown_time = data.get('cooldown_time', 1.0),
+            name          = data.get("name", ""),
+            type          = ItemTypeEnum(data.get("type", "")),
+            value         = data.get("value", 50),
+            health_impact = data.get("health_impact", 0),
+            in_use        = data.get("in_use", False),
+            damage        = data.get("damage", 10),
+            count         = data.get("count", 1),
+            weight        = data.get("weight", 1.0),
+            cooldown_time = data.get("cooldown_time", 1.0),
         )
 
 ###################################################################################################################
@@ -124,7 +124,7 @@ class Config():
     items: Dict[str, Item]
 
     @classmethod
-    def build(cls, data) -> "Config":
+    def build(cls, data: dict[str, Any]) -> "Config":
         chars = {}
         for name, chr in data["characters"].items():
             # print(name, chr)
@@ -141,7 +141,7 @@ class Config():
 ###################################################################################################################
 
 
-def test():
+def test() -> None:
     # try:
     #     main_conf = Config(**conf)
     # except ValidationError as e:

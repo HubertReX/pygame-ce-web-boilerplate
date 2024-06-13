@@ -1,5 +1,5 @@
 .ONESHELL:
-.PHONY: help clean
+.PHONY: help clean check sourcery mypy
 .DEFAULT_GOAL := run
 
 BIND_IP ?= 192.168.1.85
@@ -33,6 +33,13 @@ serve: venv  ## run the app in browser
 update_schema: venv ## generate pydantic model schema and save it to: project/config_model/config_schema.json
 	. .venv/bin/activate && cd $(MAIN_FOLDER)/config_model && $(PYTHON) config_pydantic.py
 
+check: sourcery mypy  ##  run all checks
+
+sourcery: venv ## check for code smells and generate suggestions
+	sourcery review $(MAIN_FOLDER)
+
+mypy: venv ## run mypy static type checker
+	mypy --config-file pyproject.toml $(MAIN_FOLDER)
 
 clean:  ## remove virtual environment
 	rm -rf venv

@@ -3,6 +3,7 @@ import math
 import os
 import random
 from enum import StrEnum, auto
+from typing import Any
 
 import pygame
 from maze_generator.maze_utils import a_star_cached
@@ -28,13 +29,14 @@ from settings import (
 if IS_WEB:
     from config_model.config import AttitudeEnum, Character, ItemTypeEnum
 else:
-    from config_model.config_pydantic import AttitudeEnum, Character, ItemTypeEnum
+    from config_model.config_pydantic import AttitudeEnum, Character, ItemTypeEnum  # type: ignore[assignment]
 
 import game
 import npc_state
 import scene
 import splash_screen
 from objects import HealthBar, HealthBarUI, ItemSprite, Shadow
+
 
 #################################################################################################################
 
@@ -77,17 +79,20 @@ class NPC(pygame.sprite.Sprite):
         self.selected_item_idx: int = -1
         self.total_items_weight: float = 0.0
         self.animations: dict[str, list[pygame.surface.Surface]] = {}
+        self.masks: dict[str, list[pygame.mask.Mask]] = {}
         self.animation_speed = ANIMATION_SPEED
         self.import_sprite_sheet(str(CHARACTERS_DIR / self.model.sprite / "SpriteSheet.png"))
+        self.generate_masks()
         self.frame_index: float = 0.0
         self.image = self.animations["idle_down"][int(self.frame_index)]
+        self.mask = self.masks["idle_down"][int(self.frame_index)]
         self.pos: vec = vec(pos[0], pos[1])
         self.prev_pos: vec = self.pos.copy()
         self.tileset_coord: Point = self.get_tileset_coord()
         self.rect = self.image.get_frect(midbottom = self.pos)
         # hit box size is half the TILE_SIZE, bottom, centered
         self.feet = pygame.Rect(0, 0, self.rect.width // 2, TILE_SIZE // 2)
-        self.feet.midbottom = self.pos
+        self.feet.midbottom = (int(self.pos.x), int(self.pos.y))
         # individual steps to follow (mainly a center of a given tile, but pixel accurate)
         # provided by A* path finding
         self.waypoints: tuple[Point, ...] = waypoints
@@ -145,6 +150,14 @@ class NPC(pygame.sprite.Sprite):
         self.state.enter_time = self.scene.game.time_elapsed
 
     #############################################################################################################
+    def generate_masks(self) -> None:
+        # _mask = pygame.mask.from_surface(self.image)
+        for key, animation in self.animations.items():
+            masks = [pygame.mask.from_surface(frame) for frame in animation]
+            self.masks[key] = masks
+
+    #############################################################################################################
+
     def create_health_bar(self, label_group: pygame.sprite.Group, pos: tuple[int, int]) -> HealthBar:
         return HealthBar(self.model, label_group, pos)
 
@@ -196,11 +209,7 @@ class NPC(pygame.sprite.Sprite):
                     continue
                     # print(f"ERROR! {self.name}: coordinate {x}x{y} not inside sprite sheet for {key} animation")
 
-            if len(animation) > 0:
-                self.animations[key] = animation
-            else:
-                self.animations[key] = animation_def
-
+            self.animations[key] = animation or animation_def
             # if there is only one animation for each direction
             # that is when animation name doesn't include direction (e.g. 'idle')
             # than add reference in all directions (e.g. 'idle_up', 'idle_down',...)
@@ -230,16 +239,14 @@ class NPC(pygame.sprite.Sprite):
 
     #############################################################################################################
     # MARK: animate
-    def animate(self, state, dt: float, loop=True) -> None:
+    def animate(self, state: str, dt: float, loop: bool = True) -> None:
         self.frame_index += dt
 
         if self.frame_index >= len(self.animations[state]) - 1:
-            if loop:
-                self.frame_index = 0.0
-            else:
-                self.frame_index = len(self.animations[state]) - 1.0
+            self.frame_index = 0.0 if loop else len(self.animations[state]) - 1.0
 
         self.image = self.animations[state][int(self.frame_index)].copy()
+        self.mask = self.masks[state][int(self.frame_index)].copy()
 
         if self.is_stunned:
             red_filter = pygame.Surface(self.image.get_size(), pygame.SRCALPHA)
@@ -251,8 +258,12 @@ class NPC(pygame.sprite.Sprite):
             value = math.sin(self.game.time_elapsed * 200.0)
             value = 255 if value >= 0 else 0
             self.image.set_alpha(value)
+            if self.selected_weapon and self.selected_weapon.image:
+                self.selected_weapon.image.set_alpha(value)
         else:
             self.image.set_alpha(255)
+            if self.selected_weapon and self.selected_weapon.image:
+                self.selected_weapon.image.set_alpha(255)
 
     #############################################################################################################
     def get_direction_360(self) -> str:
@@ -273,10 +284,7 @@ class NPC(pygame.sprite.Sprite):
         angle = self.vel.angle_to(vec(0, 1))
         angle = (angle + 360) % 360
 
-        if angle < 180:
-            return "right"
-        else:
-            return "left"
+        return "right" if angle < 180 else "left"
 
     #############################################################################################################
     # MARK: movement
@@ -292,7 +300,7 @@ class NPC(pygame.sprite.Sprite):
             self.target = self.scene.player.pos.copy()
             self.find_path()
         # if character has a set target (and needs to follow it) or there are no waypoints to follow any more
-        elif not self.target == vec(0, 0):  # or self.waypoints_cnt == 0:
+        elif self.target != vec(0, 0):  # or self.waypoints_cnt == 0:
             # if (no more waypoints or the player has moved) and (character is a monster chasing player)
             # not self.target == self.scene.player.pos)
             distance_player_moved = (self.target - self.scene.player.pos).magnitude_squared()
@@ -308,31 +316,37 @@ class NPC(pygame.sprite.Sprite):
 
     #############################################################################################################
     def follow_waypoints(self) -> None:
-        if self.waypoints_cnt > 0:
-            npc_pos = self.pos
-            current_way_point_vec = self.waypoints[self.current_waypoint_no].as_vector
-            current_way_point_vec.y += 4
-            # skip to next waypoint when within around 1 pixel
-            if current_way_point_vec.distance_squared_to(npc_pos) <= 2.0:
-                self.current_waypoint_no += 1
-                # if following target and reached goal do not start over again
-                if self.current_waypoint_no >= self.waypoints_cnt:
-                    if not self.target == vec(0, 0):
-                        self.target = vec(0, 0)
-                        self.waypoints = ()
-                        self.waypoints_cnt = 0
-                        self.current_waypoint_no = 0
-                        self.acc = vec(0, 0)
-                        # self.vel = vec(0, 0)
-                        return
-                    else:
-                        self.current_waypoint_no = 0
-                    current_way_point_vec = self.waypoints[self.current_waypoint_no].as_vector
-                    current_way_point_vec.y += 4
-            direction = current_way_point_vec - npc_pos
-            direction = direction.normalize() * self.force
-            self.acc.x = direction.x
-            self.acc.y = direction.y
+        if self.waypoints_cnt <= 0:
+            return
+
+        npc_pos = self.pos
+        current_way_point_vec = self.waypoints[self.current_waypoint_no].as_vector
+        current_way_point_vec.y += 4
+        # skip to next waypoint when within around 1 pixel
+        if current_way_point_vec.distance_squared_to(npc_pos) <= 2.0:
+            self.current_waypoint_no += 1
+            # if following target and reached goal do not start over again
+            if self.current_waypoint_no >= self.waypoints_cnt:
+                if self.target != vec(0, 0):
+                    return self.clear_waypoints()
+                else:
+                    self.current_waypoint_no = 0
+                current_way_point_vec = self.waypoints[self.current_waypoint_no].as_vector
+                current_way_point_vec.y += 4
+        direction = current_way_point_vec - npc_pos
+        direction = direction.normalize() * self.force
+        self.acc.x = direction.x
+        self.acc.y = direction.y
+
+    #############################################################################################################
+    def clear_waypoints(self) -> None:
+        self.target = vec(0, 0)
+        self.waypoints = ()
+        self.waypoints_cnt = 0
+        self.current_waypoint_no = 0
+        self.acc = vec(0, 0)
+        # self.vel = vec(0, 0)
+        return
 
     #############################################################################################################
     def find_path(self) -> None:
@@ -341,36 +355,32 @@ class NPC(pygame.sprite.Sprite):
         goal = (target.y, target.x)
         # fps = f"FPS:\t{self.game.fps: 6.1f}\t3s:\t{self.game.avg_fps_3s: 6.1f}
         # \t10s:\t{self.game.avg_fps_10s: 6.1f}\ttime:\t{self.game.time_elapsed:4.1f}"
-        path = a_star_cached(start=start, goal=goal, grid=self.scene.path_finding_grid, fps="")
-        if path:
-            waypoints = []
-            path_list = list(path)
-            start_index = 0
-            # if first waypoint is the same map grid, than skip it
-            # hack to prevent NPC jitter (coming back to center of current grid, than to next,
-            # but then path is recalculated and goes back to current grid center)
-            if len(path_list) >= 2:
-                if path_list[0] == start:
-                    start_index = 1
-
-            # when following Player, stop 1 step before
-            # for waypoint in path_list[start_index:-1]:
-            for waypoint in path_list[start_index:]:
-                y, x = waypoint
-                p = Point(x * TILE_SIZE + TILE_SIZE // 2, y * TILE_SIZE + TILE_SIZE // 2)
-                waypoints.append(p)
-            self.waypoints_cnt = len(waypoints)
-            self.waypoints = tuple(waypoints)
-            self.current_waypoint_no = 0
-            # self.acc = vec(0, 0)
-            # self.vel = vec(0, 0)
+        if path := a_star_cached(start=start, goal=goal, grid=self.scene.path_finding_grid):
+            self.generate_waypoints_from_path(path, start)
         else:
             print(f"{self.name}: Path not found!")
             self.waypoints = ()
             self.waypoints_cnt = 0
-            self.current_waypoint_no = 0
             self.acc = vec(0, 0)
             self.vel = vec(0, 0)
+
+        self.current_waypoint_no = 0
+
+    def generate_waypoints_from_path(self, path: list[tuple[int, int]], start: tuple[int, int]) -> None:
+        waypoints = []
+        path_list = list(path)
+        # if first waypoint is the same map grid, than skip it
+        # hack to prevent NPC jitter (coming back to center of current grid, than to next,
+        # but then path is recalculated and goes back to current grid center)
+        start_index = 1 if len(path_list) >= 2 and path_list[0] == start else 0
+        # when following Player, stop 1 step before
+        # for waypoint in path_list[start_index:-1]:
+        for waypoint in path_list[start_index:]:
+            y, x = waypoint
+            p = Point(x * TILE_SIZE + TILE_SIZE // 2, y * TILE_SIZE + TILE_SIZE // 2)
+            waypoints.append(p)
+        self.waypoints_cnt = len(waypoints)
+        self.waypoints = tuple(waypoints)
 
     #############################################################################################################
     def jump(self) -> None:
@@ -404,11 +414,7 @@ class NPC(pygame.sprite.Sprite):
             self.vel = self.vel.normalize() * speed
 
         if self.is_flying:
-
-            if self.scene.game.time_elapsed % 0.25 < 0.125:
-                oscillation = 1
-            else:
-                oscillation = 0
+            oscillation = 1 if self.scene.game.time_elapsed % 0.25 < 0.125 else 0
             self.jumping_offset = TILE_SIZE + oscillation
         else:
             if not self.is_jumping:
@@ -419,7 +425,7 @@ class NPC(pygame.sprite.Sprite):
             self.up_vel += self.up_acc * dt
             # + (self.up_vel / 2) * dt
             self.jumping_offset = int(self.up_vel * dt)
-            if int(self.jumping_offset) <= 0:
+            if self.jumping_offset <= 0:
                 self.is_jumping = False
                 self.up_acc = 0.0
                 self.up_vel = 0.0
@@ -435,9 +441,9 @@ class NPC(pygame.sprite.Sprite):
 
     #############################################################################################################
     def change_state(self) -> None:
-        new_state = self.state.enter_state(self)
-        if new_state:
+        if new_state := self.state.enter_state(self):
             new_state.enter_time = self.scene.game.time_elapsed
+            # print(self.model.name, new_state)
             self.state = new_state
 
     #############################################################################################################
@@ -449,7 +455,7 @@ class NPC(pygame.sprite.Sprite):
 
     #############################################################################################################
     def die(self) -> None:
-        self.scene.NPC = [npc for npc in self.scene.NPC if not npc == self]
+        self.scene.NPC = [npc for npc in self.scene.NPC if npc != self]
         self.shadow.kill()
         self.health_bar.kill()
         if self.name == "Player" and self.model.health <= 0:
@@ -475,7 +481,7 @@ class NPC(pygame.sprite.Sprite):
 
     #############################################################################################################
 
-    def slide(self, colliders) -> None:
+    def slide(self, colliders: list[Any]) -> None:
         move_vec = self.pos - self.prev_pos
         # can't move by full vector,
         # first try move ony in one axis (reset the movement along the other axis to zero)
@@ -503,7 +509,8 @@ class NPC(pygame.sprite.Sprite):
     #############################################################################################################
     # MARK: process_custom_event
     def process_custom_event(self, **kwargs: str) -> None:
-        # print(self.model.name, kwargs)
+        # if self.model.name == "Player":
+        #     print(kwargs["action"])
 
         if kwargs.get("action", "") == NPCEventActionEnum.pushed.value:
             # pushed state is invalidated
@@ -553,7 +560,7 @@ class NPC(pygame.sprite.Sprite):
             self.set_event_timer(self, NPCEventActionEnum.stunned, STUNNED_TIME, 1)
 
             oponent.is_stunned = True
-            self.set_event_timer(oponent, NPCEventActionEnum.stunned, STUNNED_TIME, 1)
+            oponent.set_event_timer(oponent, NPCEventActionEnum.stunned, STUNNED_TIME, 1)
 
             # show health bar (for STUNNED_TIME ms)
             # self.health_bar.set_bar(self.model.health / self.model.max_health, self.game)
@@ -580,7 +587,7 @@ class NPC(pygame.sprite.Sprite):
             oponent.adjust_rect()
 
             self.set_event_timer(self,    NPCEventActionEnum.pushed, PUSHED_TIME, 1)
-            self.set_event_timer(oponent, NPCEventActionEnum.pushed, PUSHED_TIME, 1)
+            oponent.set_event_timer(oponent, NPCEventActionEnum.pushed, PUSHED_TIME, 1)
 
             # show health bar (for PUSHED_TIME ms)
             # self.health_bar.set_bar(self.model.health / self.model.max_health, self.game)
@@ -600,7 +607,7 @@ class NPC(pygame.sprite.Sprite):
             #     oponent.die()
 
             oponent.is_stunned = True
-            self.set_event_timer(oponent, NPCEventActionEnum.stunned, STUNNED_TIME, 1)
+            oponent.set_event_timer(oponent, NPCEventActionEnum.stunned, STUNNED_TIME, 1)
 
             # show health bar (for STUNNED_TIME ms)
             # self.health_bar.set_bar(self.model.health / self.model.max_health, self.game)
@@ -616,8 +623,8 @@ class NPC(pygame.sprite.Sprite):
             oponent.acc = vec(0, 0)
             # self.adjust_rect()
             oponent.adjust_rect()
-        else:
-            pass
+        # else:
+        #     pass
             # push the npc
             # player_move = self.pos - self.prev_pos
             # if player_move != vec(0, 0):
@@ -651,17 +658,20 @@ class NPC(pygame.sprite.Sprite):
     def adjust_rect(self) -> None:
         self.tileset_coord = self.get_tileset_coord()
         # display sprite n pixels above position so the shadow doesn't stick out from the bottom
-        self.rect.midbottom = self.pos + vec(0,  -self.jumping_offset - 3)
+        self.rect.midbottom = self.pos + vec(0,  -self.jumping_offset - 3)  # type: ignore[union-attr]
         # 'hitbox' for collisions
-        self.feet.midbottom = self.pos
+        self.feet.midbottom = vec(self.pos[0], self.pos[1])  # type: ignore[assignment]
         # shadow
-        self.shadow.rect.midbottom = self.pos
-        self.health_bar.rect.midtop = self.pos
+        self.shadow.rect.midbottom =  vec(self.pos[0], self.pos[1])  # type: ignore[assignment]
+        self.health_bar.rect.midtop =  vec(self.pos[0], self.pos[1])  # type: ignore[assignment]
 
         if self.selected_weapon:
             direction = self.get_direction_360()
-            self.selected_weapon.rect.center = self.pos + WEAPON_DIRECTION_OFFSET[direction]
+            self.selected_weapon.rect.center = vec(
+                self.pos[0], self.pos[1]) + WEAPON_DIRECTION_OFFSET[direction]  # type: ignore[assignment]
             self.selected_weapon.image = self.selected_weapon.image_directions[direction]
+            self.selected_weapon.mask = self.selected_weapon.masks[direction]
+            # self.selected_weapon.image = self.selected_weapon.masks[direction].to_surface()
 
     #############################################################################################################
     def debug(self, msgs: list[str]) -> None:
@@ -726,9 +736,9 @@ class Player(NPC):
             self.find_path()
 
             if fix_exit_target:
-                target = Point(int(x), int(y - TILE_SIZE))
+                exit_target = Point(int(x), int(y - TILE_SIZE))
                 waypoints_l = list(self.waypoints)
-                self.waypoints = tuple(waypoints_l + [target])
+                self.waypoints = tuple(waypoints_l + [exit_target])
                 self.waypoints_cnt = len(waypoints_l)
 
             INPUTS["left_click"] = False
@@ -745,6 +755,7 @@ class Player(NPC):
             self.target = vec(0, 0)
             self.waypoints_cnt = 0
             self.waypoints = ()
+            INPUTS["right_click"] = False
 
         if INPUTS["attack"]:
             if not self.is_attacking and self.selected_weapon:
@@ -752,12 +763,15 @@ class Player(NPC):
                 self.attack_time = self.game.time_elapsed
                 self.scene.group.add(self.selected_weapon)
                 weapon_cooldown = int(self.selected_weapon.model.cooldown_time * 1000.0) if self.selected_weapon else 0
-                self.weapon_cooldown = self.game.time_elapsed + weapon_cooldown + self.attack_cooldown
+                self.weapon_cooldown = self.game.time_elapsed + (weapon_cooldown + self.attack_cooldown) / 1000.0
+                # print(f"p:{self.weapon_cooldown} {self.game.time_elapsed=} cool={
+                #       (weapon_cooldown + self.attack_cooldown) / 1000.0}")
                 self.set_event_timer(
                     self,
                     NPCEventActionEnum.attacking,
                     self.attack_cooldown + weapon_cooldown,
                     1)
+            INPUTS["attack"] = False
 
         if INPUTS["left"]:
             multiplier = INPUTS["left_value"] * JOY_MOVE_MULTIPLIER if self.game.is_joystick_in_use else 1.0
@@ -797,7 +811,9 @@ class Player(NPC):
 
     #############################################################################################################
     def use_item(self) -> None:
-        if not self.items or not self.selected_item_idx >= 0 or self.selected_item_idx > len(self.items) - 1:
+        if (
+            not self.items or self.selected_item_idx < 0 or self.selected_item_idx > len(self.items) - 1
+        ):
             return None
 
         item = self.items[self.selected_item_idx]
@@ -813,7 +829,7 @@ class Player(NPC):
         elif item.model.type == ItemTypeEnum.weapon:
             if self.can_switch_weapon and not self.is_attacking and not self.is_stunned:
                 self.can_switch_weapon = False
-                self.switch_cooldown = self.game.time_elapsed + self.switch_duration_cooldown
+                self.switch_cooldown = self.game.time_elapsed + (self.switch_duration_cooldown / 1000.0)
                 self.set_event_timer(self, NPCEventActionEnum.switching_weapon, self.switch_duration_cooldown, 1)
 
                 if self.selected_weapon:
@@ -834,6 +850,7 @@ class Player(NPC):
 
         if item.model.type == ItemTypeEnum.money:
             self.model.money += item.model.value
+            # self.items.append(item)
             result = True
         else:
             item_total_weight = item.model.weight  # * item.model.count
@@ -858,7 +875,9 @@ class Player(NPC):
 
     #############################################################################################################
     def drop_item(self) -> ItemSprite | None:
-        if not self.items or not self.selected_item_idx >= 0 or self.selected_item_idx > len(self.items) - 1:
+        if (
+            not self.items or self.selected_item_idx < 0 or self.selected_item_idx > len(self.items) - 1
+        ):
             return None
 
         selected_item = self.items[self.selected_item_idx]
@@ -873,9 +892,10 @@ class Player(NPC):
             selected_item.model = copy.copy(org_item.model)
             selected_item.model.count = 1
         else:
-            if selected_item.model.type == ItemTypeEnum.weapon and self.selected_weapon:
-                if self.selected_weapon.model.name == selected_item.model.name:
-                    self.selected_weapon = None
+            # are we dropping currently selected weapon
+            if selected_item.model.type == ItemTypeEnum.weapon and self.selected_weapon and \
+                    self.selected_weapon.model.name == selected_item.model.name:
+                self.selected_weapon = None
 
             self.items.remove(selected_item)
             if self.selected_item_idx >= len(self.items):

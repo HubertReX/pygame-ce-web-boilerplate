@@ -26,6 +26,8 @@ ABOUT = [
 
 # custom type definition
 # Point = namedtuple("Point", ["x", "y"])
+# from pygame/_common.pyi
+# ColorValue = Union[int, str, Sequence[int]]
 
 
 @dataclass
@@ -52,20 +54,20 @@ def to_vector(p: pytmxPoint) -> vec:
     return vec(int(p.x), int(p.y))
 
 
-# from pygame/_common.pyi
-ColorValue = Union[int, str, Sequence[int]]
+def tuple_to_vector(t: tuple[int | float, int | float]) -> vec:
+    return vec(float(t[0]), float(t[1]))
+
+
+def vector_to_tuple(v: vec) -> tuple[int, int]:
+    return (int(v.x), int(v.y))
+
 
 WIDTH, HEIGHT = 1600, 1024
 TILE_SIZE = 16
 SCALE = 1
 ZOOM_LEVEL = 3.25
 
-# Need a flag to handle differently when game is run in desktop mode or in a web browser
-IS_WEB = False
-# local storage in web version for high score table
-if __import__("sys").platform == "emscripten":
-    IS_WEB = True
-
+IS_WEB = __import__("sys").platform == "emscripten"
 IS_FULLSCREEN = False
 IS_PAUSED = False
 USE_ALPHA_FILTER = False
@@ -123,7 +125,7 @@ DAY_FILTER: tuple[int, int, int, int] = (152, 152, 0, 20)
 # amount of light sources passed to shader
 MAX_LIGHTS_COUNT: int = 16
 
-ACTIONS = {
+ACTIONS: dict[str, dict[str, Any]] = {
     "quit":           {"show": ["ESC", "q"], "msg": "back",        "keys": [pygame.K_ESCAPE,    pygame.K_q]},
     "debug":          {"show": ["`", "z"],   "msg": "debug",       "keys": [pygame.K_BACKQUOTE, pygame.K_z]},
     # "alpha":          {"show": ["f"],        "msg": "filter",      "keys": [pygame.K_f]},
@@ -161,10 +163,7 @@ ACTIONS = {
     "scroll_click":   {"show": None,            "msg": "",         "keys": []},
 }
 
-INPUTS = {}
-for key in ACTIONS.keys():
-    INPUTS[key] = False
-
+INPUTS: dict[str, float | bool] = {key: False for key in ACTIONS}
 JOY_DRIFT: float = 0.25
 JOY_MOVE_MULTIPLIER: float = 5
 GAMEPAD_XBOX_CONTROL_NAMES: dict[str, dict[str, int]] = {
@@ -276,11 +275,7 @@ JOY_COOLDOWN: float = 0.15
 # define configuration variables here
 CURRENT_DIR = Path(__file__).parent
 CONFIG_FILE = CURRENT_DIR / "config_model" / "config.json"
-if IS_WEB:
-    SCREENSHOTS_DIR = CURRENT_DIR
-else:
-    SCREENSHOTS_DIR = CURRENT_DIR / ".." / "screenshots"
-
+SCREENSHOTS_DIR = CURRENT_DIR if IS_WEB else CURRENT_DIR / ".." / "screenshots"
 ASSETS_DIR = CURRENT_DIR / "assets"
 # font_name = "font"
 font_name = "font_pixel"
@@ -358,10 +353,10 @@ SPRITE_SHEET_DEFINITION = {
 }
 
 WEAPON_DIRECTION_OFFSET = {
-    "up": vec(0, -1.5 * TILE_SIZE),
-    "down": vec(0, -4 + TILE_SIZE // 2),
-    "left": vec(-TILE_SIZE + 2, -TILE_SIZE // 2),
-    "right": vec(TILE_SIZE - 2, -TILE_SIZE // 2)
+    "up": vec(-3, -10 - TILE_SIZE),
+    "down": vec(-2, -2 + TILE_SIZE // 2),
+    "left": vec(-TILE_SIZE, 0 - TILE_SIZE // 2),
+    "right": vec(TILE_SIZE, 1 - TILE_SIZE // 2)
 }
 
 # make loading images a little easier

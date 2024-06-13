@@ -37,7 +37,7 @@ class Maze:
         if start_from_top_row:
             rows = self.cell_rows
         else:
-            rows = reversed(self.cell_rows)
+            rows = list(reversed(self.cell_rows))
 
         for row in rows:
             for cell in row:

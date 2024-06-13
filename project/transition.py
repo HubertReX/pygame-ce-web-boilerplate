@@ -50,7 +50,7 @@ class TransitionCircle(Transition):
         # pos = self.scene.player.pos
         # offset_x, offset_y = self.scene.map_view.get_center_offset()
         # zoom = self.scene.map_view.zoom
-        pos = self.scene.map_view.translate_point(self.scene.player.pos)
+        pos = self.scene.map_view.translate_point(self.scene.player.pos)  # type: ignore[has-type]
         # pygame.draw.circle(self.fade_surf, (0,0,0), (WIDTH//2, HEIGHT//2), self.radius)
         pygame.draw.circle(self.fade_surf, (0, 0, 0), pos, self.radius)
         # self.fade_surf.set_alpha(self.alpha)

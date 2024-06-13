@@ -1,3 +1,4 @@
+import contextlib
 import random
 from typing import cast
 
@@ -45,12 +46,14 @@ from settings import (
     WAYPOINTS_LINE_COLOR,
     WIDTH,
     ZOOM_LEVEL,
-    ColorValue,
+    # ColorValue,
     Point,
     to_point,
     to_vector,
+    tuple_to_vector,
     vec,
-    vec3
+    vec3,
+    vector_to_tuple
 )
 from state import State
 from transition import Transition, TransitionCircle
@@ -151,7 +154,7 @@ class Scene(State):
             )
         else:
             # load data from pytmx
-            tileset_map: TiledMap = load_pygame(str(MAPS_DIR / f"{self.current_scene}.tmx"))
+            tileset_map = load_pygame(str(MAPS_DIR / f"{self.current_scene}.tmx"))
 
         # setup level geometry with simple pygame rectangles, loaded from pytmx
         self.layers = []
@@ -181,7 +184,6 @@ class Scene(State):
         #         print(tileset)
         #         from pytmx import TiledTileset
         #         t = TiledTileset()
-        #         t.
         self.items = []
         self.item_sprites.empty()
         if "items" in self.layers:
@@ -217,12 +219,13 @@ class Scene(State):
                     getattr(obj, "maze_rows", 0),
                     getattr(obj, "return_entry_point", ""),
                 )
-
+        self.waypoints = {}
         # layer of invisible objects consisting of points that layout a list waypoints to follow by NPCs
         if "waypoints" in self.layers:
             for obj in cast(TiledObjectGroup, tileset_map.get_layer_by_name("waypoints")):
                 # self.waypoints[obj.name] = (obj.points if hasattr(obj, "points") else obj.as_points)
                 self.waypoints[obj.name] = tuple(to_point(point) for point in obj.points)
+
         self.entry_points = {}
         # layer of invisible objects being single points on map where NPCs show up coming from linked map
         if "entry_points" in self.layers:
@@ -362,7 +365,7 @@ class Scene(State):
     #############################################################################################################
     def __repr__(self) -> str:
         # MARK: __repr__
-        return f"{__class__.__name__}: {self.current_scene}"
+        return f"{self.__class__.__name__}: {self.current_scene}"
 
     #############################################################################################################
     def start_intro(self) -> None:
@@ -589,9 +592,10 @@ class Scene(State):
         self.maze_rows = self.new_scene.maze_rows
         self.shadow_sprites.empty()
         self.label_sprites.empty()
+        # self.waypoints = {}
         # self.map_view.reload()
         self.player.shadow = self.player.create_shadow(self.shadow_sprites)
-        self.player.health_bar = self.player.create_health_bar(self.label_sprites, self.player.pos)
+        self.player.health_bar = self.player.create_health_bar(self.label_sprites, vector_to_tuple(self.player.pos))
 
         self.load_map()
         # new_scene = Scene(
@@ -638,18 +642,33 @@ class Scene(State):
         # check if the Player is colliding with an NPC
         if not self.player.is_flying:
             # collision with body of NPC
-            collided_index = self.player.feet.collidelist(self.NPC)
-            if collided_index > -1:
+            collided_index = self.player.feet.collidelist(self.NPC)  # type: ignore[type-var]
+            if collided_index > -1 and not self.player.is_stunned:
+                oponent = self.NPC[collided_index]
+                # if self.player.mask.overlap(
+                #     oponent.mask,
+                #     (oponent.rect.x - self.player.rect.x, oponent.rect.y - self.player.rect.y)
+                # ):
+
                 # engage fight with enemy or push back friendly NPC
-                self.player.encounter(self.NPC[collided_index])
+                self.player.encounter(oponent)
                 # slide along wall or do a step_back
                 self.player.slide(self.NPC)
+
             # collision of weapon with other NPC
             if self.player.is_attacking and self.player.selected_weapon:
-                collided_index = self.player.selected_weapon.rect.collidelist(self.NPC)
+                collided_index = self.player.selected_weapon.rect.collidelist(self.NPC)  # type: ignore[type-var]
+                # collided with weapon rect
                 if collided_index > -1:
-                    # deal damage with weapon to enemy or nothing if friendly NPC
-                    self.player.hit(self.NPC[collided_index])
+                    oponent = self.NPC[collided_index]
+                    # weapon rect is big, check if it collides with the mask of weapon
+                    if self.player.selected_weapon.mask.overlap(
+                        oponent.mask,
+                        (oponent.rect.x - self.player.selected_weapon.rect.x,  # type: ignore[union-attr]
+                         oponent.rect.y - self.player.selected_weapon.rect.y)  # type: ignore[union-attr]
+                    ):
+                        # deal damage with weapon to enemy or nothing if friendly NPC
+                        self.player.hit(self.NPC[collided_index])
 
         colliders = self.walls
         # if self.player.is_flying:
@@ -710,10 +729,9 @@ class Scene(State):
         if INPUTS["drop"]:
             # drop item from inventory to ground
             if len(self.player.items) > 0 and not self.player.is_attacking and not self.player.is_stunned:
-                item = self.player.drop_item()
-                if item:
-                    item.pos = self.player.pos
-                    item.rect.center = self.player.pos
+                if item := self.player.drop_item():
+                    # item.pos = self.player.pos
+                    item.rect.center = self.player.pos  # type: ignore[assignment]
                     self.item_sprites.add(item)
                     self.group.add(item, layer=self.sprites_layer - 1)
                     print(f"Dropped {item.name}[{item.model.type.value}]")
@@ -724,17 +742,13 @@ class Scene(State):
         if INPUTS["pick_up"]:
             if not self.player.is_flying and not self.player.is_attacking and not self.player.is_stunned:
                 items: list[ItemSprite] = self.item_sprites.sprites()
-                collided_index = self.player.feet.collidelist(items)
+                collided_index = self.player.feet.collidelist(items)   # type: ignore[type-var]
                 if collided_index > -1:
-                    # try to pick up item
-                    res = self.player.pick_up(items[collided_index])
-                    if res:
-                        try:
+                    if self.player.pick_up(items[collided_index]):
+                        with contextlib.suppress(KeyError):
                             # if self.group.has(items[collided_index]):
                             self.group.remove(items[collided_index])
                             self.item_sprites.remove(items[collided_index])
-                        except KeyError:
-                            pass
                     else:
                         print(f"You can't pick up '{items[collided_index].model.name}' - it's too heavy.")
             INPUTS["pick_up"] = False
@@ -749,12 +763,12 @@ class Scene(State):
 
         if INPUTS["jump"]:
             # self.player.is_jumping = not self.player.is_jumping
-            if not self.player.is_flying and not self.player.is_attacking and not self.player.is_stunned:
-                if not self.player.is_jumping:
-                    self.player.is_jumping = True
-                    self.player.jump()
-                    # when airborn move one layer above so it's not colliding with obstacles on the ground
-                    self.group.change_layer(self.player, self.sprites_layer + 1)
+            if not self.player.is_flying and not self.player.is_attacking and \
+                    not self.player.is_stunned and not self.player.is_jumping:
+                self.player.is_jumping = True
+                self.player.jump()
+                # when airborn move one layer above so it's not colliding with obstacles on the ground
+                self.group.change_layer(self.player, self.sprites_layer + 1)
 
             INPUTS["jump"] = False
 
@@ -770,11 +784,6 @@ class Scene(State):
 
             INPUTS["fly"] = False
 
-        # handled in characters module
-        # if INPUTS["right_click"]:
-            # self.exit_state()
-            # self.game.reset_inputs()
-
         if INPUTS["menu"]:
             # next_scene = None #  self # Scene(self.game, "grasslands", "start")
             # AboutMenuScreen(self.game, next_scene).enter_state()
@@ -784,19 +793,7 @@ class Scene(State):
 
         # live reload map
         if INPUTS["reload"]:
-            # shadow = self.player.shadow
-            self.label_sprites.empty()
-            self.draw_sprites.empty()
-            self.exit_sprites.empty()
-            self.item_sprites.empty()
-            self.block_sprites.empty()
-            self.shadow_sprites.empty()
-            self.group.empty()
-            # self.map_view.reload()
-            self.player.shadow = self.player.create_shadow(self.shadow_sprites)
-            self.player.health_bar = self.player.create_health_bar(self.label_sprites, self.player.pos)
-            self.load_map()
-
+            self.reload_map()
             INPUTS["reload"] = False
 
         # camera zoom in/out
@@ -807,12 +804,27 @@ class Scene(State):
 
         if INPUTS["zoom_out"]:
             self.camera.zoom -= 0.25
-            if self.camera.zoom < 0.25:
-                self.camera.zoom = 0.25
+            self.camera.zoom = max(self.camera.zoom, 0.25)
             # self.map_view.zoom = self.camera.zoom
             INPUTS["zoom_out"] = False
 
+    # TODO Rename this here and in `update`
+    def reload_map(self) -> None:
+        # shadow = self.player.shadow
+        self.label_sprites.empty()
+        self.draw_sprites.empty()
+        self.exit_sprites.empty()
+        self.item_sprites.empty()
+        self.block_sprites.empty()
+        self.shadow_sprites.empty()
+        self.group.empty()
+        # self.map_view.reload()
+        self.player.shadow = self.player.create_shadow(self.shadow_sprites)
+        self.player.health_bar = self.player.create_health_bar(self.label_sprites, vector_to_tuple(self.player.pos))
+        self.load_map()
+
     #############################################################################################################
+
     def show_help(self) -> None:
         # list actions to be displayed by the property "show"
         show_actions = [action for action in ACTIONS.values() if action["show"]]
@@ -858,8 +870,8 @@ class Scene(State):
 
         if SHOW_DEBUG_INFO:
             self.show_debug()
-        else:
-            pass
+        # else:
+        #     pass
             # fps = f"FPS: {self.game.fps: 6.1f}"
             # # 3s: {self.game.avg_fps_3s: 6.1f} 10s: {self.game.avg_fps_10s: 6.1f}"
             # stats = f"Health: {
@@ -900,7 +912,7 @@ class Scene(State):
 
     #     filter_surf = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
 
-    #     filter: ColorValue = BG_COLOR
+    #     filter: pygame._common.ColorValue = BG_COLOR
     #     hour: float = self.hour + (self.minute / 60)
 
     #     if self.is_maze:
@@ -956,11 +968,8 @@ class Scene(State):
                     #     filter[i] = pygame.math.lerp(NIGHT_FILTER[i], DAY_FILTER[i], weight)
                 elif 9.00 <= hour < 17.00:
                     ratio = 0.0
-                elif 17.00 <= hour < 20.00:
+                else:
                     ratio = (hour - 17.00) / (20.00 - 17.00)
-                    # for i in range(4):
-                    #     filter[i] = pygame.math.lerp(DAY_FILTER[i], NIGHT_FILTER[i], weight)
-
             # if it's not full day add light sources
             if ratio > 0.0:
                 for npc in self.NPC + [self.player]:
@@ -970,18 +979,22 @@ class Scene(State):
                     light_sources.append(light)
                     # pygame.draw.circle(filter_surf, DAY_FILTER, pos, 196)
                 if "intro" in self.waypoints:
-                    village_pos = self.waypoints["intro"][0].as_vector
-                    pos = self.map_view.translate_point(village_pos + vec(0, 0))
-                    light = vec3(pos[0], HEIGHT - pos[1], 64.0)
-                    light_sources.append(light)
-
-                    village_pos = self.waypoints["intro"][-1].as_vector
-                    pos = self.map_view.translate_point(village_pos + vec(0, 0))
-                    light = vec3(pos[0], HEIGHT - pos[1], 64.0)
-                    light_sources.append(light)
+                    self.get_light_from_intro(light_sources)
                     # pygame.draw.circle(filter_surf, DAY_FILTER, pos, 256)
 
         return (light_sources, ratio)
+
+    #############################################################################################################
+    def get_light_from_intro(self, light_sources: list[vec3]) -> None:
+        village_pos = self.waypoints["intro"][0].as_vector
+        pos = self.map_view.translate_point(village_pos + vec(0, 0))
+        light = vec3(pos[0], HEIGHT - pos[1], 64.0)
+        light_sources.append(light)
+
+        village_pos = self.waypoints["intro"][-1].as_vector
+        pos = self.map_view.translate_point(village_pos + vec(0, 0))
+        light = vec3(pos[0], HEIGHT - pos[1], 64.0)
+        light_sources.append(light)
 
     #############################################################################################################
     def apply_alpha_filter(self, screen: pygame.Surface) -> None:
@@ -1020,13 +1033,8 @@ class Scene(State):
         # MARK: show_debug
         # prepare shader info
         shader_index = SHADERS_NAMES.index(self.game.shader.shader_name)
-        if shader_index < 0:
-            shader_index = 0
-        if USE_SHADERS:
-            shader_name = SHADERS_NAMES[shader_index]
-        else:
-            shader_name = "n/a"
-
+        shader_index = max(shader_index, 0)
+        shader_name = SHADERS_NAMES[shader_index] if USE_SHADERS else "n/a"
         # prepare debug messages displayed in upper left corner
         msgs = [
             f"FPS: {self.game.fps: 6.1f} Shader: {shader_name}",

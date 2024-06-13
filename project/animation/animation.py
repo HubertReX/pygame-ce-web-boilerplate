@@ -23,7 +23,7 @@ text_type = None
 string_types = text_type = str
 
 
-def is_number(value):
+def is_number(value: Any) -> bool:
     """Test if an object is a number.
     :param value: some object
     :returns: True
@@ -55,13 +55,13 @@ def remove_animations_of(target: Any, group: pygame.sprite.Group) -> list[Any]:
 #######################################################################################################################
 # MARK: AnimBase
 class AnimBase(pygame.sprite.Sprite):
-    _valid_schedules = []
+    _valid_schedules: tuple[str, ...] = ()
 
     def __init__(self, _name: str = "", _description: str = "") -> None:
         super(AnimBase, self).__init__()
         self._name        = _name
         self._description = _description
-        self._callbacks   = defaultdict(list)
+        self._callbacks: dict[str, list[Callable]]   = defaultdict(list)
 
     def schedule(self, func: Callable, when: str | None = None) -> None:
         """ Schedule a callback during operation of Task or Animation
@@ -321,7 +321,7 @@ class Animation(AnimBase):
     default_duration = 1000.
     default_transition = "linear"
 
-    def __init__(self, *targets, **kwargs) -> None:
+    def __init__(self, *targets: Any, **kwargs: Any) -> None:
         super(Animation, self).__init__()
         self._targets: list[Any] = []
         self._pre_targets: list[Any] = []
@@ -392,8 +392,8 @@ class Animation(AnimBase):
         if callable(attr):
             attr(value)
         else:
-            if self._round_values:
-                value = int(round(value, 0))
+            if self._round_values and type(value) is float:
+                value = round(value, 0)
             setattr(target, name, value)
 
     def _gather_initial_values(self) -> None:
@@ -486,7 +486,7 @@ class Animation(AnimBase):
         self._execute_callbacks("on update")
 
         self._state = ANIMATION_FINISHED
-        self._targets = None
+        self._targets = []
         self.kill()
 
         self._execute_callbacks("on finish")
@@ -515,7 +515,7 @@ class Animation(AnimBase):
         self.kill()
         self._execute_callbacks("on finish")
 
-    def start(self, *targets) -> None:
+    def start(self, *targets: Any) -> None:
         """ Start the animation on a target sprite/object
 
         Targets must have the attributes that were set when
@@ -532,7 +532,7 @@ class Animation(AnimBase):
             raise RuntimeError
 
         self._state = ANIMATION_RUNNING
-        self._pre_targets = targets
+        self._pre_targets = list(targets)
 
         if self._delay == 0:
             self._gather_initial_values()
@@ -576,8 +576,8 @@ def create_subtask(
 
 #######################################################################################################################
 # MARK: animator
-def animator(cutscene_def: dict[str, Any], group: pygame.sprite.Group) -> Animation:
-    animations: dict[str, Animation] = {}
+def animator(cutscene_def: dict[str, Any], group: pygame.sprite.Group) -> Animation | Task:
+    animations: dict[str, Animation | Task] = {}
     first_step_name = cutscene_def["steps"][0]["name"]
     for step in cutscene_def["steps"]:
         # print(step["name"], "create")
@@ -591,42 +591,44 @@ def animator(cutscene_def: dict[str, Any], group: pygame.sprite.Group) -> Animat
                 _name=step["name"],
                 _description=step["description"]
             )
+            # add to dict so it's easy to find by name
+            animations[step["name"]] = anim
+
         else:
             if step["from"] != "<root>":
                 # calculate sum of delays (durations) of previous steps all the way to the start ("<root>")
-                delay = sum_delays(cutscene_def, step["from"]) * 1.0
+                delay = sum_delays(cutscene_def, step["from"])
                 # print(f"{delay=}")
                 # create subtask and add it to group
                 subtask = partial(
                     create_subtask,
                     step["target"],
                     args=step["args"],
-                    interval=step["interval"] * 1.0,
+                    interval=step["interval"],
                     times=step["times"],
                     _name=step["name"],
                     _description=step["description"],
                     group=group
                 )
                 # create delaying task so the subtask starts afters finishing "from" step
-                anim = Task(
+                task = Task(
                     subtask,
                     interval=delay,
                     times=1,
                     _name=f'{step["name"]}_delay',
                     _description="dummy task to delay start"
                 )
+                animations[step["name"]] = task
             else:
                 # no need to create subtask and delay it
-                anim = Task(
+                task = Task(
                     partial(step["target"], **step["args"]),
                     interval=step["interval"] * 1.0,
                     times=step["times"],
                     _name=step["name"],
                     _description=step["description"]
                 )
-
-        # add to dict so it's easy to find by name
-        animations[step["name"]] = anim
+                animations[step["name"]] = task
 
         if step["name"] != first_step_name:
             if step["type"] == "animation":
@@ -641,5 +643,6 @@ def animator(cutscene_def: dict[str, Any], group: pygame.sprite.Group) -> Animat
         group.add(anim)
     # start first animation
     first_step = animations[first_step_name]
-    first_step.start(cutscene_def["steps"][0]["target"])
+    if type(first_step) is Animation:
+        first_step.start(cutscene_def["steps"][0]["target"])
     return first_step

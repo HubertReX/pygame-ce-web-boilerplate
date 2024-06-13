@@ -12,7 +12,7 @@ class Cell:
         self.x = x
         self.y = y
         self.links: list[Cell] = []
-        self.neighbors: dict[int, Cell] = dict()
+        self.neighbors: dict[int, Cell] = {}
         self.allowed_moves: list[bool] = []
         self.image_index: int = 0
 
@@ -39,7 +39,7 @@ class Cell:
     def get_number_links(self) -> int:
         return len(self.links)
 
-    def is_direction_linked(self, direction) -> bool:
+    def is_direction_linked(self, direction: int) -> bool:
         res = False
 
         if direction not in self.neighbors:

@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import asyncio
 import os
 import random
 from datetime import datetime
 from os import environ
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 import pygame
 from opengl_shader import OpenGL_shader
@@ -48,7 +50,7 @@ from settings import (
     USE_SHADERS,
     USE_SOD,
     WIDTH,
-    ColorValue,
+    # ColorValue,
     vec,
     vec3
 )
@@ -57,7 +59,7 @@ if IS_WEB:
     from config_model.config import load_config
 else:
     import ffmpeg
-    from config_model.config_pydantic import load_config
+    from config_model.config_pydantic import load_config  # type: ignore[assignment]
 
 environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 # https://www.reddit.com/r/pygame/comments/12twl0e/cannot_rumble_dualshock_4_via_bluetooth_in_pygame/
@@ -103,19 +105,17 @@ class Game:
         self.flags: int = 0
 
         if IS_FULLSCREEN:
-            self.flags = self.flags | pygame.FULLSCREEN
+            self.flags |= pygame.FULLSCREEN
 
         if IS_WEB:
             pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
             pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 0)
             pygame.display.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_ES)
-            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, True)
         else:
             pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
             pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 3)
             pygame.display.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_CORE)
-            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, True)
-
+        pygame.display.gl_set_attribute(pygame.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, True)
         # pygame.RESIZABLE , | pygame.SCALED
         self.flags = self.flags | pygame.OPENGL | pygame.DOUBLEBUF
         self.screen: pygame.Surface = pygame.display.set_mode((WIDTH * SCALE, HEIGHT * SCALE), self.flags, vsync=1)
@@ -196,7 +196,12 @@ class Game:
         self.SOD = SecondOrderDynamics(f, z, r, x0=pos)
 
     #############################################################################################################
-    def render_panel(self, rect: pygame.Rect, color: ColorValue, surface: pygame.Surface | None = None) -> None:
+    def render_panel(
+        self,
+        rect: pygame.Rect,
+        color: pygame._common.ColorValue,
+        surface: pygame.Surface | None = None
+    ) -> None:
         # MARK: render
         """
         Renders semitransparent (if `alpha` provided) rect using provided color on `game.canvas`
@@ -218,9 +223,9 @@ class Game:
             self,
             texts:     list[str],
             pos:       tuple[int, int],
-            color:     ColorValue = FONT_COLOR,
-            bg_color:  ColorValue = 0,
-            shadow:    ColorValue = CUTSCENE_BG_COLOR,
+            color:     pygame._common.ColorValue = FONT_COLOR,
+            bg_color:  pygame._common.ColorValue = 0,
+            shadow:    pygame._common.ColorValue = CUTSCENE_BG_COLOR,
             font_size: int = 0,
             centred:   bool = False,
             surface:   pygame.Surface | None = None
@@ -250,9 +255,9 @@ class Game:
             self,
             text:      str,
             pos:       tuple[int, int],
-            color:     ColorValue = FONT_COLOR,
-            bg_color:  ColorValue = 0,
-            shadow:    ColorValue = CUTSCENE_BG_COLOR,
+            color:     pygame._common.ColorValue = FONT_COLOR,
+            bg_color:  pygame._common.ColorValue = 0,
+            shadow:    pygame._common.ColorValue = CUTSCENE_BG_COLOR,
             font_size: int = 0,
             centred:   bool = False,
             surface:   pygame.Surface | None = None
@@ -359,7 +364,7 @@ class Game:
         animations: dict[str, list[pygame.Surface]] = {}
         for file in os.listdir(path):
             if os.path.isdir(os.path.join(path, file)):
-                animations.update({file: []})
+                animations |= {file: []}
         return animations
 
     #############################################################################################################
@@ -379,7 +384,8 @@ class Game:
             Image.frombuffer("RGBA", (WIDTH, HEIGHT), data, "raw", "RGBA", 0, -1).save(file_name)
             if IS_WEB:
                 import platform
-                platform.window.download_from_browser_fs(file_name.as_posix(), "image/png")
+                platform.window.download_from_browser_fs(  # type: ignore[attr-defined]
+                    file_name.as_posix(), "image/png")
             else:
                 print(f"screenshot saved to file '{file_name}'")
             return True
@@ -593,10 +599,17 @@ class Game:
         print(f"Recording started: {file_name}")
 
         self.rec_process = (
-            ffmpeg
-            .input("pipe:", format="rawvideo", pix_fmt="rgba", s="{}x{}".format(WIDTH, HEIGHT), r=FPS_CAP)
+            ffmpeg.input(
+                "pipe:",
+                format="rawvideo",
+                pix_fmt="rgba",
+                s=f"{WIDTH}x{HEIGHT}",
+                r=FPS_CAP,
+            )
             .vflip()
-            .output(str(file_name), pix_fmt="rgb24", loglevel="quiet", r=RECORDING_FPS)
+            .output(
+                str(file_name), pix_fmt="rgb24", loglevel="quiet", r=RECORDING_FPS
+            )
             .overwrite_output()
             .run_async(pipe_stdin=True)
         )
@@ -615,16 +628,17 @@ class Game:
     def postprocessing(self, dt: float) -> None:
         # shaders are used for postprocessing special effects
         # the whole Surface is used as texture on rect that fills to a full screen
+        ratio: float = 0.0
         if hasattr(self.states[-1], "player"):
             # if TYPE_CHECKING:
-            #     from scene import Scene
-            # scene = cast(Scene, self.states[-1])
-            scene = self.states[-1]
+            from scene import Scene
+            scene = cast(Scene, self.states[-1])
+            # scene = self.states[-1]
             positions, ratio = scene.get_lights()
             scale = scene.camera.zoom
         else:
             positions = [vec3(0.0, 0.0, 0.0)]
-            ratio: float = -1.0
+            ratio = -1.0
             scale = 1.0
 
         res = self.shader.render(self.screen, positions, scale, ratio, dt, USE_SHADERS, save_frame=self.save_frame)

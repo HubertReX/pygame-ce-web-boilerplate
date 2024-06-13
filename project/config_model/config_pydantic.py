@@ -97,7 +97,7 @@ class Config(BaseModel):
 ###################################################################################################################
 
 
-def test():
+def test() -> None:
     # try:
     #     main_conf = Config(**conf)
     # except ValidationError as e:
@@ -113,11 +113,11 @@ def test():
 # MARK: Helper functions
 
 
-def generate_config_schema(model: Config) -> dict[str, Any]:
+def generate_config_schema(model: type[Config]) -> dict[str, Any]:
     return model.model_json_schema()
 
 
-def save_config_schema(model: Config, file_name: PathLike) -> None:
+def save_config_schema(model: type[Config], file_name: PathLike) -> None:
     schema = generate_config_schema(model)
     with open(file_name, "w", encoding="utf-8") as f:
         json.dump(schema, f, ensure_ascii=False, indent=4)

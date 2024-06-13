@@ -8,10 +8,15 @@
 		"cSpell.words": [
 			"bottomright",
 			"colliderect",
+			"dpad",
 			"emscripten",
 			"opengl",
 			"pygbag",
+			"tilesets",
 			"zengl"
+		],
+		"mypy.targets": [
+			"project"
 		]
 	},
 	"launch": {

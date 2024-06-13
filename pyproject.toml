@@ -8,3 +8,13 @@ skip_gitignore = true
 # force_grid_wrap = 1
 multi_line_output = 8
 # use_parentheses = true
+
+[tool.mypy]
+python_version = "3.12"
+disallow_untyped_defs = true
+ignore_missing_imports = true
+disable_error_code = "import-untyped"
+follow_imports = "skip"
+exclude = ['.venv311', '.venv', 'project\/pygame_menu']
+# targets = "project"
+# exclude = ['.venv311', '.venv', 'project\/characters\.py']

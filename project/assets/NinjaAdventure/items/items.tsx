@@ -138,7 +138,7 @@
  </tile>
  <tile id="44">
   <properties>
-   <property name="item_name" value="golden_coin"/>
+   <property name="item_name" value=""/>
   </properties>
   <animation>
    <frame tileid="44" duration="180"/>
@@ -149,7 +149,7 @@
  </tile>
  <tile id="45">
   <properties>
-   <property name="item_name" value=""/>
+   <property name="item_name" value="golden_coin"/>
   </properties>
   <animation>
    <frame tileid="44" duration="180"/>

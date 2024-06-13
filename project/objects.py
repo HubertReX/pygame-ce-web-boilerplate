@@ -10,10 +10,11 @@ from settings import (
     load_image,
 )
 
+import game
 if IS_WEB:
     from config_model.config import AttitudeEnum, Character, Item, ItemTypeEnum
 else:
-    from config_model.config_pydantic import AttitudeEnum, Character, Item, ItemTypeEnum
+    from config_model.config_pydantic import AttitudeEnum, Character, Item, ItemTypeEnum  # type: ignore[assignment]
 
 #################################################################################################################
 
@@ -110,7 +111,7 @@ class HealthBarUI(pygame.sprite.Sprite):
         rect = pygame.Rect(width, 0, self.rect_full.width - width, self.image_full.get_height())
         tmp_img = self.image_empty.subsurface(rect)
 
-        self.image.blit(tmp_img, (self.rect_full.left + width, 0))
+        self.image.blit(tmp_img, (width, 0))
 
 #################################################################################################################
 
@@ -137,7 +138,7 @@ class HealthBar(pygame.sprite.Sprite):
             self.color = "pink"
 
     #############################################################################################################
-    def set_bar(self, percentage: float, game) -> None:
+    def set_bar(self, percentage: float, game: "game.Game") -> None:
         self.image.fill(TRANSPARENT_COLOR)
 
         # leave image fully transparent (hide labels)
@@ -156,7 +157,7 @@ class HealthBar(pygame.sprite.Sprite):
 
         game.render_text(
             self.model.name,
-            (self.rect.width // 2, 10),
+            (int(self.rect.width // 2), 10),
             self.color,
             font_size=FONT_SIZE_TINY,
             shadow=True,
@@ -172,14 +173,14 @@ class Object(pygame.sprite.Sprite):
         self,
         groups: pygame.sprite.Group,
         pos: tuple[int, int],
-        image=pygame.Surface((TILE_SIZE, TILE_SIZE)),
+        image: pygame.Surface  = pygame.Surface((TILE_SIZE, TILE_SIZE)),
         # z: str = "blocks",
     ) -> None:
 
         super().__init__(groups)
 
         self.image = image
-        self.rect: pygame.FRect = self.image.get_frect(topleft = pos)
+        self.rect: pygame.FRect = image.get_frect(topleft = pos)
         # self.hitbox: pygame.FRect = self.rect.copy().inflate(0, 0)
         # self.z = z
 
@@ -195,7 +196,7 @@ class ItemSprite(Object):
         # z: str = "blocks",
         name: str,
         model: Item,
-        image=pygame.Surface((TILE_SIZE, TILE_SIZE)),
+        image: pygame.Surface = pygame.Surface((TILE_SIZE, TILE_SIZE)),
     ) -> None:
 
         super().__init__(groups, pos, image)
@@ -205,10 +206,18 @@ class ItemSprite(Object):
         self.name = name
         self.model = model
         if model.type == ItemTypeEnum.weapon:
-            self.image_directions: dict[str, pygame.Surface] = {}
-            self.image_directions["down"] = image
-            self.image_directions["up"] = pygame.transform.flip(image, False, True)
+            self.image_directions: dict[str, pygame.Surface] = {
+                "down": image,
+                "up": pygame.transform.flip(image, False, True),
+            }
             self.image_directions["left"] = pygame.transform.rotate(image, -90)
             self.image_directions["right"] = pygame.transform.rotate(image, 90)
+
+            # self.weapon_mask = pygame.mask.from_surface(self.image)
+            self.masks: dict[str, pygame.mask.Mask] = {}
+            for direction in self.image_directions:
+                self.masks[direction] = pygame.mask.from_surface(self.image_directions[direction])
+
+            self.mask: pygame.mask.Mask = self.masks["up"]
 
 #################################################################################################################

@@ -2,6 +2,7 @@ import heapq
 import random
 import time
 from functools import partial, wraps
+from typing import Any, Callable
 
 import pytmx
 from pygame.math import Vector2 as vec
@@ -70,10 +71,10 @@ _cnt: int = 0
 #######################################################################################################################
 
 
-def timeit(func):
+def timeit(func: Callable) -> Callable:
 
     @wraps(func)
-    def timeit_wrapper(*args, **kwargs):
+    def timeit_wrapper(*args: Any, **kwargs: Any) -> Any:
         global _sum, _cnt
 
         start_time = time.perf_counter()
@@ -95,14 +96,18 @@ def timeit(func):
 # @timeit
 
 
-def a_star_cached(grid, start: tuple[int, int], goal: tuple[int, int], fps: str) -> list[tuple[int, int]]:
+def a_star_cached(
+    grid: list[list[int]],
+    start: tuple[int, int],
+    goal: tuple[int, int],
+    fps: str = ""
+) -> list[tuple[int, int]]:
     global _CACHE  # , _sum, _cnt
 
     key = (start, goal)  # create_key(start, goal)
 
     if key not in _CACHE:
-        res = a_star(grid, start, goal)
-        if res:
+        if res := a_star(grid, start, goal):
             _CACHE[key] = res
             for i, wp in enumerate(res):
                 new_key = (wp, goal)
@@ -114,7 +119,7 @@ def a_star_cached(grid, start: tuple[int, int], goal: tuple[int, int], fps: str)
     return _CACHE[key]
 
 
-def clear_maze_cache():
+def clear_maze_cache() -> None:
     # del _CACHE
     global _CACHE, _sum, _cnt
     # print(f"Cache size was: {len(_CACHE)} {_sum=:.4f} {_cnt=}")
@@ -134,11 +139,12 @@ def a_star(grid: list[list[int]], start: tuple[int, int], goal: tuple[int, int])
         return abs(point[0] - goal[0]) + abs(point[1] - goal[1])
 
     # https://panda-man.medium.com/a-pathfinding-algorithm-efficiently-navigating-the-maze-of-possibilities-8bb16f9cecbd
-    open_set = []
+    # (score, (x, y))
+    open_set: list[tuple[int, tuple[int, int]]] = []
 
     # Priority queue with (F-score, node)
     heapq.heappush(open_set, (0, start))
-    came_from = {}
+    came_from: dict[tuple[int, int], tuple[int, int]] = {}
     g_score: dict[tuple[int, int], int] = {start: 0}
 
     while open_set:
@@ -222,7 +228,7 @@ def a_star(grid: list[list[int]], start: tuple[int, int], goal: tuple[int, int])
 #######################################################################################################################
 
 
-def copy_subtile(new_data: list[list[int]], x: int, y: int, subtile_sheet: list[list[int]]):
+def copy_subtile(new_data: list[list[int]], x: int, y: int, subtile_sheet: list[list[int]]) -> None:
     rows = len(subtile_sheet)
     cols = len(subtile_sheet[0])
     for row in range(rows):
@@ -244,7 +250,7 @@ def get_gid_from_tmx_id(tmx_id: int, tileset_map: pytmx.TiledMap) -> int:
 #######################################################################################################################
 
 
-def make_layer(layer, maze: Maze, new_cols_cnt: int, new_rows_cnt: int):
+def make_layer(layer: pytmx.TiledTileLayer, maze: Maze, new_cols_cnt: int, new_rows_cnt: int) -> None:
 
     subtile_sheet_dict = {}
     for y in range(SUBTILE_GRID_ROWS):
@@ -281,7 +287,13 @@ def make_layer(layer, maze: Maze, new_cols_cnt: int, new_rows_cnt: int):
 #######################################################################################################################
 
 
-def place_tile_randomly(maze, tile_gids, layer, tile_name: str, tiles_count: int):
+def place_tile_randomly(
+    maze: Maze,
+    tile_gids: dict[str, int],
+    layer: pytmx.TiledTileLayer,
+    tile_name: str,
+    tiles_count: int
+) -> None:
     count: int = 0
     while count < tiles_count:
         r_x = random.randint(0, maze.num_cols - 1)
