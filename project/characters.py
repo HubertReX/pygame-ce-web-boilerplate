@@ -23,7 +23,9 @@ from settings import (
     STUNNED_TIME,
     TILE_SIZE,
     WEAPON_DIRECTION_OFFSET,
+    WEAPON_DIRECTION_OFFSET_FROM,
     Point,
+    lerp_vectors,
 )
 
 if IS_WEB:
@@ -36,7 +38,7 @@ import npc_state
 import scene
 import splash_screen
 from objects import HealthBar, HealthBarUI, ItemSprite, Shadow
-
+from animation.transitions import AnimationTransition
 
 #################################################################################################################
 
@@ -393,6 +395,7 @@ class NPC(pygame.sprite.Sprite):
     # MARK: physics
     def physics(self, dt: float) -> None:
         if self.is_stunned or self.is_attacking:
+            self.adjust_rect()
             return
 
         self.prev_pos = self.pos.copy()
@@ -665,13 +668,22 @@ class NPC(pygame.sprite.Sprite):
         self.shadow.rect.midbottom =  vec(self.pos[0], self.pos[1])  # type: ignore[assignment]
         self.health_bar.rect.midtop =  vec(self.pos[0], self.pos[1])  # type: ignore[assignment]
 
-        if self.selected_weapon:
+        if self.selected_weapon and self.is_attacking:
             direction = self.get_direction_360()
-            self.selected_weapon.rect.center = vec(
-                self.pos[0], self.pos[1]) + WEAPON_DIRECTION_OFFSET[direction]  # type: ignore[assignment]
+            # how far between start attack time and weapon cooldown are we
+            factor: float = max(0, self.weapon_cooldown - self.game.time_elapsed) / \
+                (self.weapon_cooldown - self.attack_time)
+            weapon_offset_from = WEAPON_DIRECTION_OFFSET_FROM[direction]
+            weapon_offset_to = WEAPON_DIRECTION_OFFSET[direction]
+            # smooth out the move using a transition function
+            # shift by 0.5 to the weapon is moved away the farthest
+            # in the middle of the transition
+            # in_out_quad in_out_expo in_out_elastic in_out_back
+            factor = AnimationTransition.in_out_elastic(1.0 - abs(factor - 0.5) * 2.0)
+            offset = lerp_vectors(weapon_offset_from, weapon_offset_to, factor)
+            self.selected_weapon.rect.center = vec(self.pos[0], self.pos[1]) + offset   # type: ignore[assignment]
             self.selected_weapon.image = self.selected_weapon.image_directions[direction]
             self.selected_weapon.mask = self.selected_weapon.masks[direction]
-            # self.selected_weapon.image = self.selected_weapon.masks[direction].to_surface()
 
     #############################################################################################################
     def debug(self, msgs: list[str]) -> None:
@@ -761,11 +773,10 @@ class Player(NPC):
             if not self.is_attacking and self.selected_weapon:
                 self.is_attacking = True
                 self.attack_time = self.game.time_elapsed
-                self.scene.group.add(self.selected_weapon)
+                self.scene.group.add(self.selected_weapon, layer=self.scene.sprites_layer - 1)
                 weapon_cooldown = int(self.selected_weapon.model.cooldown_time * 1000.0) if self.selected_weapon else 0
                 self.weapon_cooldown = self.game.time_elapsed + (weapon_cooldown + self.attack_cooldown) / 1000.0
-                # print(f"p:{self.weapon_cooldown} {self.game.time_elapsed=} cool={
-                #       (weapon_cooldown + self.attack_cooldown) / 1000.0}")
+
                 self.set_event_timer(
                     self,
                     NPCEventActionEnum.attacking,

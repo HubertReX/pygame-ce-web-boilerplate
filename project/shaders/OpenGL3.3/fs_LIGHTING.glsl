@@ -4,6 +4,8 @@
 // int MAX_LIGHTS_CNT - maksimal size of array (needs to fixed even the atctual number of lights might change)
 // vec2 screen_size - width, heigh used to map uv
 #include "common"
+// helper function to convert between RGB and HSV color space
+#include "RGB2HSV"
 
 uniform float time;
 // day/night ratio
@@ -17,7 +19,10 @@ uniform float scale;
 // and we need to know how many values are actually valid
 uniform int lights_cnt;
 // uniform vec2 screen_size;
+// screen Surface from pygame
 uniform sampler2D Texture;
+// HUD Surface from pygame
+uniform sampler2D HUD;
 
 in vec2 vertex;
 
@@ -31,7 +36,6 @@ layout (std140) uniform LightPositions {
 out vec4 out_color;
 
 const float PI = 3.1415926535897932384626;
-const float Epsilon = 1e-10;
 
 // intensivity/saturation of a color
 // value in range [0.0, 1.0]
@@ -52,28 +56,6 @@ const float HUE_SHIFT = 0.0;
 // value < 0.5 => darker
 const float VALUE = 0.5;
 
-vec3 RGBtoHSV(in vec3 RGB)
-{
-    vec4  P   = (RGB.g < RGB.b) ? vec4(RGB.bg, -1.0, 2.0/3.0) : vec4(RGB.gb, 0.0, -1.0/3.0);
-    vec4  Q   = (RGB.r < P.x) ? vec4(P.xyw, RGB.r) : vec4(RGB.r, P.yzx);
-    float C   = Q.x - min(Q.w, Q.y);
-    float H   = abs((Q.w - Q.y) / (6.0 * C + Epsilon) + Q.z);
-    vec3  HCV = vec3(H, C, Q.x);
-    float S   = HCV.y / (HCV.z + Epsilon);
-
-    return vec3(HCV.x, S, HCV.z);
-}
-
-vec3 HSVtoRGB(in vec3 HSV)
-{
-    float H   = HSV.x;
-    float R   = abs(H * 6.0 - 3.0) - 1.0;
-    float G   = 2.0 - abs(H * 6.0 - 2.0);
-    float B   = 2.0 - abs(H * 6.0 - 4.0);
-    vec3  RGB = clamp( vec3(R,G,B), 0.0, 1.0 );
-    return ((RGB - 1.0) * HSV.y + 1.0) * HSV.z;
-}
-
 vec3 screen(vec2 vertex) {
     if (abs(vertex.x) > 1.001 || abs(vertex.y) > 1.001) {
         return vec3(0.0);
@@ -81,6 +63,17 @@ vec3 screen(vec2 vertex) {
 
     vec2 uv = vertex * 0.5 + 0.5;
     vec3 color = texture(Texture, uv).rgb;
+
+    return color;
+}
+
+vec4 hud(vec2 vertex) {
+    if (abs(vertex.x) > 1.001 || abs(vertex.y) > 1.001) {
+        return vec4(0.0);
+    }
+
+    vec2 uv = vertex * 0.5 + 0.5;
+    vec4 color = texture(HUD, uv).rgba;
 
     return color;
 }
@@ -97,7 +90,8 @@ float get_distance(vec3 pos) {
 void dummy() {
     // pretand to use uniforms
     // without it pipeline creation fails in zengl
-    out_color = vec4(screen_size.x, 0.0, 0.0, time);
+    out_color = vec4(screen_size.x, scale, ratio, time);
+    out_color.a = float(lights_cnt);
 }
 
 void main() {
@@ -105,6 +99,7 @@ void main() {
     float dist = 999999.0;
     float size = 100.0;
     vec3 color = screen(vertex);
+    vec4 hud_color = hud(vertex);
 
     vec3 col_hsv = RGBtoHSV(color.rgb);
 
@@ -156,6 +151,7 @@ void main() {
     col_hsv = clamp(col_hsv, 0.0, 1.0);
     color = HSVtoRGB(col_hsv.rgb);
 
-
-    out_color = vec4(color, 1.0);
+    float alpha = hud_color.a;
+    out_color = ((1.0 - alpha) * vec4(color, 1.0)) + (alpha * hud_color);
+    // out_color = vec4(color, 1.0);
 }

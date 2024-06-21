@@ -52,7 +52,7 @@ class State:
         # print(f"STATE {SHOW_DEBUG_INFO=}")
         # if SHOW_DEBUG_INFO:
         rect = pygame.Rect(
-            10 - 4,
+            500 - 4,
             -10 + FONT_SIZE_MEDIUM * TEXT_ROW_SPACING,
             600,
             (len(msgs) + 1) * FONT_SIZE_MEDIUM * TEXT_ROW_SPACING
@@ -60,4 +60,4 @@ class State:
         self.game.render_panel(rect, (10, 10, 10, 150))
 
         for i, msg in enumerate(msgs):
-            self.game.render_text(msg, (10, int(FONT_SIZE_MEDIUM * TEXT_ROW_SPACING * (i + 1))))
+            self.game.render_text(msg, (500, int(FONT_SIZE_MEDIUM * TEXT_ROW_SPACING * (i + 1))))

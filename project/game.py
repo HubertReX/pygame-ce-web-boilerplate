@@ -46,6 +46,9 @@ from settings import (
     SHADERS_NAMES,
     TEXT_ROW_SPACING,
     TILE_SIZE,
+    TRANSPARENT_COLOR,
+    UI_BORDER_COLOR,
+    UI_BORDER_WIDTH,
     USE_CUSTOM_MOUSE_CURSOR,
     USE_SHADERS,
     USE_SOD,
@@ -118,10 +121,14 @@ class Game:
         pygame.display.gl_set_attribute(pygame.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, True)
         # pygame.RESIZABLE , | pygame.SCALED
         self.flags = self.flags | pygame.OPENGL | pygame.DOUBLEBUF
-        self.screen: pygame.Surface = pygame.display.set_mode((WIDTH * SCALE, HEIGHT * SCALE), self.flags, vsync=1)
+        # final surface, afters scaling up
+        self.screen: pygame.Surface = pygame.display.set_mode((WIDTH * SCALE, HEIGHT * SCALE), self.flags, vsync=0)
 
+        # helper surface, before scaling up
         # , 32 .convert_alpha() # pygame.SRCALPHA
         self.canvas: pygame.Surface = pygame.Surface((WIDTH, HEIGHT), self.flags)
+        # helper surface for HUD
+        self.HUD: pygame.Surface = pygame.Surface((WIDTH, HEIGHT), self.flags | pygame.SRCALPHA)
 
         size = self.screen.get_size()
         self.shader = OpenGL_shader(size, DEFAULT_SHADER)
@@ -176,9 +183,8 @@ class Game:
             font_size=FONT_SIZE_LARGE,
             centred=True,
             bg_color=PANEL_BG_COLOR,
-            surface=self.screen
         )
-        self.shader.render(self.screen, [], 1.0, -1.0, 0.01, True)
+        self.shader.render(self.screen, self.HUD, [], 1.0, -1.0, 0.01, True)
         pygame.display.flip()
 
     #############################################################################################################
@@ -204,7 +210,7 @@ class Game:
     ) -> None:
         # MARK: render
         """
-        Renders semitransparent (if `alpha` provided) rect using provided color on `game.canvas`
+        Renders semitransparent (if `alpha` provided) rect using provided color on `game.HUD`
 
         Args:
             rect (pygame.Rect): Size and position of panel
@@ -212,10 +218,11 @@ class Game:
             surface (pygame.Surface): surface to blit on. Defaults to None
         """
         if not surface:
-            surface = self.canvas
+            surface = self.HUD
 
         surf = pygame.Surface(rect.size, pygame.SRCALPHA)
         pygame.draw.rect(surf, color, surf.get_rect())
+        pygame.draw.rect(surf, UI_BORDER_COLOR, surf.get_rect(), width=UI_BORDER_WIDTH)
         surface.blit(surf, rect)
 
     #############################################################################################################
@@ -231,7 +238,7 @@ class Game:
             surface:   pygame.Surface | None = None
     ) -> None:
         """
-        Blit several lines of text on surface or on `game.canvas` if surface is not provided, one under other,
+        Blit several lines of text on surface or on `game.HUD` if surface is not provided, one under other,
 
         Args:
             texts (list[str]): list of strings to render
@@ -241,7 +248,7 @@ class Game:
             shadow (ColorValue, optional): draw outline of text with black color. Defaults to `CUTSCENE_BG_COLOR`.
             font_size (int, optional): font size from `FONT_SIZES_DICT` list. Defaults to `0` == `FONT_SIZE_DEFAULT`
             centred (bool, optional): shell the text be centered at `pos`. Defaults to `False`.
-            surface (pygame.Surface, optional): surface to blit on, if `None` user `game.canvas`. Defaults to `None`.
+            surface (pygame.Surface, optional): surface to blit on, if `None` user `game.HUD`. Defaults to `None`.
         """
 
         for line_no, text in enumerate(texts):
@@ -263,7 +270,7 @@ class Game:
             surface:   pygame.Surface | None = None
     ) -> None:
         """
-        Blit line of text on `surface` or on `game.canvas` if `surface` is not provided
+        Blit line of text on `surface` or on `game.HUD` if `surface` is not provided
 
         Args:
             text (str): _description_
@@ -277,7 +284,7 @@ class Game:
         """
 
         if not surface:
-            surface = self.canvas
+            surface = self.HUD
 
         selected_font = self.font
         if self.fonts.get(font_size, False):
@@ -580,12 +587,11 @@ class Game:
             font_size=FONT_SIZE_LARGE,
             centred=True,
             bg_color=PANEL_BG_COLOR,
-            surface=self.screen
         )
 
-        positions = [vec3(0, 0, 0)]
+        # positions = [vec3(0, 0, 0)]
         ratio: float = -1.0
-        self.shader.render(self.screen, positions, 1.0, ratio, self.clock.tick(
+        self.shader.render(self.screen, self.HUD, [], 1.0, ratio, self.clock.tick(
             FPS_CAP) / 1000, USE_SHADERS, save_frame=self.save_frame)
         pygame.display.flip()
         self.rec_process.wait()
@@ -621,7 +627,7 @@ class Game:
             (WIDTH * SCALE // 2, HEIGHT * SCALE // 2),
             font_size=FONT_SIZE_LARGE,
             centred=True,
-            bg_color=PANEL_BG_COLOR
+            bg_color=PANEL_BG_COLOR,
         )
 
     #############################################################################################################
@@ -641,7 +647,21 @@ class Game:
             ratio = -1.0
             scale = 1.0
 
-        res = self.shader.render(self.screen, positions, scale, ratio, dt, USE_SHADERS, save_frame=self.save_frame)
+        # render pipeline works as follows:
+        # main game is rendered on game.canvas Surface
+        # game.canvas is scaled to desired resolution on game.screen Surface
+        # HUD/UI is rendered on game.HUD Surface
+        # game.screen and game.HUD are passed to pixel shader for postprocessing effects
+        # e.g.: day/night effect, color boost is applied to game.screen
+        # HUD is drawn on top of it using alpha blending
+        # when save_frame is True, the final image is returned as byte buffer
+        # to be saved to a file (for screenshot or video recording)
+        # returned image is not converted to Surface since it's a very slow process
+        res = self.shader.render(
+            self.screen, self.HUD, positions, scale, ratio, dt,
+            USE_SHADERS, save_frame=True
+            # USE_SHADERS
+        )  # self.save_frame)
 
         if self.save_frame:
             if INPUTS["screenshot"]:
@@ -663,7 +683,7 @@ class Game:
                 # delta time since last frame in milliseconds
                 dt = self.clock.tick(FPS_CAP) / 1000
                 # slow down
-                # dt *= 0.5
+                # dt *= 0.25
                 self.fps = self.clock.get_fps()
                 # self.fps_data_3s.append(self.fps)
                 # self.fps_data_10s.append(self.fps)
@@ -677,12 +697,12 @@ class Game:
                     self.time_elapsed += dt
                     self.states[-1].update(dt, events)
                 self.canvas.fill(BG_COLOR)
+                self.HUD.fill(TRANSPARENT_COLOR)
                 self.states[-1].draw(self.canvas, dt)
                 self.custom_cursor(self.canvas)
 
                 if self.is_paused:
                     self.show_pause_message()
-
                 # than scale and copy on final Surface (game.screen)
                 if SCALE != 1:
                     self.screen.blit(pygame.transform.scale_by(self.canvas, SCALE), (0, 0))

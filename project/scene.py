@@ -105,6 +105,8 @@ class Scene(State):
             (WIDTH // 2, HEIGHT // 2),
             "Player"
         )
+        # pyscroll renderer (camera)
+        self.map_view: pyscroll.BufferedRenderer
         # view target for camera
         self.camera = Camera(self)
         # self.camera.target = vec(1 * TILE_SIZE, 1 * TILE_SIZE)
@@ -122,7 +124,7 @@ class Scene(State):
         # self.circle_gradient: pygame.Surface = (CIRCLE_GRADIENT).convert_alpha()
 
         self.load_map()
-        self.ui = UI(self.game, self.game.canvas, self.game.fonts[FONT_SIZE_MEDIUM])
+        self.ui = UI(self, self.game.fonts[FONT_SIZE_MEDIUM])
         # self.set_camera_on_player()
 
     #############################################################################################################
@@ -1037,7 +1039,7 @@ class Scene(State):
         shader_name = SHADERS_NAMES[shader_index] if USE_SHADERS else "n/a"
         # prepare debug messages displayed in upper left corner
         msgs = [
-            f"FPS: {self.game.fps: 6.1f} Shader: {shader_name}",
+            f"FPS: {self.game.fps: 5.1f} Shader: {shader_name}",
             # f"Eye: x:{self.camera.target.x:6.2f} y:{self.camera.target.y:6.2f}",
             f"Time: {self.hour}:{self.minute:02}",
             # f"vel: {self.player.vel.x: 6.1f} {self.player.vel.y: 6.1f}",

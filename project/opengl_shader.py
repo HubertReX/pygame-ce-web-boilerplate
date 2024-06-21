@@ -5,7 +5,7 @@ from typing import Any, Iterable
 import _zengl
 import pygame
 import zengl
-from settings import IS_WEB, MAX_LIGHTS_COUNT, SHADERS_DIR, vec, vec3
+from settings import COMMON_SHADERS_DIR, IS_WEB, MAX_LIGHTS_COUNT, SHADERS_DIR, vec, vec3
 
 zengl.init()
 
@@ -56,7 +56,8 @@ class OpenGL_shader():
         _zengl.compile_error = compile_error_debug
 
         self.image = self.ctx.image(size, "rgba8unorm")  # , samples=4)
-        # self.depth = self.ctx.image(size, 'depth24plus') # , samples=4)
+        self.HUD = self.ctx.image(size, "rgba8unorm")  # , samples=4)
+        # self.depth = self.ctx.image(size, "depth24plus") # , samples=4)
 
         float_size = 16
         floats_per_light = 3  # x, y, size
@@ -77,11 +78,17 @@ class OpenGL_shader():
         FS = self.read_shader_from_file(fs_file)
         VS = self.read_shader_from_file(vs_file)
 
-        includes = {'common': f'''
-const vec2 screen_size = vec2({self.size[0]}, {self.size[1]});
-const int MAX_LIGHTS_CNT = {MAX_LIGHTS_COUNT};
-        '''
-                    }
+        common_file = COMMON_SHADERS_DIR / "common.glsl"
+        common = self.read_shader_from_file(common_file)
+        common = common.format(width = self.size[0], height = self.size[1], MAX_LIGHTS_COUNT = MAX_LIGHTS_COUNT)
+
+        rgb2hsv_file = COMMON_SHADERS_DIR / "RGB2HSV.glsl"
+        RGB2HSV = self.read_shader_from_file(rgb2hsv_file)
+
+        includes = {
+            "common": common,
+            "RGB2HSV": RGB2HSV,
+        }
 
         layout: Iterable[zengl.LayoutBinding] = [
             {
@@ -89,8 +96,12 @@ const int MAX_LIGHTS_CNT = {MAX_LIGHTS_COUNT};
                 "binding": 0,
             },
             {
-                'name': 'LightPositions',
-                'binding': 1,
+                "name": "LightPositions",
+                "binding": 1,
+            },
+            {
+                "name": "HUD",
+                "binding": 2,
             },
         ]
 
@@ -112,16 +123,25 @@ const int MAX_LIGHTS_CNT = {MAX_LIGHTS_COUNT};
                 "wrap_y": "clamp_to_edge",
             },
             {
-                'type': 'uniform_buffer',
-                'binding': 1,
-                'buffer': self.lights_pos_buffer,
+                "type": "uniform_buffer",
+                "binding": 1,
+                "buffer": self.lights_pos_buffer,
+            },
+            {
+                "type": "sampler",
+                "binding": 2,
+                "image": self.HUD,
+                "min_filter": "nearest",
+                "mag_filter": "nearest",
+                "wrap_x": "clamp_to_edge",
+                "wrap_y": "clamp_to_edge",
             },
         ]
 
         # depth = {
-        #     'test': True,
-        #     'write': False,
-        #     'func': 'greater',
+        #     "test": True,
+        #     "write": False,
+        #     "func": "greater",
         # },
 
         # blend = {
@@ -139,7 +159,7 @@ const int MAX_LIGHTS_CNT = {MAX_LIGHTS_COUNT};
             uniforms = uniforms,
             # framebuffer = [self.image, self.depth],
             # framebuffer = [self.image],
-            framebuffer = (None if IS_WEB else [self.image]),
+            framebuffer = (None if IS_WEB else [self.image, self.HUD]),
             # blend = blend,
             # depth = depth,
             # cull_face="back",
@@ -170,6 +190,7 @@ const int MAX_LIGHTS_CNT = {MAX_LIGHTS_COUNT};
     def render(
         self,
         surface: pygame.Surface,
+        HUD: pygame.Surface,
         lights_pos: list[vec3],
         scale: float,
         ratio: float,
@@ -193,6 +214,8 @@ const int MAX_LIGHTS_CNT = {MAX_LIGHTS_COUNT};
         self.ctx.new_frame()
         self.image.clear()
         self.image.write(pygame.image.tobytes(surface, "RGBA", flipped=True))
+        self.HUD.clear()
+        self.HUD.write(pygame.image.tobytes(HUD, "RGBA", flipped=True))
         # Fatal Python error: none_dealloc: deallocating None: bug likely caused by a refcount error in a C extension
         # Python runtime state: initialized
 
@@ -205,7 +228,7 @@ const int MAX_LIGHTS_CNT = {MAX_LIGHTS_COUNT};
 
         if use_shaders:
             for i, p in enumerate(lights_pos):
-                data = struct.pack('3f4x', p.x, p.y, p.z)
+                data = struct.pack("3f4x", p.x, p.y, p.z)
                 self.lights_pos_buffer.write(data, offset= (i * 16))
             if self.pipeline.uniforms:
                 self.pipeline.uniforms["time"][:] = struct.pack("f", self.timestamp / 100.0)

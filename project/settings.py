@@ -62,6 +62,10 @@ def vector_to_tuple(v: vec) -> tuple[int, int]:
     return (int(v.x), int(v.y))
 
 
+def lerp_vectors(v1: vec, v2: vec, t: float) -> vec:
+    return v1 + (v2 - v1) * t
+
+
 WIDTH, HEIGHT = 1600, 1024
 TILE_SIZE = 16
 SCALE = 1
@@ -78,7 +82,7 @@ SHOW_DEBUG_INFO = False
 SHOW_HELP_INFO = False
 
 # game render fps cap
-FPS_CAP = 30
+FPS_CAP = 130
 # gameplay recording fps (doesn't need to be the same as FPS_CAP)
 RECORDING_FPS = 30
 
@@ -100,9 +104,9 @@ STUNNED_TIME: int = 1000
 PUSHED_TIME: int = 1000
 
 # initial game time hour
-INITIAL_HOUR = 9
+INITIAL_HOUR: int = 9
 # game time speed (N game hours / 1 real time second)
-GAME_TIME_SPEED = 0.25
+GAME_TIME_SPEED: float = 0.25
 
 
 TRANSPARENT_COLOR = (0, 0, 0, 0)
@@ -110,8 +114,17 @@ FONT_COLOR = "white"
 BLACK_COLOR = (0, 0, 0, 255)
 # background fill color
 BG_COLOR = (0, 0, 0, 0)
+# HUD box border color
+UI_BORDER_COLOR = (17, 17, 17, 255)
+# HUD box border width
+UI_BORDER_WIDTH = 3
+# HUD border color when weapon switched
+UI_BORDER_COLOR_ACTIVE = 'gold'
+# HUD box fill color when attacking
+UI_COOL_OFF_COLOR = "red"
+
 # render text panel background color
-PANEL_BG_COLOR = (10, 10, 10, 150)
+PANEL_BG_COLOR = (30, 30, 30, 200)
 # cutscene framing background color
 CUTSCENE_BG_COLOR = (10, 10, 10, 255)
 # waypoint lines color
@@ -302,6 +315,7 @@ HUD_DIR           = RESOURCES_DIR / "HUD"
 PROGRAM_ICON      = ASSETS_DIR / "icon.png"
 MOUSE_CURSOR_IMG  = ASSETS_DIR / "aim.png"
 CIRCLE_GRADIENT   = HUD_DIR / "circle_gradient_big.png"
+COMMON_SHADERS_DIR = Path("shaders") / "common"
 if IS_WEB:
     SHADERS_DIR = Path("shaders") / "OpenGL3.0_ES"
 else:
@@ -352,11 +366,18 @@ SPRITE_SHEET_DEFINITION = {
     "bored":        [(4, 0), (4, 1), (4, 2), (4, 3), (4, 4), (4, 5)],
 }
 
-WEAPON_DIRECTION_OFFSET = {
-    "up": vec(-3, -10 - TILE_SIZE),
-    "down": vec(-2, -2 + TILE_SIZE // 2),
-    "left": vec(-TILE_SIZE, 0 - TILE_SIZE // 2),
-    "right": vec(TILE_SIZE, 1 - TILE_SIZE // 2)
+WEAPON_DIRECTION_OFFSET: dict[str, vec] = {
+    "up":    vec(-3,         -10 - TILE_SIZE),
+    "down":  vec(-2,          -2 + TILE_SIZE // 2),
+    "left":  vec(-TILE_SIZE,   0 - TILE_SIZE // 2),
+    "right": vec(TILE_SIZE,    1 - TILE_SIZE // 2)
+}
+
+WEAPON_DIRECTION_OFFSET_FROM: dict[str, vec] = {
+    "up":    vec(-3, -10),
+    "down":  vec(-2,  -2 - TILE_SIZE // 2),
+    "left":  vec(0,    0 - TILE_SIZE // 2),
+    "right": vec(0,    1 - TILE_SIZE // 2)
 }
 
 # make loading images a little easier
