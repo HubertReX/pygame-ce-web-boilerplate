@@ -6,10 +6,12 @@
 	],
 	"settings": {
 		"cSpell.words": [
+			"Bitcraft",
 			"bottomright",
 			"colliderect",
 			"dpad",
 			"emscripten",
+			"itchio",
 			"opengl",
 			"pygbag",
 			"tilesets",

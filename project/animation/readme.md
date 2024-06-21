@@ -1,4 +1,4 @@
-# animation.py
+# animation.py <!-- omit in toc -->
 
 Copied from:
 
@@ -7,12 +7,24 @@ Copied from:
 Animation and timer for pygame games
 animation.py is public domain.
 
-* [Tasks: Delayed calls](#task)
-* [Animation: Change values over time](#animation)
+## TOC <!-- omit in toc -->
 
+- [Task](#task)
+  - [Execute functions at a later time, once or many times](#execute-functions-at-a-later-time-once-or-many-times)
+    - [Examples](#examples)
+- [Animation](#animation)
+  - [Change numeric values over time](#change-numeric-values-over-time)
+    - [What it does](#what-it-does)
+    - [Animaton Examples](#animaton-examples)
+    - [Callable Attributes](#callable-attributes)
+    - [Example of using callable attributes](#example-of-using-callable-attributes)
+    - [Rounding](#rounding)
+    - [Potential pitfalls](#potential-pitfalls)
+    - [More info](#more-info)
 
-# Task
-## Execute functions at a later time, once or many times
+## Task
+
+### Execute functions at a later time, once or many times
 
 This is a silly little class meant to make it easy to create
 delayed or looping events without any complicated hooks into
@@ -29,7 +41,7 @@ about managing instance of the Tasks or Animations.
 The only real requirement about the group, is that it must
 not be drawn.
 
-### Examples
+#### Examples
 
 Because the pygame clock returns milliseconds, the examples
 below use milliseconds.  However, you are free to use what-
@@ -57,7 +69,6 @@ while game_is_running:
     task_group.update(dt)
 ```
 
-
 If you want to repeat the function, then pass another value.
 Below, the "call_later" function will be called 24 times, with
 1000 milliseconds between each call.
@@ -66,13 +77,11 @@ Below, the "call_later" function will be called 24 times, with
 task = Task(call_later, 1000, 24)
 ```
 
-
 Set times to -1 to make the task repeat forever, or until aborted.
 
 ```python
 task = Task(call_later, interval=2500, times=-1)
 ```
-
 
 Tasks must be initialized with at least one callback, but more
 can be added later on.
@@ -82,7 +91,6 @@ task = Task(heres_my_number, 2500, -1)
 task.schedule(call_me)     # schedule something else
 task.schedule(maybe)       # schedule something else
 ```
-
 
 The Task and Animation classes do not directly support passing
 positional or keyword arguments to the scheduled callback
@@ -98,7 +106,6 @@ task = Task(partial(call_later(1,2,3, key=value)), 1000)
 task.schedule(partial(call_later(1,2,3, key=value)), 1000)
 ```
 
-
 There are other useful ways to schedule with a Task:
 
 ```python
@@ -108,7 +115,6 @@ task = Task(my_function, 1000, 10)
 # "quit" will be called after the 10th time (when task is totally finished)
 task.schedule(quit, 'on finish')
 ```
-
 
 Tasks support simple sequencing.  Use the chain method to
 create a sequence of tasks.  Chained events will begin after
@@ -123,15 +129,15 @@ task = Task(call_later, 2500)        # after 2.5 seconds
 task.chain(Task(something_else, 1))  # something_else is called 3.5 seconds later
 ```
 
+## Animation
 
-# Animation
-## Change numeric values over time
+### Change numeric values over time
 
 The animation class is modeled after Kivy's excellent
 Animation module and is adapted for pygame.  It is similar,
 but not a direct copy.
 
-### What it does
+#### What it does
 
 Animation objects are used to modify the attributes of other
 objects over time.  It can be used to smoothly move sprites
@@ -142,8 +148,7 @@ Animations (and Tasks) are meant to follow the pygame "Sprite
 and Group" model.  They do not implement their own clock, rather,
 they rely on being updated, just like sprites.
 
-
-### Examples
+#### Animaton Examples
 
 To animate a target sprite/object's position, simply specify
 the target x/y values where you want the widget positioned at
@@ -153,7 +158,6 @@ Animations will smoothly change values over time.  So, instead
 of thinking "How many pixels do I add to move the rect?", you
 can define where you want the rect to be, without thinking
 about the math.
-
 
 ```python
 import pygame
@@ -179,7 +183,6 @@ while game_is_running:
     ...
 ```
 
-
 The shorthand method of starting animations is to pass the
 targets as positional arguments in the constructor.
 If you don't know the target when the animation is created,
@@ -194,7 +197,6 @@ ani = Animation(x=100, y=0)
 ani.start(sprite.rect)
 ```
 
-
 If you would rather specify relative values, then pass the
 relative keyword and the values will be adjusted for you.
 Below, the rect will be moved 100 pixels to the right and
@@ -204,14 +206,12 @@ Below, the rect will be moved 100 pixels to the right and
 ani = Animation(sprite.rect, x=100, y=100, duration=1000, relative=True)
 ```
 
-
 Animations can also be configured for a delay.
 
 ```python
 # start the movement after 300ms
 ani = Animation(sprite.rect, x=100, y=100, duration=1000, delay=300)
 ```
-
 
 Sometimes you need to stop an animation for a particular object,
 but you don have a reference handy for it.  Use the included
@@ -229,7 +229,6 @@ animations.add(ani)
 # lets remove animations of the rect
 remove_animations_of(sprite.rect, animations)
 ```
-
 
 Animations can be aborted or finished early.  Finishing an animation
 will cause the animation to end, but the target values will be applied.
@@ -256,8 +255,7 @@ ani.schedule(my_function)
 ani.schedule(func, 'on update')  # called after new values are applied each update
 ```
 
-
-### Callable Attributes
+#### Callable Attributes
 
 Target attributes can also be callable.  If callable, they will be called
 with the value of the animation each update.  For example, if you are
@@ -269,24 +267,24 @@ This presents a special problem, as it may be impossible to
 determine the initial value of the animation.  In this case, the
 following rules are used to determine the initial value of the animation:
 
-* If the callable returns a value, the initial value will be set to that
-* If there is no return value (or it is None), the initial will be zero
+- If the callable returns a value, the initial value will be set to that
+- If there is no return value (or it is None), the initial will be zero
 
 To further complicate matters the the initial value can be passed
 in the Animation constructor.  If passed, the value returned by the
 callable will not be considered.  The initial value can also be a
-callable, and is subject to the following rules: 
+callable, and is subject to the following rules:
 
-* The value of the initial or return value of it are used
-* The initial must be a number
-* If the initial is None (or any other non-number), an exception is raised
-* The initial value is only determined once
+- The value of the initial or return value of it are used
+- The initial must be a number
+- If the initial is None (or any other non-number), an exception is raised
+- The initial value is only determined once
 
 NOTE: Specifying an initial value will set the initial value
       for all target names in the constructor.  This
       limitation won't be resolved for a while.
-            
-### Example of using callable attributes
+
+#### Example of using callable attributes
 
 ```python
 import pygame
@@ -302,16 +300,14 @@ ani = Animation(surf, set_alpha=255, duration=1000)
 ani = Animation(surf, set_alpha=0, initial=255, duration=1000)
 ```
 
+#### Rounding
 
-
-### Rounding
-
-In some cases, you may want you values to be rounded to the 
+In some cases, you may want you values to be rounded to the
 nearest integer.  For pygame rects, this is needed for smooth
 movement, and the Animation class will use rounded values
 automatically.  For other cases, pass "round_values=True"
 
-### Potential pitfalls
+#### Potential pitfalls
 
 Because Animations have a list of keyword arguments that configure
 it, those words cannot be used on target objects.
@@ -321,15 +317,15 @@ you cannot use an animation to change the "duration" attribute of
 another object.  This is an issue that I will fix sometime.
 
 For now, here is a list of reserved words can cannot be used:
-* duration
-* transition
-* initial
-* relative
-* round_values
-* delay
 
+- duration
+- transition
+- initial
+- relative
+- round_values
+- delay
 
-### More info
+#### More info
 
 The docstrings have some more detailed info about each class.  Take
 a look at the source for more info about what is possible.
