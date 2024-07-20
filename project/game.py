@@ -154,15 +154,13 @@ class Game:
         # (not used for now since pygame.time.set_timer is not implemented in pygbag)
         self.custom_events: dict[int, Callable] = {}
         # moved imports here to avoid circular imports
-        # import menus
-        # start_state = menus.MainMenuScreen(self, "MainMenu")
-        # self.states.append(start_state)
-        import scene
-        start_state = scene.Scene(self, "Village", "start")
-        # start_state = scene.Scene(self, "Maze", "start", is_maze=True, maze_cols=10, maze_rows=5)
-        start_state.enter_state()
-        # self.states.append(start_state)
-        # self.states.append(start_state)
+        import menus
+        start_state = menus.MainMenuScreen(self, "MainMenu")
+        self.states.append(start_state)
+
+        # import scene
+        # start_state = scene.Scene(self, "Village", "start")
+        # start_state.enter_state()
 
         if USE_CUSTOM_MOUSE_CURSOR:
             cursor_img = pygame.image.load(MOUSE_CURSOR_IMG)
@@ -184,7 +182,10 @@ class Game:
             centred=True,
             bg_color=PANEL_BG_COLOR,
         )
-        self.shader.render(self.screen, self.HUD, [], 1.0, -1.0, 0.01, True)
+        self.shader.render(
+            self.screen, self.HUD, [], 1.0, -1.0, 0.01,
+            use_shaders=USE_SHADERS, save_frame=self.save_frame
+        )
         pygame.display.flip()
 
     #############################################################################################################
@@ -591,8 +592,11 @@ class Game:
 
         # positions = [vec3(0, 0, 0)]
         ratio: float = -1.0
-        self.shader.render(self.screen, self.HUD, [], 1.0, ratio, self.clock.tick(
-            FPS_CAP) / 1000, USE_SHADERS, save_frame=self.save_frame)
+        dt: float = self.clock.tick(FPS_CAP) / 1000.0
+        self.shader.render(
+            self.screen, self.HUD, [], 1.0, ratio, dt,
+            use_shaders=USE_SHADERS, save_frame=self.save_frame
+        )
         pygame.display.flip()
         self.rec_process.wait()
 
@@ -643,7 +647,7 @@ class Game:
             positions, ratio = scene.get_lights()
             scale = scene.camera.zoom
         else:
-            positions = [vec3(0.0, 0.0, 0.0)]
+            positions = []
             ratio = -1.0
             scale = 1.0
 
@@ -659,7 +663,7 @@ class Game:
         # returned image is not converted to Surface since it's a very slow process
         res = self.shader.render(
             self.screen, self.HUD, positions, scale, ratio, dt,
-            USE_SHADERS, save_frame=True
+            USE_SHADERS, save_frame=self.save_frame
             # USE_SHADERS
         )  # self.save_frame)
 

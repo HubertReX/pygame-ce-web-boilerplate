@@ -9,16 +9,20 @@ from pygame_menu import themes
 pygame.init()
 surface = pygame.display.set_mode((600, 400))
 
+
 def set_difficulty(value, difficulty):
     print(value)
     print(difficulty)
+
 
 def start_the_game():
     mainmenu._open(loading)
     pygame.time.set_timer(update_loading, 30)
 
+
 def level_menu():
     mainmenu._open(level)
+
 
 mainmenu = pygame_menu.Menu('Welcome', 600, 400, theme=themes.THEME_SOLARIZED)
 mainmenu.add.text_input('Name: ', default='username')
@@ -34,7 +38,7 @@ loading.add.progress_bar("Progress", progressbar_id = "1", default=0, width = 20
 
 arrow = pygame_menu.widgets.LeftArrowSelection(arrow_size = (10, 15))
 
-update_loading = pygame.event.custom_type() # pygame.USEREVENT + 0
+update_loading = pygame.event.custom_type()  # pygame.USEREVENT + 0
 
 while True:
     events = pygame.event.get()

@@ -3,7 +3,7 @@ import pygame
 import pygame_menu
 import scene
 import splash_screen
-from settings import ABOUT, FPS_CAP, HEIGHT, INPUTS, IS_WEB, SHOW_DEBUG_INFO, WIDTH
+from settings import ABOUT, FPS_CAP, HEIGHT, INPUTS, IS_WEB, PANEL_BG_COLOR, SHOW_DEBUG_INFO, WIDTH
 from state import State
 
 #######################################################################################################################
@@ -21,15 +21,19 @@ class MenuScreen(State):
         self.menu.full_reset()
         # self.msgs = []
 
+    #############################################################################################################
     # def debug(self, msgs: list[str]) -> None:
     #     return super().debug(msgs)
 
+    #############################################################################################################
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}: {self.name}"
 
+    #############################################################################################################
     def create_menu(self) -> pygame_menu.Menu:
         raise NotImplementedError("Subclasses should implement this!")
 
+    #############################################################################################################
     def deactivate(self) -> None:
         # self.menu.disable()
 
@@ -37,6 +41,7 @@ class MenuScreen(State):
         self.game.reset_inputs()
         self.exit_state()
 
+    #############################################################################################################
     def update(self, dt: float, events: list[pygame.event.EventType]) -> None:
         # .get_inputs()
         # events = pygame.event.get()
@@ -57,17 +62,20 @@ class MenuScreen(State):
         # if INPUTS["quit"]:
         #     self.deactivate()
 
+    #############################################################################################################
     def draw(self, screen: pygame.Surface, dt: float) -> None:
-        # screen.fill(COLORS["blue"])
-        # self.game.render_text(f"{self.__class__.__name__}:
-        # press space to continue", (WIDTH / 2, HEIGHT / 2), centred=True)
+        # screen.fill(PANEL_BG_COLOR)
+        # self.game.render_text(f"{self.__class__.__name__}: # press space to continue",
+        #   (WIDTH / 2, 32), centred=True)
         if self.menu.is_enabled():
-            self.menu.mainloop(screen, None, disable_loop=True, fps_limit=FPS_CAP)
-        msgs = [
-            f"Menu   : {self.name}",
-            f"Scenes : {len(self.game.states)}",
-        ]
+            # self.menu.mainloop(screen, None, disable_loop=True, fps_limit=FPS_CAP)  # fps_limit=FPS_CAP
+            self.menu.draw(screen)
+
         if SHOW_DEBUG_INFO:
+            msgs = [
+                f"Menu   : {self.name}",
+                f"Scenes : {len(self.game.states)}",
+            ]
             self.debug(msgs)
 
 #######################################################################################################################
@@ -81,6 +89,7 @@ class MainMenuScreen(MenuScreen):
     #     am.create_menu()
     #     return am.menu
 
+    #############################################################################################################
     def create_menu(self) -> pygame_menu.Menu:
         # print("AboutMenuScreen.create_menu", self.game.__class__.__name__)
 
@@ -106,6 +115,7 @@ class MainMenuScreen(MenuScreen):
 
         return main_menu
 
+    #############################################################################################################
     def update(self, dt: float, events: list[pygame.event.EventType]) -> None:
         super().update(dt, events)
 
@@ -126,13 +136,13 @@ class MainMenuScreen(MenuScreen):
         if INPUTS["screenshot"]:
             self.game.save_screenshot()
 
+    #############################################################################################################
     # def draw(self, screen: pygame.Surface):
     #     # screen.fill(COLORS["blue"])
     #     # self.game.render_text(f"{self.__class__.__name__}:
     # press space to continue", (WIDTH / 2, HEIGHT / 2), centred=True)
     #     if self.menu.is_enabled:
     #         self.menu.mainloop(screen, None, disable_loop=True, fps_limit=FPS_CAP)
-
     #     self.debug([f"Menu : {self.name}"])
 
 #######################################################################################################################
@@ -141,6 +151,7 @@ class MainMenuScreen(MenuScreen):
 
 class AboutMenuScreen(MenuScreen):
 
+    #############################################################################################################
     def create_menu(self) -> pygame_menu.Menu:
         # print("AboutMenuScreen.create_menu", self.game.__class__.__name__)
 
@@ -161,6 +172,7 @@ class AboutMenuScreen(MenuScreen):
         # about_menu.add.button("Close menu", pygame_menu.events.BACK)
         return about_menu
 
+    #############################################################################################################
     def update(self, dt: float, events: list[pygame.event.EventType]) -> None:
         super().update(dt, events)
 
@@ -193,6 +205,7 @@ class AboutMenuScreen(MenuScreen):
         # if INPUTS["help"]:
         #     self.deactivate()
 
+    #############################################################################################################
     # def draw(self, screen: pygame.Surface):
     #     # screen.fill(COLORS["blue"])
     #     # self.game.render_text(f"{self.__class__.__name__}:
