@@ -42,7 +42,7 @@ const float PI = 3.1415926535897932384626;
 // value  > 0.5 => saturated
 // value == 0.5 => no change
 // value  < 0.5 => bleached
-const float SATURATION = 0.62;
+const float SATURATION = 0.5; // 0.62;
 
 // circle around color wheel
 // value in range [0.0, 1.0]
