@@ -380,7 +380,7 @@ def build_tileset_map_from_maze(clean_tileset_map: pytmx.TiledMap, maze: Maze, t
     for prop in background_decors_props:
         gid, tile = prop
         # print(tile)
-        if "background_decors" in tile.keys():
+        if "background_decors" in tile:  # .keys():
             background_decors_gids[tile["background_decors"]] = gid
 
     # floor decors (dirt, gray stones)
@@ -389,7 +389,7 @@ def build_tileset_map_from_maze(clean_tileset_map: pytmx.TiledMap, maze: Maze, t
     for prop in floor_decors_props:
         gid, tile = prop
         # print(tile)
-        if "floor_decors" in tile.keys():
+        if "floor_decors" in tile:  # .keys():
             floor_decors_gids[tile["floor_decors"]] = gid
 
     # elements on floor (dead rat, barrel, crate, stool)
@@ -398,7 +398,7 @@ def build_tileset_map_from_maze(clean_tileset_map: pytmx.TiledMap, maze: Maze, t
     for prop in elements_props:
         gid, tile = prop
         # print(tile)
-        if "elements" in tile.keys():
+        if "elements" in tile:  # .keys():
             elements_gids[tile["elements"]] = gid
 
     # wall decors (bars, banner, glyph)
@@ -407,7 +407,7 @@ def build_tileset_map_from_maze(clean_tileset_map: pytmx.TiledMap, maze: Maze, t
     for prop in walls_decors_props:
         gid, tile = prop
         # print(tile)
-        if "walls_decors" in tile.keys():
+        if "walls_decors" in tile:  # .keys():
             walls_decors_gids[tile["walls_decors"]] = gid
 
     # collectable items (flask health, golden key, coin)
@@ -431,7 +431,7 @@ def build_tileset_map_from_maze(clean_tileset_map: pytmx.TiledMap, maze: Maze, t
                 r_y = random.randint(0, maze.num_rows - 1)
                 # tiles with visible wall at the top (so there is a place to put decors)
                 image_index = maze.cell_rows[r_y][r_x].image_index
-                if image_index in ELEMENTS_OFFSETS_MAP.keys():
+                if image_index in ELEMENTS_OFFSETS_MAP:  # .keys():
                     tile_gid = random.choice(list(elements_gids.values()))
                     x = (r_x * SUBTILE_ROWS) + MARGIN + int(ELEMENTS_OFFSETS_MAP[image_index].x)
                     y = (r_y * SUBTILE_COLS) + MARGIN + int(ELEMENTS_OFFSETS_MAP[image_index].y)
