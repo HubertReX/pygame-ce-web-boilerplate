@@ -1,0 +1,56 @@
+pygame-ce 2.4.1 (SDL 2.28.5, Python 3.12.4)
+emoji_data_python==1.6.0
+ffmpeg-python==0.2.0
+  future==1.0.0
+glcontext==2.5.0
+isort==5.13.2
+lxml==5.2.2
+mypy==1.10.0
+  mypy-extensions==1.0.0
+  typing_extensions==4.10.0
+pilmoji==2.0.4
+  emoji==1.7.0
+  pillow==10.3.0
+pipdeptree==2.23.1
+  packaging==24.1
+  pip==24.2
+pydantic==2.7.1
+  annotated-types==0.7.0
+  pydantic_core==2.18.2
+    typing_extensions==4.10.0
+  typing_extensions==4.10.0
+pygame-menu-ce==4.4.3
+  pygame-ce==2.4.1
+  pyperclip==1.8.2
+  typing_extensions==4.10.0
+pygame-screen-record==0.1.1
+  opencv-python==4.9.0.80
+    numpy==1.26.4
+    numpy==1.26.4
+    numpy==1.26.4
+    numpy==1.26.4
+    numpy==1.26.4
+    numpy==1.26.4
+    numpy==1.26.4
+  pygame
+pygbag==0.9.1
+PyOpenGL==3.1.7
+pyscroll==2.31
+PyTMX==3.32
+rich==13.7.1
+  markdown-it-py==3.0.0
+    mdurl==0.1.2
+  Pygments==2.18.0
+setuptools==70.0.0
+sourcery==1.19.0
+thorpy==2.1.8
+tqdm==4.66.4
+zengl-extras==0.5.0
+  colorama==0.4.6
+  progress==1.6
+  requests==2.32.2
+    certifi==2024.2.2
+    charset-normalizer==3.3.2
+    idna==3.7
+    urllib3==2.2.1
+  zengl==2.4.1
