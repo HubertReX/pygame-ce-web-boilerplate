@@ -37,8 +37,7 @@ import pygame
 
 # from pygame.locals import *
 
-# from . import resources
-import resources
+from . import resources
 from .style import Style
 
 

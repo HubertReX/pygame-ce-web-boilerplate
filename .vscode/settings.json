@@ -72,6 +72,5 @@
         "WINDOWSHOWN",
         "zengl"
     ],
-    "python.analysis.typeCheckingMode": "off",
-    "makefile.configureOnOpen": false
+    "python.analysis.typeCheckingMode": "off"
 }

@@ -3,7 +3,7 @@ import pygame
 import pygame_menu
 import scene
 import splash_screen
-from settings import ABOUT, FPS_CAP, HEIGHT, INPUTS, IS_WEB, MAIN_FONT, PANEL_BG_COLOR, SHOW_DEBUG_INFO, WIDTH
+from settings import ABOUT, FPS_CAP, HEIGHT, INPUTS, IS_WEB, PANEL_BG_COLOR, SHOW_DEBUG_INFO, WIDTH
 from state import State
 
 #######################################################################################################################
@@ -94,8 +94,6 @@ class MainMenuScreen(MenuScreen):
         # print("AboutMenuScreen.create_menu", self.game.__class__.__name__)
 
         main_theme = pygame_menu.themes.THEME_BLUE.copy()
-        main_theme.title_font = MAIN_FONT
-        main_theme.widget_font = MAIN_FONT
 
         main_menu = pygame_menu.Menu(
             width=WIDTH * 0.6,
@@ -159,8 +157,6 @@ class AboutMenuScreen(MenuScreen):
 
         about_theme = pygame_menu.themes.THEME_DEFAULT.copy()
         about_theme.widget_margin = (0, 0)
-        about_theme.title_font = MAIN_FONT
-        about_theme.widget_font = MAIN_FONT
 
         about_menu = pygame_menu.Menu(
             width = WIDTH * 0.6,
