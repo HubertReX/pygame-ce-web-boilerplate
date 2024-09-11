@@ -15,6 +15,7 @@
 #  "rich",
 #  "Pygments",
 #  "zengl",
+#  "zengl_extras",
 #  "struct",
 #  "pathlib",
 #  "pillow"

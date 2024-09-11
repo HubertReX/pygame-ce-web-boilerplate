@@ -15,6 +15,6 @@ disallow_untyped_defs = true
 ignore_missing_imports = true
 disable_error_code = "import-untyped"
 follow_imports = "skip"
-exclude = ['.venv311', '.venv', 'project\/pygame_menu']
+exclude = ['.venv311', '.venv', 'project\/pygame_menu', 'utils']
 # targets = "project"
 # exclude = ['.venv311', '.venv', 'project\/characters\.py']
