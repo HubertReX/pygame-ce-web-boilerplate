@@ -2,12 +2,15 @@ import struct
 from pathlib import Path
 from typing import Any, Iterable
 
-import _zengl
+import zengl_extras
 import pygame
 import zengl
 from settings import COMMON_SHADERS_DIR, IS_WEB, MAX_LIGHTS_COUNT, SHADERS_DIR, vec, vec3
 
-zengl.init()
+if IS_WEB:
+    zengl.init()
+else:
+    zengl_extras.init()
 
 
 try:
@@ -53,7 +56,7 @@ class OpenGL_shader():
         self.timestamp: float = 0.0
         self.size = size
 
-        _zengl.compile_error = compile_error_debug
+        zengl_extras.compile_error = compile_error_debug
 
         self.image = self.ctx.image(size, "rgba8unorm")  # , samples=4)
         self.HUD = self.ctx.image(size, "rgba8unorm")  # , samples=4)

@@ -19,7 +19,8 @@
 		],
 		"mypy.targets": [
 			"project"
-		]
+		],
+		"makefile.configureOnOpen": false
 	},
 	"launch": {
 		"version": "0.2.0",
