@@ -18,7 +18,8 @@
 #  "zengl_extras",
 #  "struct",
 #  "pathlib",
-#  "pillow"
+#  "pillow",
+#  "thorpy",
 # ]
 # ///
 import asyncio
