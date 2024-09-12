@@ -30,6 +30,7 @@ from settings import (
     GAMEPAD_XBOX_BUTTON2ACTIONS,
     GAMEPAD_XBOX_CONTROL_NAMES,
     HEIGHT,
+    HUD_DIR,
     INPUTS,
     IS_FULLSCREEN,
     IS_WEB,
@@ -37,6 +38,7 @@ from settings import (
     JOY_DRIFT,
     JOY_MOVE_MULTIPLIER,
     MAIN_FONT,
+    LOGO_IMG,
     MOUSE_CURSOR_IMG,
     PANEL_BG_COLOR,
     PROGRAM_ICON,
@@ -53,6 +55,7 @@ from settings import (
     USE_SHADERS,
     USE_SOD,
     WIDTH,
+    load_image,
     # ColorValue,
     vec,
     vec3
@@ -128,7 +131,7 @@ class Game:
         # , 32 .convert_alpha() # pygame.SRCALPHA
         self.canvas: pygame.Surface = pygame.Surface((WIDTH, HEIGHT), self.flags)
         # helper surface for HUD
-        self.HUD: pygame.Surface = pygame.Surface((WIDTH, HEIGHT), self.flags | pygame.SRCALPHA)
+        self.HUD: pygame.Surface = pygame.Surface((WIDTH * SCALE, HEIGHT * SCALE), self.flags | pygame.SRCALPHA)
 
         size = self.screen.get_size()
         self.shader = OpenGL_shader(size, DEFAULT_SHADER)
@@ -146,6 +149,15 @@ class Game:
         self.shader.create_pipeline()
         # self.loading_screen()
 
+        if USE_CUSTOM_MOUSE_CURSOR:
+            self.cursor_img = pygame.image.load(MOUSE_CURSOR_IMG)
+            # scale_x = self.cursor_img.get_width() // TILE_SIZE
+            # scale_y = self.cursor_img.get_height() // TILE_SIZE
+            # self.cursor_img = pygame.transform.scale(cursor_img, (scale_x, scale_y)).convert_alpha()
+            # self.cursor_img = pygame.transform.invert(self.cursor_img)
+            # self.cursor_img.set_alpha(150)
+            pygame.mouse.set_visible(False)
+
         # stacked game states (e.g. Scene, Menu)
         if TYPE_CHECKING:
             from state import State
@@ -155,20 +167,19 @@ class Game:
         self.custom_events: dict[int, Callable] = {}
         # moved imports here to avoid circular imports
         import menus
-        start_state = menus.MainMenuScreen(self, "MainMenu")
+        # bg_image = load_image(HUD_DIR / "main_menu_bg.png").convert_alpha()
+        # bg_image = load_image(HUD_DIR / "big_tree_1600x1024.png").convert_alpha()
+        bg_image = load_image(HUD_DIR / "Main_menu_bg-0001.png").convert_alpha()
+        # logo_image = load_image(LOGO_IMG).convert_alpha()
+        # logo_image = pygame.transform.scale_by(logo_image, 5)
+        # bg_image.blit(logo_image, (WIDTH // 2, 100))
+        start_state = menus.MainMenuScreen(self, "MainMenu", bg_image)
         self.states.append(start_state)
 
         # import scene
         # start_state = scene.Scene(self, "Village", "start")
         # start_state.enter_state()
 
-        if USE_CUSTOM_MOUSE_CURSOR:
-            cursor_img = pygame.image.load(MOUSE_CURSOR_IMG)
-            scale = cursor_img.get_width() // TILE_SIZE
-            self.cursor_img = pygame.transform.scale(cursor_img, (scale, scale)).convert_alpha()
-            # self.cursor_img = pygame.transform.invert(self.cursor_img)
-            self.cursor_img.set_alpha(150)
-            pygame.mouse.set_visible(False)
         if USE_SOD:
             self.init_SOD()
 
@@ -651,6 +662,11 @@ class Game:
             ratio = -1.0
             scale = 1.0
 
+        # if SCALE != 1:
+        #     HUD = pygame.transform.scale_by(self.HUD, SCALE)
+        # else:
+        #     HUD = self.HUD
+
         # render pipeline works as follows:
         # main game is rendered on game.canvas Surface
         # game.canvas is scaled to desired resolution on game.screen Surface
@@ -703,7 +719,7 @@ class Game:
                 self.canvas.fill(BG_COLOR)
                 self.HUD.fill(TRANSPARENT_COLOR)
                 self.states[-1].draw(self.canvas, dt)
-                self.custom_cursor(self.canvas)
+                self.custom_cursor(self.HUD)
 
                 if self.is_paused:
                     self.show_pause_message()
