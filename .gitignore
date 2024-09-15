@@ -158,3 +158,4 @@ screenshots/recording_*.mp4
 screenshots/intro_*.mp4
 screenshots/intro_*.webm
 _temp/**
+.aider*
