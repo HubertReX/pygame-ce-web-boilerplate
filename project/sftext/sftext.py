@@ -35,10 +35,12 @@ import re
 from typing import Any
 import pygame
 
+from settings import TILE_SIZE
+
 # from pygame.locals import *
 
-# from . import resources
-import resources
+from . import resources
+# import resources
 from .style import Style
 
 
@@ -46,25 +48,23 @@ class SFText():
     def __init__(
         self,
         text: str,
-        images: dict[str, pygame.Surface] = None,
-        screen: pygame.Surface = None,
+        images: dict[str, pygame.Surface] = {},
+        canvas: pygame.Surface = pygame.Surface((TILE_SIZE, TILE_SIZE)),
         font_path: str = ".",
-        style: str | dict[str, Any] = None,
+        style: dict[str, Any] = {},
         debug: bool = False,
     ):
         self.debug = debug
-        if isinstance(text, bytes):
-            # print("text is", bytes)
-            self.text = text.decode("utf-8")
-        elif isinstance(text, str):
-            # print("text is", str)
-            self.text = text
-        self.parsed = []
-        self.links = {}
+        self.text: str = text
+        self.parsed: list[dict[str, Any]] = []
+        self.links: dict[str, dict[str, Any]] = {}
         # self.last_link_name: str = ""
         # self.last_link_tooltip: pygame.Surface | None = None
         self.needs_update: bool = True
+        # if in general we want to show the scrollbar
         self.show_scrollbar: bool = True
+        # if text is longer then
+        self.needs_scrolling: bool = False
 
         if images:
             self.images = images
@@ -80,25 +80,25 @@ class SFText():
 
         # narrow down the space where images will be placed
         self.IMAGE_WIDTH_FACTOR =  0.4
-        self.MARGIN_HORIZONTAL = 30
-        self.MARGIN_VERTICAL = 30  # -self.default_style["size"]
+        self.MARGIN_HORIZONTAL = 60
+        self.MARGIN_VERTICAL = 20  # -self.default_style["size"]
 
-        # position of the text on the screen in percentage (0.0 => top - 1.0 => bottom)
+        # position of the text on the canvas in percentage (0.0 => top - 1.0 => bottom)
         self.percentage: float = 0.0
 
-        if not screen:
-            self.screen = pygame.display.get_surface()
+        if not canvas:
+            self.canvas = pygame.display.get_surface()
         else:
-            self.screen = screen
-        self.screen_offset = (0, 0)
-        self.screen_rect = self.screen.get_rect()
+            self.canvas = canvas
+        self.canvas_offset = (0, 0)
+        self.canvas_rect = self.canvas.get_rect()
 
-        self.bg = self.screen.copy()
+        self.bg = self.canvas.copy()
         self.alpha = self.bg.get_at((0, 0))[3]
 
         self.parse_text()
 
-    def set_text(self, text: str, resize: bool = True) -> None:
+    def set_text(self, text: str, resize: bool = False) -> None:
         if self.debug:
             print("Setting new text", text)
 
@@ -117,20 +117,20 @@ class SFText():
             self.bg,
             (self.max_x + (self.MARGIN_HORIZONTAL * 2),
              self.max_y + (self.MARGIN_VERTICAL * 3)))
-        # pygame.transform.scale(self.screen, (self.max_x + 10, self.max_y + 10))
-        self.screen = self.bg.copy()
-        # print(self.max_x, self.max_y, self.screen.get_size())
+        # pygame.transform.scale(self.canvas, (self.max_x + 10, self.max_y + 10))
+        self.canvas = self.bg.copy()
+        # print(self.max_x, self.max_y, self.canvas.get_size())
 
-        new_size = self.screen.get_size()
-        offset = self.screen_rect.height - new_size[1]
+        new_size = self.canvas.get_size()
+        offset = self.canvas_rect.height - new_size[1]
         for p in self.parsed:
             p["rect"].move_ip(0, -offset)
 
     def revert_to_original_size(self) -> None:
-        self.screen = pygame.transform.scale(self.screen, (self.screen_rect.width, self.screen_rect.height))
-        self.bg = self.screen.copy()
+        self.canvas = pygame.transform.scale(self.canvas, (self.canvas_rect.width, self.canvas_rect.height))
+        self.bg = self.canvas.copy()
 
-    def set_font(self, obj):
+    def set_font(self, obj: dict[str, Any]) -> None:
         if obj["bold"] and obj["italic"] and obj["separate_bolditalic"]:
             obj["font_obj"] = self.fonts.load(obj["separate_bolditalic"], obj["size"])
         elif obj["separate_bold"] and obj["bold"]:
@@ -140,9 +140,9 @@ class SFText():
         else:
             obj["font_obj"] = self.fonts.load(obj["font"], obj["size"])
 
-    def parse_text(self):
+    def parse_text(self) -> None:
         self.parsed = []
-        scr_w = self.screen_rect.width
+        scr_w = self.canvas_rect.width
 
         # self.default_style = Style.default_style
         self.default_style["font_obj"] = self.fonts.load(self.default_style["font"], self.default_style["size"])
@@ -186,12 +186,12 @@ class SFText():
                         y += wrap["h"]
                     if len(wraps) == 1 and wrap["align"] == "center":
                         rect.midtop = (
-                            self.screen_rect.centerx,
-                            self.screen_rect.bottom + y + self.MARGIN_VERTICAL)
+                            self.canvas_rect.centerx,
+                            self.canvas_rect.bottom + y + self.MARGIN_VERTICAL)
                     else:
                         rect.topleft = (
                             x + self.MARGIN_HORIZONTAL,
-                            self.screen_rect.bottom + y + self.MARGIN_VERTICAL)
+                            self.canvas_rect.bottom + y + self.MARGIN_VERTICAL)
                     # if self.text.splitlines().index(line) == 0:
                     #     print(rect.move(0, self.y).topleft, rect.size)
 
@@ -217,9 +217,9 @@ class SFText():
         # print("done parsing")
         self.set_scroll_limits()
 
-    def set_scroll_limits(self):
-        # self.start_y = 0 - self.screen_rect.h + self.default_style["h"]
-        size = self.screen.get_size()
+    def set_scroll_limits(self) -> None:
+        # self.start_y = 0 - self.canvas_rect.h + self.default_style["h"]
+        size = self.canvas.get_size()
         self.start_y = self.MARGIN_VERTICAL - size[1]
 
         self.y = int(self.start_y)
@@ -228,10 +228,10 @@ class SFText():
         self.end_y = -self.max_y - (self.MARGIN_HORIZONTAL * 2)  # - sum(p["h"] for p in self.parsed if p["x"] == 0)
         # print("y", self.y, self.start_y, self.end_y)
 
-    def wrap_text(self, text, width, _x, styled_txt):
+    def wrap_text(self, text: str, width: int, _x: int, styled_txt: dict[str, Any]) -> list[dict[str, Any]]:
         style = dict(styled_txt)
         x = int(_x)
-        wrapped = []
+        wrapped: list[dict[str, Any]] = []
         size = style["font_obj"].size
         c_width = style["w"]
 
@@ -250,7 +250,7 @@ class SFText():
         else:
             # print("doesn't fit")
             # print(text)
-            wrapped = [text]
+            wrapped_list: list[str] = [text]
             guessed_length = ((width - c_width * 6 - x) // c_width)
             all_fit = False
             all_fit_iter = 1
@@ -265,9 +265,9 @@ class SFText():
                     break
                 # DEBUG #
                 #########
-                for i in range(len(wrapped)):
-                    # print("for i in range(len(wrapped))")
-                    fit = size(wrapped[i])[0] < width - c_width * 6 - x
+                for i in range(len(wrapped_list)):
+                    # print("for i in range(len(wrapped_list))")
+                    fit = size(wrapped_list[i])[0] < width - c_width * 6 - x
                     # print(width - c_width * 6 - x)
                     iter_length = int(guessed_length)
                     # print(iter_length)
@@ -291,16 +291,16 @@ class SFText():
                             guessed_length = ((width - c_width * 6 - x) // c_width)
                             iter_length = int(guessed_length)
                             continue
-                        guess = wrapped[i][:iter_length]
+                        guess = wrapped_list[i][:iter_length]
                         # print("while not fit: "{}"".format(guess))
                         if guess[-1:] not in [" ", ",", ".", "-", "\n"]:
                             # print("if guess[-1:] not in:")
                             iter_length -= 1
                         else:
                             if size(guess)[0] < width - c_width * 6 - x:
-                                remains = wrapped[i][iter_length:]
-                                wrapped[i] = guess
-                                wrapped.append(remains)
+                                remains = wrapped_list[i][iter_length:]
+                                wrapped_list[i] = guess
+                                wrapped_list.append(remains)
                                 fit = True
                             else:
                                 iter_length -= 1
@@ -310,22 +310,22 @@ class SFText():
                     # print("Remains: "{}"".format(remains))
                     # print("[{}]fit? {}".format(i, fit))
                 status = True
-                for i in range(len(wrapped)):
-                    if size(wrapped[i])[0] >= width:
+                for i in range(len(wrapped_list)):
+                    if size(wrapped_list[i])[0] >= width:
                         status = False
                 all_fit = status
 
-            for i in range(len(wrapped)):
-                # print(""{}"".format(wrapped[i]))
-                style["text"] = wrapped[i]
-                style["w1"] = size(wrapped[i])[0]
+            for i in range(len(wrapped_list)):
+                # print(""{}"".format(wrapped_list[i]))
+                style["text"] = wrapped_list[i]
+                style["w1"] = size(wrapped_list[i])[0]
                 if style["text"] == "§":
                     style["w1"] = int(style["w1"] * self.IMAGE_WIDTH_FACTOR)
-                wrapped[i] = dict(style)
+                wrapped.append(dict(style))
 
             return wrapped
 
-    def on_update(self):
+    def on_update(self) -> None:
         if not self.needs_update:
             return
 
@@ -335,22 +335,23 @@ class SFText():
         if self.show_scrollbar:
             font = self.fonts.load(self.default_style["font"], self.default_style["size"])
             top = self.MARGIN_VERTICAL
-            bottom = self.screen_rect.height - self.default_style["h"] - self.MARGIN_VERTICAL
+            bottom = self.canvas_rect.height - self.default_style["h"] - self.MARGIN_VERTICAL
             bar_size = self.default_style["h"]
             size = bottom - top - (bar_size * 2)
             scrollbar_pos = int(top + bar_size + (size * self.percentage))
+            self.needs_scrolling = bottom < self.max_y
             # print(top, bottom, self.max_y, bar_size, size, self.percentage, scrollbar_pos)
-            # show scrollbar only if text is bigger than screen
-            if bottom < self.max_y:
+            # show scrollbar only if text is bigger than canvas
+            if self.needs_scrolling:
                 if self.percentage > 0.0:
-                    self.screen.blit(font.render("/\\", 1, self.default_style["color"]),
-                                     (self.screen_rect.width - self.default_style["w"] * 2, top))
-                self.screen.blit(font.render("|", 1, self.default_style["color"]),
-                                 (self.screen_rect.width - self.default_style["w"] * 2, scrollbar_pos))
+                    self.canvas.blit(font.render("/\\", True, self.default_style["color"]),
+                                     (self.canvas_rect.width - self.default_style["w"] * 2, top))
+                self.canvas.blit(font.render("|", True, self.default_style["color"]),
+                                 (self.canvas_rect.width - self.default_style["w"] * 2, scrollbar_pos))
 
                 if self.percentage < 1.0:
-                    self.screen.blit(font.render("\\/", 1, self.default_style["color"]),
-                                     (self.screen_rect.width - self.default_style["w"] * 2, bottom))
+                    self.canvas.blit(font.render("\\/", True, self.default_style["color"]),
+                                     (self.canvas_rect.width - self.default_style["w"] * 2, bottom))
 
         # for i, p in enumerate(self.parsed[:]):
         # print(self.parsed[0].keys())
@@ -398,21 +399,25 @@ class SFText():
                 image = pygame.transform.scale_by(image, scale)
                 image_rect = image.get_rect(center=rect.center)
                 # print(p["image"], p["h"], image_rect.height, image_rect.width, scale)
-                self.screen.blit(image, image_rect)
+                self.canvas.blit(image, image_rect)
             else:
                 if p["cast_shadow"]:
-                    self.screen.blit(p["shadow"], rect.move(p["shadow_offset"]))
-                self.screen.blit(p["text"], rect)
+                    self.canvas.blit(p["shadow"], rect.move(p["shadow_offset"]))
+                self.canvas.blit(p["text"], rect)
             self.needs_update = False
 
-            screen_height = self.screen.get_size()[1]
-            # if rect.top >= (self.screen_rect.bottom - self.default_style["h"]):
-            # if rect.top >= (screen_height - (self.MARGIN_VERTICAL * 2) - self.default_style["h"]):
+            canvas_height = self.canvas.get_size()[1]
+            # if rect.top >= (self.canvas_rect.bottom - self.default_style["h"]):
+            # if rect.top >= (canvas_height - (self.MARGIN_VERTICAL * 2) - self.default_style["h"]):
 
-            if rect.top >= (screen_height - self.default_style["h"]):
+            if rect.top >= (canvas_height - self.default_style["h"]):
                 break
 
-    def scroll(self, y: int = 0):
+    def scroll(self, y: int = 0) -> None:
+        # do not try to scroll if text fits on the screen
+        if not self.needs_scrolling:
+            return
+
         # if isinstance(y, int):
         self.y += y
         if self.y < self.end_y:
@@ -433,34 +438,61 @@ class SFText():
         #         self.y = self.end_y
 
     def clear(self) -> None:
-        self.screen.blit(self.bg, (0, 0))
+        self.canvas.blit(self.bg, (0, 0))
 
         if self.alpha < 255:
-            self.screen.fill((0, 0, 0, self.alpha))
-            # self.screen.fill((0, 0, 0, 0))
+            self.canvas.fill((0, 0, 0, self.alpha))
+            # self.canvas.fill((0, 0, 0, 0))
+
+    def is_scroll_top(self) -> bool:
+        # return self.y == self.start_y
+        return self.percentage <= 0.0
+
+    def is_scroll_bottom(self) -> bool:
+        # return self.y == self.end_y
+        return self.percentage >= 0.90
+
+    def scroll_line_up(self) -> None:
+        self.scroll(50)
+
+    def scroll_line_down(self) -> None:
+        self.scroll(-50)
+
+    def scroll_page_up(self) -> None:
+        self.scroll(200)
+
+    def scroll_page_down(self) -> None:
+        self.scroll(-300)
+
+    def scroll_top(self) -> None:
+        self.scroll(-self.start_y)
+
+    def scroll_bottom(self) -> None:
+        self.scroll(self.end_y)
 
     def on_key_press(self, event: pygame.event.Event) -> None:
+
         if event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
-            self.scroll(50)
+            self.scroll_line_up()
         elif event.type == pygame.KEYDOWN and event.key == pygame.K_PAGEUP:
-            self.scroll(200)
+            self.scroll_page_up()
         elif event.type == pygame.KEYDOWN and event.key == pygame.K_HOME:
             # self.scroll("home")
-            self.scroll(-self.start_y)
+            self.scroll_top()
 
         elif event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
-            self.scroll(-50)
+            self.scroll_line_down()
         elif event.type == pygame.KEYDOWN and event.key == pygame.K_PAGEDOWN:
-            self.scroll(-200)
+            self.scroll_page_down()
         elif event.type == pygame.KEYDOWN and event.key == pygame.K_END:
             # self.scroll("end")
-            self.scroll(self.end_y)
+            self.scroll_bottom()
 
     def on_mouse_move(self, mouse_position: tuple[int, int]) -> str:
         return self.check_link_activation(mouse_position)
 
     def check_link_activation(self, pos: tuple[int, int]) -> str:
-        pos_offset = pos[0] - self.screen_offset[0], pos[1] - self.screen_offset[1]
+        pos_offset = pos[0] - self.canvas_offset[0], pos[1] - self.canvas_offset[1]
 
         for link in self.links:
             # print(self.links[link]["rect"])
@@ -479,14 +511,15 @@ class SFText():
         return ""
 
     def on_mouse_button(self, event: pygame.event.Event) -> str:
-        # left click
-        if event.button == 1:
-            return self.check_link_activation(pygame.mouse.get_pos())
-        # scroll up
-        if event.button == 4:
-            self.scroll(50)
-        # scroll down
-        elif event.button == 5:
-            self.scroll(-50)
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            # left click
+            if event.button == 1:
+                return self.check_link_activation(pygame.mouse.get_pos())
+            # scroll up
+            if event.button == 4:
+                self.scroll_line_up()
+            # scroll down
+            elif event.button == 5:
+                self.scroll_line_down()
 
         return ""

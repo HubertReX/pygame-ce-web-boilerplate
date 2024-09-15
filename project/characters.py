@@ -10,11 +10,16 @@ from maze_generator.maze_utils import a_star_cached
 from pygame.math import Vector2 as vec
 from settings import (
     ANIMATION_SPEED,
+    AVATAR_SCALE,
     CHARACTERS_DIR,
+    DIALOGS_DIR,
+    EMOTE_SHEET_DEFINITION,
+    EMOTE_SHEET_FILE,
     HEIGHT,
     INPUTS,
     IS_WEB,
     JOY_MOVE_MULTIPLIER,
+    MAX_HOTBAR_ITEMS,
     MONSTER_WAKE_DISTANCE,
     PUSHED_TIME,
     RECALCULATE_PATH_DISTANCE,
@@ -26,6 +31,7 @@ from settings import (
     WEAPON_DIRECTION_OFFSET_FROM,
     Point,
     lerp_vectors,
+    vector_to_tuple,
 )
 
 if IS_WEB:
@@ -37,7 +43,7 @@ import game
 import npc_state
 import scene
 import splash_screen
-from objects import HealthBar, HealthBarUI, ItemSprite, Shadow
+from objects import EmoteSprite, HealthBar, HealthBarUI, ItemSprite, Shadow
 from animation.transitions import AnimationTransition
 
 #################################################################################################################
@@ -63,7 +69,8 @@ class NPC(pygame.sprite.Sprite):
             label_group: pygame.sprite.Group,
             pos: tuple[int, int],
             name: str,
-            waypoints: tuple[Point, ...] = ()
+            emotes: dict[str, list[pygame.Surface]],
+            waypoints: tuple[Point, ...] = (),
     ):
 
         super().__init__(groups)
@@ -71,6 +78,11 @@ class NPC(pygame.sprite.Sprite):
         self.scene = scene
         self.name = name
         self.model: Character = game.conf.characters[name]
+        self.dialogs: str | None = None
+        self.has_dialog: bool = False
+
+        self.load_dialogs()
+
         self.shadow = self.create_shadow(shadow_group)
         self.health_bar = self.create_health_bar(label_group, pos)
         # self.weapon_group = groups[-1]
@@ -84,6 +96,15 @@ class NPC(pygame.sprite.Sprite):
         self.masks: dict[str, list[pygame.mask.Mask]] = {}
         self.animation_speed = ANIMATION_SPEED
         self.import_sprite_sheet(str(CHARACTERS_DIR / self.model.sprite / "SpriteSheet.png"))
+        self.avatar = pygame.image.load(str(CHARACTERS_DIR / self.model.sprite / "Faceset.png")).convert_alpha()
+        # Player avatar will be shown on the right side of the screen
+        # and need to be flipped to face left
+        if self.model.name != "Player":
+            self.avatar = pygame.transform.flip(self.avatar, True, False)
+
+        self.avatar = pygame.transform.scale(self.avatar, (TILE_SIZE * AVATAR_SCALE, TILE_SIZE * AVATAR_SCALE))
+        self.emote: EmoteSprite = EmoteSprite(label_group, pos, emotes)
+
         self.generate_masks()
         self.frame_index: float = 0.0
         self.image = self.animations["idle_down"][int(self.frame_index)]
@@ -91,7 +112,7 @@ class NPC(pygame.sprite.Sprite):
         self.pos: vec = vec(pos[0], pos[1])
         self.prev_pos: vec = self.pos.copy()
         self.tileset_coord: Point = self.get_tileset_coord()
-        self.rect = self.image.get_frect(midbottom = self.pos)
+        self.rect: pygame.FRect = self.image.get_frect(midbottom = self.pos)
         # hit box size is half the TILE_SIZE, bottom, centered
         self.feet = pygame.Rect(0, 0, self.rect.width // 2, TILE_SIZE // 2)
         self.feet.midbottom = (int(self.pos.x), int(self.pos.y))
@@ -103,6 +124,9 @@ class NPC(pygame.sprite.Sprite):
         # list of targets to follow
         self.target: vec = vec(0, 0)
         self.targets: list[vec] = []
+
+        # NPC met in the game
+        self.npc_met: NPC | None = None
 
         # is in attacking state
         self.is_attacking: bool = False
@@ -142,6 +166,7 @@ class NPC(pygame.sprite.Sprite):
         self.is_flying = False
         self.is_jumping = False
         self.is_stunned = False
+        self.is_talking = False
 
         # general purpose custom event, action is defined by the payload passed to event
         self.custom_event_id: int  = pygame.event.custom_type()
@@ -150,6 +175,13 @@ class NPC(pygame.sprite.Sprite):
         # actual NPC state, mainly to determine type of animation and speed
         self.state: npc_state.NPC_State = npc_state.Idle()
         self.state.enter_time = self.scene.game.time_elapsed
+
+    def load_dialogs(self) -> None:
+        if self.model.attitude == AttitudeEnum.friendly.value:
+            modal_panel_file = DIALOGS_DIR / f"{self.model.name}.md"
+            if modal_panel_file.exists():
+                self.dialogs = modal_panel_file.read_text()
+                self.has_dialog = True
 
     #############################################################################################################
     def generate_masks(self) -> None:
@@ -220,6 +252,7 @@ class NPC(pygame.sprite.Sprite):
                     self.animations[f"{key}_{direction}"] = self.animations[key]
 
     #############################################################################################################
+
     def import_image(self, path: str) -> None:
         """
         old implementation used with separate img per frame (e.g. monochrome_ninja)
@@ -244,13 +277,15 @@ class NPC(pygame.sprite.Sprite):
     def animate(self, state: str, dt: float, loop: bool = True) -> None:
         self.frame_index += dt
 
-        if self.frame_index >= len(self.animations[state]) - 1:
+        if self.frame_index >= len(self.animations[state]):
             self.frame_index = 0.0 if loop else len(self.animations[state]) - 1.0
 
         self.image = self.animations[state][int(self.frame_index)].copy()
         self.mask = self.masks[state][int(self.frame_index)].copy()
 
+        self.emote.animate(dt)
         if self.is_stunned:
+            # self.emote.set_emote("shocked_anim")
             red_filter = pygame.Surface(self.image.get_size(), pygame.SRCALPHA)
             red_filter.fill(STUNNED_COLOR)
             # self.image.blit(red_filter, (0, 0))
@@ -269,7 +304,11 @@ class NPC(pygame.sprite.Sprite):
 
     #############################################################################################################
     def get_direction_360(self) -> str:
-        angle = self.vel.angle_to(vec(0, 1))
+        if self.npc_met and self.is_talking:
+            direction = self.npc_met.pos - self.pos
+            angle = direction.angle_to(vec(0, 1))
+        else:
+            angle = self.vel.angle_to(vec(0, 1))
         angle = (angle + 360) % 360
 
         if 45 <= angle < 135:
@@ -291,7 +330,7 @@ class NPC(pygame.sprite.Sprite):
     #############################################################################################################
     # MARK: movement
     def movement(self) -> None:
-        if self.is_stunned:
+        if self.is_stunned or self.is_talking:
             return
 
         distance_from_player = (self.pos - self.scene.player.pos).magnitude_squared()
@@ -300,6 +339,7 @@ class NPC(pygame.sprite.Sprite):
         if self.waypoints_cnt == 0 and distance_from_player < MONSTER_WAKE_DISTANCE**2 and \
                 self.model.attitude == AttitudeEnum.enemy.value:
             self.target = self.scene.player.pos.copy()
+            self.emote.set_temporary_emote("red_exclamation_anim", 4.0)
             self.find_path()
         # if character has a set target (and needs to follow it) or there are no waypoints to follow any more
         elif self.target != vec(0, 0):  # or self.waypoints_cnt == 0:
@@ -461,6 +501,7 @@ class NPC(pygame.sprite.Sprite):
         self.scene.NPC = [npc for npc in self.scene.NPC if npc != self]
         self.shadow.kill()
         self.health_bar.kill()
+        self.emote.kill()
         if self.name == "Player" and self.model.health <= 0:
             self.scene.exit_state()
             scene.Scene(self.game, "Village", "start").enter_state()
@@ -564,6 +605,7 @@ class NPC(pygame.sprite.Sprite):
 
             oponent.is_stunned = True
             oponent.set_event_timer(oponent, NPCEventActionEnum.stunned, STUNNED_TIME, 1)
+            oponent.emote.set_temporary_emote("fight_anim", 4.0)
 
             # show health bar (for STUNNED_TIME ms)
             # self.health_bar.set_bar(self.model.health / self.model.max_health, self.game)
@@ -587,6 +629,7 @@ class NPC(pygame.sprite.Sprite):
             player_move = self.pos - self.prev_pos
             if player_move != vec(0, 0):
                 oponent.pos += player_move.normalize() * TILE_SIZE
+                oponent.emote.set_temporary_emote("shocked_anim", 4.0)
             oponent.adjust_rect()
 
             self.set_event_timer(self,    NPCEventActionEnum.pushed, PUSHED_TIME, 1)
@@ -595,6 +638,10 @@ class NPC(pygame.sprite.Sprite):
             # show health bar (for PUSHED_TIME ms)
             # self.health_bar.set_bar(self.model.health / self.model.max_health, self.game)
             oponent.health_bar.set_bar(oponent.model.health / oponent.model.max_health, self.game)
+            # if oponent.has_dialog and oponent.dialogs:
+            #     self.npc_met = oponent
+            #     self.scene.ui.dialog_panel.set_text(oponent.dialogs)
+            #     self.scene.ui.dialog_panel.formatted_text.scroll_top()
 
     #############################################################################################################
     # MARK: hit
@@ -647,6 +694,25 @@ class NPC(pygame.sprite.Sprite):
         pygame.time.set_timer(event, interval, repeat)
 
     #############################################################################################################
+    def set_emote(self, emote: str) -> None:
+        if self.has_dialog and str(self.state) in ["Idle", "Bored", "Walk", "Run"]:
+            self.emote.set_emote("dots_anim")
+        else:
+            self.emote.set_emote(emote)
+
+    #############################################################################################################
+    def reset(self) -> None:
+        self.shadow = self.create_shadow(self.scene.shadow_sprites)
+        self.emote = EmoteSprite(self.scene.label_sprites, vector_to_tuple(self.pos), self.scene.emotes)
+        self.health_bar = self.create_health_bar(self.scene.label_sprites, vector_to_tuple(self.pos))
+        self.is_attacking = False
+        self.is_flying = False
+        self.is_jumping = False
+        self.is_stunned = False
+        self.is_talking = False
+
+    #############################################################################################################
+
     def move_back(self) -> None:
         """
         If called after an update, the sprite can move back
@@ -661,12 +727,15 @@ class NPC(pygame.sprite.Sprite):
     def adjust_rect(self) -> None:
         self.tileset_coord = self.get_tileset_coord()
         # display sprite n pixels above position so the shadow doesn't stick out from the bottom
-        self.rect.midbottom = self.pos + vec(0,  -self.jumping_offset - 3)  # type: ignore[union-attr]
+        self.rect.midbottom = self.pos + vec(0,  -self.jumping_offset - 3)  # type: ignore[union-attr, assignment]
         # 'hitbox' for collisions
         self.feet.midbottom = vec(self.pos[0], self.pos[1])  # type: ignore[assignment]
         # shadow
         self.shadow.rect.midbottom =  vec(self.pos[0], self.pos[1])  # type: ignore[assignment]
         self.health_bar.rect.midtop =  vec(self.pos[0], self.pos[1])  # type: ignore[assignment]
+
+        # if self.emote:
+        self.emote.rect.midbottom = self.rect.midtop
 
         if self.selected_weapon and self.is_attacking:
             direction = self.get_direction_360()
@@ -703,14 +772,15 @@ class Player(NPC):
             shadow_group: pygame.sprite.Group,
             label_group: pygame.sprite.Group,
             pos: tuple[int, int],
-            name: str
+            name: str,
+            emotes: dict[str, list[pygame.Surface]]
     ):
-        super().__init__(game, scene, groups, shadow_group, label_group, pos, name)
+        super().__init__(game, scene, groups, shadow_group, label_group, pos, name, emotes)
         # give player some super powers
         self.speed_run  = int(self.speed_run * 1.7)
         self.speed_walk = int(self.speed_walk * 1.4)
         self.speed = self.speed_run
-        self.health_bar_ui = self.create_health_bar_ui(label_group, pos, 8)
+        self.health_bar_ui = self.create_health_bar_ui(label_group, pos, 4)
         label_group.remove(self.health_bar)
 
     #############################################################################################################
@@ -728,6 +798,20 @@ class Player(NPC):
             return
 
         global INPUTS
+
+        if INPUTS["talk"]:
+            if self.npc_met and self.npc_met.has_dialog and not self.is_talking:
+                self.scene.ui.show_dialog_panel = True
+                self.scene.ui.dialog_panel.set_text(self.npc_met.dialogs or "")
+                self.scene.ui.dialog_panel.formatted_text.scroll_top()
+                self.is_talking = self.scene.ui.show_dialog_panel
+                self.npc_met.is_talking = self.scene.ui.show_dialog_panel
+            INPUTS["talk"] = False
+
+        # prevent player from moving and attacking while talking
+        if self.is_talking:
+            return
+
         if not self.target == vec(0, 0):
             self.follow_waypoints()
 
@@ -771,6 +855,7 @@ class Player(NPC):
 
         if INPUTS["attack"]:
             if not self.is_attacking and self.selected_weapon:
+
                 self.is_attacking = True
                 self.attack_time = self.game.time_elapsed
                 self.scene.group.add(self.selected_weapon, layer=self.scene.sprites_layer - 1)
@@ -864,22 +949,28 @@ class Player(NPC):
             # self.items.append(item)
             result = True
         else:
-            item_total_weight = item.model.weight  # * item.model.count
-            if self.total_items_weight + item_total_weight <= self.model.max_carry_weight:
-                self.total_items_weight += item_total_weight
-                found = False
-                for idx, owned_item in enumerate(self.items):
-                    if owned_item.model.name == item.model.name:
-                        self.items[idx].model.count += 1
-                        found = True
+            if len(self.items) < MAX_HOTBAR_ITEMS:
+                item_total_weight = item.model.weight  # * item.model.count
+                if self.total_items_weight + item_total_weight <= self.model.max_carry_weight:
+                    self.total_items_weight += item_total_weight
+                    found = False
+                    # increase amount if already owned
+                    for idx, owned_item in enumerate(self.items):
+                        if owned_item.model.name == item.model.name:
+                            self.items[idx].model.count += 1
+                            found = True
+                            break
 
-                if not found:
-                    self.items.append(item)
+                    # add new item if not owned
+                    if not found:
+                        self.items.append(item)
 
-                if self.selected_item_idx < 0:
-                    self.selected_item_idx = 0
-                result = True
-
+                    # if it's the first owned item, set it as selected
+                    if self.selected_item_idx < 0:
+                        self.selected_item_idx = 0
+                    result = True
+            else:
+                print("No more free items slot")
         # print(f"Picked up {item.name}({item.model.type.value})")
 
         return result

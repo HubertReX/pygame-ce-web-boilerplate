@@ -102,7 +102,7 @@ class ScrollArea(Base):
     :param controls_touchscreen: Use touchscreen events
     :param extend_x: Px to extend the surface on x-axis in px from left. Recommended use only within Menus
     :param extend_y: Px to extend the surface on y-axis in px from top. Recommended use only within Menus
-    :param menubar: Menubar for style compatibility. ``None`` if ScrollArea is not used within a Menu (for example, in Frames)
+    :param menubar: Menubar for style compatibility. ``None`` if ScrollArea is not used within a Menu (eg, in Frames)
     :param parent_scrollarea: Parent ScrollArea if the new one is added within another area
     :param scrollarea_id: Scrollarea ID
     :param scrollbar_color: Scrollbars color
@@ -196,7 +196,7 @@ class ScrollArea(Base):
             self._border_tiles_size = tw, th
             self._border_tiles = [
                 border_color.subsurface((x, y, tw, th))
-                for x, y in product(range(0, iw, tw), range(0, ih, th))
+                for x, y in product(range(0, iw - tw + 1, tw), range(0, ih - th + 1, th))
             ]
 
         scrollbar_color = assert_color(scrollbar_color)
@@ -326,7 +326,8 @@ class ScrollArea(Base):
             return
 
         # Make surface
-        self._bg_surface = make_surface(width=self._rect.width + self._extend_x, height=self._rect.height + self._extend_y)
+        self._bg_surface = make_surface(width=self._rect.width + self._extend_x,
+                                        height=self._rect.height + self._extend_y)
         rect = self._bg_surface.get_rect()
         if self._area_color is not None:
             if isinstance(self._area_color, pygame_menu.BaseImage):
@@ -542,22 +543,30 @@ class ScrollArea(Base):
             # draw top and bottom tiles
             area: Optional[Tuple[int, int, int, int]]
 
-            for x in range(border_rect.left, border_rect.right, tw):
+            # TWEAKS by Hubert Nafalski
+            # with semitransparent corners, top/bottom/sides tiles overlap with corners
+            # also, tw/th is not nesesery a multiplication of border width/height
+            for x in range(border_rect.left + tw, border_rect.right - 2 * tw, tw):
                 if x + tw >= border_rect.right:
                     area = 0, 0, tw - (x + border_rect.right), th
                 else:
                     area = None
                 surface_blit(tile_n, (x, top), area)
-                surface_blit(tile_s, (x, border_rect.bottom - th), area)
+                surface_blit(tile_s, (x, border_rect.bottom - th))
+            surface_blit(tile_n, (border_rect.right - 2 * tw, top))
+            surface_blit(tile_s, (border_rect.right - 2 * tw, border_rect.bottom - th))
 
             # draw left and right tiles
-            for y in range(border_rect.top, border_rect.bottom, th):
+            for y in range(border_rect.top + th, border_rect.bottom - 2 * (th - 0), th):
                 if y + th >= border_rect.bottom:
                     area = 0, 0, tw, th - (y + border_rect.bottom)
                 else:
                     area = None
-                surface_blit(tile_w, (left, y), area)
+                surface_blit(tile_w, (left,                   y), area)
                 surface_blit(tile_e, (border_rect.right - tw, y), area)
+
+            surface_blit(tile_w, (left,                   border_rect.bottom - 2 * th))
+            surface_blit(tile_e, (border_rect.right - tw, border_rect.bottom - 2 * th))
 
             # draw corners
             surface_blit(tile_nw, (left, top))
@@ -940,7 +949,8 @@ class ScrollArea(Base):
         :return: Scrollarea scrolled to rect. If ``False`` the rect was already inside the visible area
         """
         # Check if visible
-        if self.to_real_position(rect, visible=True).height == 0 and self._parent_scrollarea is not None and scroll_parent:
+        if self.to_real_position(rect, visible=True).height == 0 and \
+                self._parent_scrollarea is not None and scroll_parent:
             self._parent_scrollarea.scroll_to_rect(self._parent_scrollarea.get_rect(), margin, scroll_parent)
             self._parent_scrollarea.scroll_to_rect(self.get_rect(), margin, scroll_parent)
 
@@ -1020,7 +1030,7 @@ class ScrollArea(Base):
         """
         assert widget.get_scrollarea() == self, \
             '{0} scrollarea {1} is different than current {2}' \
-                .format(widget, widget.get_scrollarea().get_class_id(), self.get_class_id())
+            .format(widget, widget.get_scrollarea().get_class_id(), self.get_class_id())
         wx, wy = widget.get_position()
         view_rect = self.get_view_rect()
         vx, vy = view_rect.width, view_rect.height

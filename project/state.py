@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import game
 import pygame
-from settings import FONT_SIZE_MEDIUM, INPUTS, IS_WEB, SHOW_DEBUG_INFO, SHOW_HELP_INFO, TEXT_ROW_SPACING
+from settings import FONT_SIZE_MEDIUM, INPUTS, IS_WEB, SHOW_DEBUG_INFO, TEXT_ROW_SPACING
 
 #################################################################################################################
 
@@ -37,10 +37,9 @@ class State:
             SHOW_DEBUG_INFO = not SHOW_DEBUG_INFO
             self.game.reset_inputs()
 
-        global SHOW_HELP_INFO
-        if INPUTS["help"]:
-            SHOW_HELP_INFO = not SHOW_HELP_INFO
-            self.game.reset_inputs()
+        # if INPUTS["help"]:
+        #     self.game.ui.show_help_info = not self.game.ui.show_help_info
+        #     self.game.reset_inputs()
 
     #############################################################################################################
     def draw(self, screen: pygame.Surface, dt: float) -> None:

@@ -1,385 +1,559 @@
-import os
 from pathlib import Path
 import re
 import pygame
 import thorpy as tp
+from settings import EMOJIS_DICT, EMOJIS_PATH, HEIGHT, HUD_DIR, HUD_ICONS, WIDTH, vec
 from sftext.sftext import SFText
 from sftext.style import Style
 # from utils.sftext import sftext
 # from rich import print
 
-pygame.init()
 
-# screen resolution
-W, H     = 1800, 900
-# rich text canvas resolution
-C_W, C_H = 1700, 700
-screen = pygame.display.set_mode((W, H))
-# screen background
-bck = pygame.image.load(tp.fn("data/bck.jpg"))
-bck = pygame.transform.smoothscale(bck, (W, H))  # load some background pic
-# bck = pygame.transform.smoothscale(bck, (C_W, C_H))  # load some background pic
+class RichPanel():
 
-# emojis can be used in the rich text
-# syntax:
-# :angry: -> {style}{image angry}§{style}
-EMOJIS_DICT: dict[str, str] = {
-    "empty":   "emote00.png",
-    "shocked": "emote01.png",
-    "blessed": "emote02.png",
-    "love":    "emote03.png",
-    "angry":   "emote04.png",
-    "indifferent":   "emote05.png",
-    "happy":         "emote06.png",
-    "wondering":     "emote07.png",
-    "blink":   "emote08.png",
-    "doubt":   "emote09.png",
-    "frounce":   "emote10.png",
-    "smile":   "emote11.png",
-    "dreaming":   "emote12.png",
-    "sad":   "emote13.png",
-    "neutral":   "emote14.png",
-    "dead":   "emote15.png",
-    "miserable":   "emote16.png",
-    "offended":   "emote17.png",
-    "peaceful":   "emote18.png",
-    "evil":   "emote19.png",
-    "dots":   "emote20.png",
-    "exclamation":   "emote21.png",
-    "red_exclamation":   "emote22.png",
-    "question":   "emote23.png",
-    "human":   "emote24.png",
-    "red_question":   "emote25.png",
-    "broken_heart":   "emote26.png",
-    "heart":   "emote27.png",
-    "sleeping":   "emote28.png",
-    "star":   "emote29.png",
-    "cross":   "emote30.png",
-    "fight":   "emote31_fight.png",
-    "walk":   "emote32_walk.png",
-}
-# custom styles, syntax:
-# [emphasis]this is important[/emphasis] -> {style}{bold True}{cast_shadow True}this is important{style}
-# or
-# [link WIKI_CHARACTERS_WOLF.md]bad wolf[/link] -> {style}{link WIKI_CHARACTERS_WOLF.md}bad wolf{style}
-# or
-# :angry: -> {style}{image angry}§{style}
-
-STYLE_TAGS_DICT: dict[str, str] = {
-    "shadow":    "{cast_shadow True}",
-    "dark":      "{shadow_color (30,30,30)}",
-    "light":     "{shadow_color (230,230,230)}",
-    "bold":      "{bold True}",
-    "italic":    "{italic True}",
-    "underline": "{underline True}",
-    "link( +[^\\]]+)?": "{underline True}{link LINK_URL}",
-    "big":       "{size 42}",
-    "small":     "{size 12}",
-    "left":      "{align left}",
-    "right":     "{align right}",
-    "center":    "{align center}",
-    "act":       "{color (255,110,104)}",
-    # "char":      "{color (255,252,103,255)}",
-    "char":      "{color (255,252,103)}",
-    "item":      "{color (104,113,255)}",
-    "loc":       "{color (95,250,104)}",
-    "num":       "{color (255,119,255)}",
-    "quest":     "{color (96,253,255)}",
-    "text":      "{color (0,197,199)}",
-}
-
-EMOJIS_IMAGE_DICT: dict[str, pygame.Surface] = {}
-for emoji in EMOJIS_DICT.keys():
-    path = Path("assets") / "NinjaAdventure" / "Emote" / EMOJIS_DICT[emoji]
-    image = pygame.image.load(path).convert_alpha()
-    EMOJIS_IMAGE_DICT[emoji] = pygame.transform.scale2x(image)
-
-test_rich_text = """[center][big][shadow][act]Title[/act][/shadow][/big][/center]
-
-([act]F[/act]) [bold]Confrontations[/bold]  [link http://www.onet.pl]LINK[/link]
-
-[shadow]If there is any [char]character[/char] :smile: in the current [loc]lo[bold]cat[/bold]ion[/loc], you [link PLEASE READ THE WIKI]must[/link] first [act]confront[/act] with her/him in order to access that [loc]location[/loc]. The [char]enemy[/char] can be defeated in one of three ways:[/shadow]
-
-- :angry: [bold]grappling[/bold] - you have to land as many successful hits until the [char]opponent's[/char] health will drop to [num]123,98[/num].
-
-- :blink: [bold]incapacitate[/bold] - as above, try multiple times until you manage to defeat the opponent.
-
-And there's always...
-- :doubt: [bold]Escape[/bold] - well, sometimes that can be the best "[italic]ITALIC way out[/italic]". This is treated as a random event: you may be able to escape unscathed, but you may also lose something while escaping and it's not just about your honor.
-
-[shadow]SHADOW The outcome of a given encounter is affected by the [item]equipment[/item], current [quest]quest[/quest] ([act]D[/act]).[/shadow]
-ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789
-
-[small]SMALL font Morbi orci leo, [char]scelerisque[/char] [bold][act]a arcu ac[/act], viverra eleifend risus[/bold]. Nulla ultrices lorem ac rutrum tristique. Etiam sed posuere enim. Nullam sed sollicitudin odio. Mauris a semper ante. Duis nec mauris ipsum. Pellentesque euismod iaculis felis a venenatis. Maecenas tincidunt, erat non pretium eleifend, massa eros aliquam felis, eu dapibus tortor mauris eget tellus. Mauris dapibus fermentum enim nec lacinia. Nam sed velit lacinia, interdum massa sit amet, congue nibh.[/small]
-
-([act]D[/act]) see chapter "[item][link Open inventory by pressing (I).]Items[/link][/item]".
-"""
-
-# test_rich_text = """[center][shadow][act]Title[/act][/shadow][/center]
-# ([act]F[/act]) [bold]Confrontations[/bold]  [link http://www.onet.pl]LINK[/link]
-# [shadow]If there is any [char]character[/char] :smile: in the current [loc]lo[bold]cat[/bold]ion[/loc]:[/shadow]
-# - :angry: [bold]grappling[/bold] the [char]opponent's[/char] health will drop to [num]123,98[/num].
-# - :blink: [bold]incapacitate[/bold] - as above, try multiple times until you manage to defeat
-# And there's always...
-# And there's always...
-# And there's always...
-# And there's always...
-# And there's always...
-# And there's always...
-# And there's always...
-# And there's always...
-# And there's always...
-# And there's always...
-# And there's always...
-# And there's always...
-# - :doubt: [bold]Escape[/bold] - well, sometimes that can be the best "[italic]ITALIC way out[/italic]".
-# [shadow]SHADOW The outcome of a the [item]equipment[/item], current [quest]quest[/quest] ([act]D[/act]).[/shadow]
-# ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789
-# ([act]D[/act]) see chapter "[item][link Open inventory by pressing (I).]Items[/link][/item]".
-# """
-
-
-def parse_text(rich_text: str, style_tags_dict: dict[str, str], emojis_names: list[str]) -> str:
-    """
-    converts custom rich text to sftext format
+    FONTS_PATH = Path("assets") / "fonts"
+    # custom styles, syntax:
     # [emphasis]this is important[/emphasis] -> {style}{bold True}{cast_shadow True}this is important{style}
     # or
     # [link WIKI_CHARACTERS_WOLF.md]bad wolf[/link] -> {style}{link WIKI_CHARACTERS_WOLF.md}bad wolf{style}
     # or
     # :angry: -> {style}{image angry}§{style}
 
-    Args:
-        text_rich (str): original rich text with custom tags (e.g. [bold]this is bold[/bold])
-        style_tags_dict (dict[str, str]): maps custom tags to sftext style tags (e.g. "bold" -> "{bold True}")
+    STYLE_TAGS_DICT: dict[str, str] = {
+        "h1": "{align center}{size 42}{cast_shadow True}",
+        "h2": "{align left}{size 36}{cast_shadow True}",
+        "h3": "{align left}{size 28}{cast_shadow True}",
+        "shadow":    "{cast_shadow True}",
+        "dark":      "{shadow_color (30,30,30)}",
+        "light":     "{shadow_color (230,230,230)}",
+        "bold":      "{bold True}",
+        "b":         "{bold True}",
+        "italic":    "{italic True}",
+        "i":         "{italic True}",
+        "underline": "{underline True}",
+        "u":         "{underline True}",
+        "link( +[^\\]]+)?": "{underline True}{link LINK_URL}",
+        "big":       "{size 42}",
+        "small":     "{size 12}",
+        "left":      "{align left}",
+        "right":     "{align right}",
+        "center":    "{align center}",
+        "act":       "{color (255,110,104)}",
+        # "char":      "{color (255,252,103,255)}",
+        "char":      "{color (255,252,103)}",
+        "item":      "{color (104,113,255)}",
+        "loc":       "{color (95,250,104)}",
+        "num":       "{color (255,119,255)}",
+        "quest":     "{color (96,253,255)}",
+        "text":      "{color (0,197,199)}",
+    }
 
-    Returns:
-        str: sftext formatted text
-    """
+    def __init__(
+            self,
+            rich_text: str,
+            tooltip_rich_text: str,
+            background_canvas: pygame.Surface,
+            screen_offset: tuple[int, int],
+            default_font_size: int = 20,
+            default_font_color: tuple[int, int, int] = (0, 197, 199),
+            shadow_color: tuple[int, int, int] = (130, 32, 32),
+            shadow_offset: tuple[int, int] = (4, 4),
+            border_size: tuple[int, int] = (0, 0),
+            margin_horizontal: int = 0,
+            margin_vertical: int = 0,
+            show_scrollbar: bool = True,
+            is_tooltip_available: bool = True,
+            tooltip_canvas: pygame.Surface | None = None,
+            tooltip_font_size: int = 12,
+            tooltip_offset: tuple[int, int] = (0, 0),
+            debug: bool = False,
+    ) -> None:
+        """
+        `RichPanel` is interactive rectangle rendered with custom rich formatted text.
+        It contains 2 `sftext` helper objects (for main text and for tooltips).
+        Rich text can contain mixture of following formatting tags:
+            - font faces
+            - font sizes
+            - font colors
+            - bold/italic/underline
+            - text background
+            - links with custom text shown in tooltip when hovered or clicked
+            - emojis (actually any images) mixed in between the text
+            - text alignment
+            - text margin
 
-    tags_list = style_tags_dict.keys()
-    tags_pattern = "|".join(tags_list)
-    opening_tag_pattern = f"\\[(/?)({tags_pattern})\\]"
-    # print(opening_tag_pattern)
+        Panel can be used as static texture (Surface) by calling `get_panel()`
+        or interactively to scroll text (up, down, home, end) and show tooltips
+        by passing events to `on_key_press()`, `on_mouse_move()`, `on_mouse_button()`
+        and calling `on_update()`, `get_tooltip()`
+
+        Args:
+            rich_text (str): The main rich text content with tags to be displayed in the panel.
+            tooltip_rich_text (str): The rich text content with tags to be displayed in the
+            tooltip when hovered or clicked. A `'%s'`placeholder will be replaced with link text.
+            background_canvas (pygame.Surface): The surface on which the rich text will be rendered.
+            If too narrow, text will be wrapped, but's its buggy.
+            screen_offset (tuple[int, int]): The offset of the rich text panel relative to
+            the main screen (required to handel absolute mouse position over Links).
+            default_font_size (int, optional): The default font size if no style applied. Defaults to `20`.
+            default_font_color (tuple[int, int, int], optional): The default font color if
+            no style applied. Defaults to `(0, 197, 199)`.
+            shadow_color (tuple[int, int, int], optional): The color of the shadow. Defaults to `(130, 32, 32)`.
+            shadow_offset (tuple[int, int], optional): The offset of the shadow. Defaults to `(4, 4)`.
+            margin_horizontal (int, optional): The horizontal margin to be added from both sides. Defaults to `0`.
+            margin_vertical (int, optional): The vertical margin to be added at the top and bottom. Defaults to `0`.
+            show_scrollbar (bool, optional): Whether to show a simplified text based vertical scrollbar panel
+            on the right. It won't be shown if text fits on canvas and there is no need for scrolling.
+            Defaults to `True` on the panel and `False` on the tooltip.
+            is_tooltip_available (bool, optional): Whether a link was activated and tooltip is available.
+            Defaults to `False`.
+            tooltip_canvas (pygame.Surface | None, optional): The surface on which the tooltip will be rendered.
+            It can be very large, but then it will be rescaled to fit tooltip text. If `None`,
+            default grey with semitransparent one will be used. Defaults to `None`.
+            tooltip_font_size (int, optional): The font size for the tooltip text. Defaults to `12`.
+            tooltip_offset (tuple[int, int]): The position offset of the tooltip panel. Defaults to `(0, 0)`.
+            debug (bool, optional): Whether to enable debug mode sftext. Defaults to `False`.
+        """
+
+        self.EMOJIS_IMAGE_DICT: dict[str, pygame.Surface] = {}
+        for emoji in EMOJIS_DICT.keys():
+            path = EMOJIS_PATH / EMOJIS_DICT[emoji]
+            image = pygame.image.load(path).convert_alpha()
+            self.EMOJIS_IMAGE_DICT[emoji] = pygame.transform.scale2x(image)
+
+        for emoji in HUD_ICONS.keys():
+            path = HUD_DIR / HUD_ICONS[emoji]
+            image = pygame.image.load(path).convert_alpha()
+            self.EMOJIS_IMAGE_DICT[emoji] = pygame.transform.scale(image, (32, 32))
+
+        self.rich_text = rich_text
+        self.processed_text = self._parse_text(self.rich_text)
+
+        self.pixel_art_style = Style().get_default("")
+        self.pixel_art_style["size"] = default_font_size
+        self.pixel_art_style["font"] = "font_pixel.ttf"
+        # s["font"] = "Homespun.ttf"
+        self.pixel_art_style["separate_italic"] = None
+        self.pixel_art_style["separate_bold"] = None
+        self.pixel_art_style["separate_bolditalic"] = None
+        # pixel_art_style["indent"] = 10 # indent is actually not implemented in sftext
+        # default text color
+        self.pixel_art_style["color"] = default_font_color
+        # default text shadow color
+        self.pixel_art_style["shadow_color"] = shadow_color
+        # direction of the shadow offset, needs to be aligned with the font size
+        self.pixel_art_style["shadow_offset"] = shadow_offset
+
+        self.background_canvas = background_canvas
+        self.border_size = border_size
+        self.background_canvas_size = self.background_canvas.get_size()
+
+        self.text_canvas = pygame.Surface(
+            (self.background_canvas_size[0] - self.border_size[0] * 2,
+             self.background_canvas_size[1] - self.border_size[1] * 2)).convert_alpha()
+        self.text_canvas.fill((0, 0, 0, 0))
+
+        self.debug = debug
+        self.formatted_text = SFText(
+            text=self.processed_text,
+            images=self.EMOJIS_IMAGE_DICT,
+            canvas=self.text_canvas,
+            # font_path=os.path.join(".", "sftext", "resources"),
+            font_path=str(self.FONTS_PATH),
+            style=self.pixel_art_style,
+            debug=self.debug
+        )
+        # in order to detect mouse hover over a link,
+        # sftext object needs to know it's offset relative to the main screen
+        self.formatted_text.canvas_offset = (
+            screen_offset[0] + self.border_size[0],
+            screen_offset[1] + self.border_size[0])
+        self.formatted_text.show_scrollbar = show_scrollbar
+        self.formatted_text.MARGIN_HORIZONTAL = margin_horizontal
+        self.formatted_text.MARGIN_VERTICAL = margin_vertical
+
+        self.is_tooltip_available: bool = is_tooltip_available
+        self.tooltip_style = self.pixel_art_style.copy()
+        self.tooltip_style["size"] = tooltip_font_size
+        self.tooltip_offset = tooltip_offset
+
+        if tooltip_canvas:
+            self.tooltip_canvas = tooltip_canvas
+        else:
+            self.tooltip_canvas = pygame.Surface((1_000, 1_000)).convert_alpha()
+            # self.tooltip_canvas.fill((255, 255, 0, 255))
+            self.tooltip_canvas.fill((30, 30, 30, 200))
+            # it can also be an image/texture
+            # self.tooltip_canvas.blit(bck, (0, 0))  # blit background pic
+
+        self.tooltip_rich_text = tooltip_rich_text
+
+        self.formatted_rich_tooltip_text = self._parse_text(self.tooltip_rich_text)
+        self.tooltip_text = SFText(
+            text=self.formatted_rich_tooltip_text,
+            images=self.EMOJIS_IMAGE_DICT,
+            canvas=self.tooltip_canvas,
+            # font_path=os.path.join(".", "sftext", "resources"),
+            font_path=str(self.FONTS_PATH),
+            style=self.tooltip_style,
+            debug=self.debug
+        )
+        self.tooltip_rect: pygame.Rect = self.tooltip_text.canvas.get_rect()
+
+        self.tooltip_text.MARGIN_HORIZONTAL = 20
+        self.tooltip_text.MARGIN_VERTICAL = 10
+        # most commonly tooltip won't need scrollbar
+        self.tooltip_text.show_scrollbar = False
+
+    def get_panel(self) -> pygame.Surface:
+        """
+        Recommended way of accessing final panel do be blitted on the screen.
+        Do not use canvas passed to the constructor, since it might reference a wrong object.
+
+        Returns:
+            pygame.Surface: the rich panel himself
+        """
+
+        text_canvas = self.formatted_text.canvas
+        panel = self.background_canvas.copy()
+        panel.blit(text_canvas, self.border_size)
+        return panel
+
+    def get_tooltip(self) -> tuple[pygame.Surface, pygame.Rect]:
+        """
+        Recommended way of accessing tooltip do be blitted on the screen.
+        Do not use canvas passed to the constructor, since it might reference a wrong object.
+        Before using it, make sure to call `on_mouse_button()` and/or `on_mouse_move()`
+        and check `is_tooltip_available` flag.
+
+
+        Returns:
+            pygame.Surface: the tooltip itself
+        """
+
+        return self.tooltip_text.canvas, self.tooltip_rect
+
+    def on_key_press(self, event: pygame.Event) -> None:
+        """
+        To be called in the main game loop.
+
+        Handles vertical panel **scrolling** when `up arrow`, `down arrow`, `Page Up`, `Page Down`, `Home` or `End`
+        was pressed.
+        It won't have any effect if text fits on the canvas.
+
+        Args:
+            event (pygame.Event): event element form pygame.event.get() list
+        """
+
+        self.formatted_text.on_key_press(event)
+
+    def on_mouse_button(self, event: pygame.Event) -> None:
+        """
+        To be called in the main game loop.
+
+        Handles **scrolling** and **links** clicking.
+
+        1. Vertical panel scrolling will be applied when mouse wheel goes `up` or `down`.
+        It won't scroll if text fits on the canvas.
+
+        2. When left mouse button is clicked on a link, a tooltip will be created.
+        Check `is_tooltip_available` flag it that was a case.
+
+        Args:
+            event (pygame.Event): event element form pygame.event.get() list
+        """
+
+        link = self.formatted_text.on_mouse_button(event)
+        self._process_tooltip(link)
+
+    def on_mouse_move(self, mouse_pos: tuple[int, int] | None = None) -> None:
+        """
+        To be called in the main game loop.
+
+        When mouse hovers over a link, a tooltip will be created.
+        Check `is_tooltip_available` flag it that was a case.
+        For this to work correctly, a proper `screen_offset` must be set.
+        It is the offset of the rich text panel relative to the main screen.
+
+        Ff `mouse_pos` is not provided, `pygame.mouse.get_pos()` will be called.
+
+        If hovering is not required, simply do not call this method.
+
+
+        Args:
+            mouse_pos (tuple[int, int] | None): tuple of `x`, `y` mouse absolute position on the main screen
+        """
+
+        if not mouse_pos:
+            mouse_pos = pygame.mouse.get_pos()
+
+        link = self.formatted_text.on_mouse_move(mouse_pos)
+        self._process_tooltip(link)
+
+    def on_update(self) -> None:
+        """
+        To be called in the main game loop.
+
+        The panel will be rendered again only if text has changed or the content has been scrolled.
+        """
+
+        self.formatted_text.on_update()
+
+    def _parse_text(self, rich_text: str) -> str:
+        """
+        converts custom rich text to sftext format
+        # [emphasis]this is important[/emphasis] -> {style}{bold True}{cast_shadow True}this is important{style}
+        # or
+        # [link WIKI_CHARACTERS_WOLF.md]bad wolf[/link] -> {style}{link WIKI_CHARACTERS_WOLF.md}bad wolf{style}
+        # or
+        # :angry: -> {style}{image angry}§{style}
+
+        Args:
+            text_rich (str): original rich text with custom tags (e.g. [bold]this is bold[/bold])
+
+        Returns:
+            str: sftext formatted text
+        """
+
+        tags_list = self.STYLE_TAGS_DICT.keys()
+        tags_pattern = "|".join(tags_list)
+        opening_tag_pattern = f"\\[(/?)({tags_pattern})\\]"
+        # print(opening_tag_pattern)
+        # print()
+        active_tags_list: list[str] = []
+        parsed_text: str = ""
+        prev_tag_index: int = 0
+        active_tags: str = ""
+        # iterate over all tags found in the text_rich
+        for match in re.finditer(opening_tag_pattern, rich_text):
+            url: str = ""
+            res: str = match.group()[1:-1]  # replace("[", "").replace("]", "")
+            # process link url
+            if "link" in res:
+                # opening tag
+                if " " in res:
+                    split_pos = res.find(" ")
+                    url = res[split_pos + 1:]
+                    res = res[:split_pos]
+                # needs to be exactly the same as in the style_tags_dict
+                res = f"{res}( +[^\\]]+)?"
+                # print(f"res: {res}", url)
+
+            before_tag = match.string[prev_tag_index:match.start()]
+
+            parsed_text += self._parse_emojis(before_tag, active_tags)
+
+            if "/" not in res:
+                active_tags_list.append(res)
+            else:
+                res = res.replace("/", "")
+                # if "link" in res:
+                #     print(f"res close: {res}")
+                active_tags_list.remove(res)
+
+            if active_tags_list:
+                active_tags = "".join([self.STYLE_TAGS_DICT[tag] for tag in active_tags_list])
+                if "LINK_URL" in active_tags:
+                    active_tags = active_tags.replace("LINK_URL", url)
+            else:
+                active_tags = ""
+            parsed_text += f"{{style}}{active_tags}"
+            prev_tag_index = match.end()
+
+        parsed_text += self._parse_emojis(rich_text[prev_tag_index:], active_tags)
+
+        return parsed_text
+
+    def _parse_emojis(self, text: str, active_tags: str) -> str:
+        """
+        converts emojis tags to sftext format
+        :angry: -> {style}{image angry}§{style}
+
+        Args:
+            text (str): text with emojis tags (e.g. :angry:), changed in place
+            active_tags (str): list active of sftext style tags to carry on
+
+        Returns:
+            str: sf text formatted text
+        """
+        for emoji in EMOJIS_DICT.keys():
+            text = text.replace(f":{emoji}:", f"{{style}}{{image {emoji}}}§{{style}}{active_tags}")
+        return text
+
+    def _process_tooltip(self, link: str) -> None:
+        """
+        Process the tooltip based on the provided `link` text
+        and sets the flag `show_tooltip` if there is a tooltip to be shown
+
+        Args:
+            link (str): The link text clicked in the rich text.
+
+        Returns:
+            None
+        """
+
+        if link:
+            # print(f"link: {link}")
+            new_text = self.formatted_rich_tooltip_text % link
+            self.is_tooltip_available = True
+            if new_text != self.tooltip_text.text:
+                self.tooltip_text.set_text(new_text, resize=True)
+            self._process_tooltip_rect()
+        else:
+            self.is_tooltip_available = False
+
+    def _process_tooltip_rect(self) -> None:
+        mouse_pos = pygame.mouse.get_pos()
+        # cursor_size = self.game.cursor_img.get_size()
+        mouse_x: int = mouse_pos[0] + self.tooltip_offset[0] // 2
+        mouse_y: int  = mouse_pos[1] + self.tooltip_offset[1]
+        tooltip_canvas = self.tooltip_text.canvas
+        if mouse_x + tooltip_canvas.get_width() > WIDTH:
+            mouse_x = WIDTH - tooltip_canvas.get_width()
+
+        if mouse_y + tooltip_canvas.get_height() > HEIGHT:
+            mouse_y = HEIGHT - tooltip_canvas.get_height()
+        self.tooltip_rect.topleft = (mouse_x, mouse_y)
+
+    def set_text(self, rich_text: str, resize: bool = False) -> None:
+        """
+        Recommended way to update rich text after the panel has been created.
+        Changing `rich_text` property of the panel won't work.
+        Text will be parsed again and panel will be rendered
+        so there is not need to call `on_update()` (it won't bother either).
+        The `is_tooltip_available` flag will be set to `False`.
+
+        Args:
+            rich_text (str): the new rich text
+            resize (bool, optional): Whether to resize panel canvas. Defaults to `False`.
+        """
+
+        if rich_text != self.rich_text:
+            self.rich_text = rich_text
+            self.processed_text = self._parse_text(self.rich_text)
+            self.formatted_text.set_text(self.processed_text, resize=resize)
+        self.is_tooltip_available = False
+
+
+# def before_gui() -> None:
+#     """ add here the things to do before blitting gui elements"""
+#     pass
+#     # screen.blit(bck, (0, 0))  # blit background pic
+
+
+def main() -> None:
+    pygame.init()
+
+    # screen resolution
+    W, H     = 1800, 900  # 1800, 900
+    # rich panel canvas resolution
+    C_W, C_H = W - 100, H - 200  # 1700, 700
+
+    screen = pygame.display.set_mode((W, H))
+    # screen or panel background
+    bck = pygame.image.load(r"assets\NinjaAdventure\HUD\dark_panel_1700x900.png")
+    # bck = pygame.transform.smoothscale(bck, (W, H))  # load some background pic
+    bck = pygame.transform.smoothscale(bck, (C_W, C_H))  # load some background pic
+
+    # rich_text_file = Path("rich_text_sample.md")
+    rich_text_file = Path(r"assets\dialogs\rich_text_sample.md")
+    test_rich_text = rich_text_file.read_text()
+
+    # helper canvas to render the rich text on
+    # it will determine the size of the rendered text with wrapping if needed
+    # alpha channel can be used to create a (semi)transparent background
+    canvas = pygame.Surface((C_W, C_H)).convert_alpha()
+    # canvas.fill((255, 255, 0, 255))
+    # canvas.fill((30, 30, 30, 125))
+    canvas.blit(pygame.transform.scale(bck, canvas.get_size()), (0, 0))
+
+    screen_offset = (50, 50)
+
+    tooltip_rich_text = """[act][shadow][bold]This is a tooltip[/bold][/shadow][/act]\n\n[underline]%s"""
+    rich_panel = RichPanel(test_rich_text, tooltip_rich_text, bck, screen_offset)
+
     # print()
-    active_tags_list: list[str] = []
-    parsed_text: str = ""
-    prev_tag_index: int = 0
-    active_tags: str = ""
-    # iterate over all tags found in the text_rich
-    for match in re.finditer(opening_tag_pattern, rich_text):
-        url: str = ""
-        res: str = match.group()[1:-1]  # replace("[", "").replace("]", "")
-        # process link url
-        if "link" in res:
-            # opening tag
-            if " " in res:
-                split_pos = res.find(" ")
-                url = res[split_pos + 1:]
-                res = res[:split_pos]
-            # needs to be exactly the same as in the style_tags_dict
-            res = f"{res}( +[^\\]]+)?"
-            # print(f"res: {res}", url)
+    # print(reformatted_text)
 
-        before_tag = match.string[prev_tag_index:match.start()]
+    tp.init(screen, tp.theme_game1)
 
-        parsed_text += parse_emojis(before_tag, emojis_names, active_tags)
+    # Style.set_default(pixel_art_style)
 
-        if "/" not in res:
-            active_tags_list.append(res)
-        else:
-            res = res.replace("/", "")
-            # if "link" in res:
-            #     print(f"res close: {res}")
-            active_tags_list.remove(res)
+    # stylized_text = Style.stylize(reformatted_text, pixel_art_style)
+    # text, style = Style.split(stylized_text)
+    # print(text)
+    # print(style)
 
-        if active_tags_list:
-            active_tags = "".join([style_tags_dict[tag] for tag in active_tags_list])
-            if "LINK_URL" in active_tags:
-                active_tags = active_tags.replace("LINK_URL", url)
-        else:
-            active_tags = ""
-        parsed_text += f"{{style}}{active_tags}"
-        prev_tag_index = match.end()
+    # it can also be an image/texture
+    # canvas.blit(bck, (0, 0))  # blit background pic
 
-    parsed_text += parse_emojis(rich_text[prev_tag_index:], emojis_names, active_tags)
+    # stylized_text = Style.stylize(formatted_rich_tooltip_text, pixel_art_style)
+    # text, style = Style.split(stylized_text)
+    # print(len(text))
+    # print(text)
+    # print()
+    # print(style)
 
-    return parsed_text
+    close_button = tp.Button("Close", )  # , generate_surfaces=True)
+    close_button.set_center(W // 2, H - 200)
+    # my_button.set_font_auto_multilines_width(700, refresh=False)
+    # print(my_button.get_text_size())
+    # print(my_button.get_value())
+    # Arbitrarily choosing "#" as the tag here, but you are free to set whatever you like.
+    # my_button.set_font_color([255, 255, 255])
+    # my_button.set_font_rich_text_tag("#")  # setting a tag automatically enable rich text (disabled by default)
+    # my_button.set_style_attr("font_align", "l")  # font_align is either "l", "r" or "c" (left, right and center)
+    # my_button.center_on(screen)
 
+    tp_elements = tp.Group([close_button],)
+    tp_elements.set_center(W // 2, H - 200)
+    tp_updater = tp_elements.get_updater()
 
-def parse_emojis(text: str, emojis_names: list[str], active_tags: str) -> str:
-    """
-    converts emojis tags to sftext format
-    :angry: -> {style}{image angry}§{style}
+    # tp_loop = tp.Loop(element=close_button)
+    clock = pygame.time.Clock()
 
-    Args:
-        text (str): text with emojis tags (e.g. :angry:), changed in place
-        emojis_dict (list[str]): list of allowed emojis names
-        active_tags (str): list active of sftext style tags to carry on
-
-    Returns:
-        str: sf text formatted text
-    """
-    for emoji in emojis_names:
-        text = text.replace(f":{emoji}:", f"{{style}}{{image {emoji}}}§{{style}}{active_tags}")
-    return text
-
-
-def process_tooltip(link: str, show_tooltip: bool, tooltip_text: SFText) -> bool:
-    """
-    Process the tooltip based on the link and show_tooltip flag.
-
-    Args:
-        link (str): The link text clicked in the rich text.
-        show_tooltip (bool): Flag indicating whether to show the tooltip or not.
-        tooltip_text (SFText): The tooltip sftext object.
-
-    Returns:
-        bool: Flag indicating whether to show the tooltip or not.
-    """
-    # Add your implementation here
-    if link:
-        # print(f"link: {link}")
-        new_text = formatted_rich_tooltip_text % link
-        show_tooltip = True
-        if new_text != tooltip_text.text:
-            tooltip_text.set_text(new_text)
-    else:
-        show_tooltip = False
-
-    return show_tooltip
-
-
-reformatted_text = parse_text(test_rich_text, STYLE_TAGS_DICT, EMOJIS_DICT.keys())
-
-# print()
-# print(reformatted_text)
-
-
-# tp.init(screen, tp.theme_classic)
-
-
-pixel_art_style = Style().get_default("")
-pixel_art_style["size"] = 20
-pixel_art_style["font"] = "font_pixel.ttf"
-# s["font"] = "Homespun.ttf"
-pixel_art_style["separate_italic"] = None
-pixel_art_style["separate_bold"] = None
-pixel_art_style["separate_bolditalic"] = None
-# pixel_art_style["indent"] = 10 # indent is actually not implemented in sftext
-# default text color
-pixel_art_style["color"] = (0, 197, 199)
-# default text shadow color
-pixel_art_style["shadow_color"] = (0, 32, 32)
-# direction of the shadow offset, needs to be aligned with the font size
-pixel_art_style["shadow_offset"] = (4, 4)
-# Style.set_default(pixel_art_style)
-
-# stylized_text = Style.stylize(reformatted_text, pixel_art_style)
-# text, style = Style.split(stylized_text)
-# print(text)
-# print(style)
-
-# helper canvas to render the rich text on
-# it will determine the size of the rendered text with wrapping if needed
-# alpha channel can be used to create a (semi)transparent background
-canvas = pygame.Surface((C_W, C_H)).convert_alpha()
-# canvas.fill((255, 255, 0, 255))
-canvas.fill((30, 30, 30, 125))
-# it can also be an image/texture
-# canvas.blit(bck, (0, 0))  # blit background pic
-
-formatted_text = SFText(text=reformatted_text,
-                        images=EMOJIS_IMAGE_DICT,
-                        screen=canvas,
-                        # font_path=os.path.join(".", "sftext", "resources"),
-                        font_path=str(Path(".") / "assets" / "fonts"),
-                        style=pixel_art_style,
-                        debug=False
-                        )
-
-pixel_art_style["size"] = 12
-tooltip_canvas = pygame.Surface((1_000, 1_000)).convert_alpha()
-# canvas.fill((255, 255, 0, 255))
-tooltip_canvas.fill((30, 30, 30, 200))
-# it can also be an image/texture
-# canvas.blit(bck, (0, 0))  # blit background pic
-tooltip_rich_text = """[act][shadow][bold]This is a tooltip[/bold][/shadow][/act]
-
-[underline]%s"""
-
-formatted_rich_tooltip_text = parse_text(tooltip_rich_text, STYLE_TAGS_DICT, EMOJIS_DICT.keys())
-tooltip_text = SFText(text=formatted_rich_tooltip_text,
-                      images=EMOJIS_IMAGE_DICT,
-                      screen=tooltip_canvas,
-                      # font_path=os.path.join(".", "sftext", "resources"),
-                      font_path=str(Path(".") / "assets" / "fonts"),
-                      style=pixel_art_style,
-                      debug=False
-                      )
-
-tooltip_text.MARGIN_HORIZONTAL = 20
-tooltip_text.MARGIN_VERTICAL = 10
-tooltip_text.show_scrollbar = False
-
-stylized_text = Style.stylize(formatted_rich_tooltip_text, pixel_art_style)
-text, style = Style.split(stylized_text)
-# print(len(text))
-# print(text)
-# print()
-# print(style)
-
-# my_button = tp.Text(reformatted_text, generate_surfaces=True)
-# my_button.set_font_auto_multilines_width(700, refresh=False)
-# print(my_button.get_text_size())
-# print(my_button.get_value())
-# Arbitrarily choosing "#" as the tag here, but you are free to set whatever you like.
-# my_button.set_font_color([255, 255, 255])
-# my_button.set_font_rich_text_tag("#")  # setting a tag automatically enable rich text (disabled by default)
-# my_button.set_style_attr("font_align", "l")  # font_align is either "l", "r" or "c" (left, right and center)
-# my_button.center_on(screen)
-# my_ui_elements = tp.Group([my_button])
-# updater = my_ui_elements.get_updater()
-
-# m = tp.Loop(element=my_button)
-clock = pygame.time.Clock()
-screen_offset = (50, 50)
-# in order to detect mouse hover over a link,
-# sftext object needs to know it's offset relative to the main screen
-formatted_text.screen_offset = screen_offset
-
-show_tooltip: bool = False
-is_running = True
-while is_running:
-    clock.tick(60)
-    events = pygame.event.get()
-    for e in events:
-        if e.type == pygame.QUIT:
-            is_running = False
-        if e.type == pygame.KEYDOWN:
-            formatted_text.on_key_press(e)
-            if e.key in [pygame.K_q, pygame.K_ESCAPE]:
+    is_running = True
+    while is_running:
+        clock.tick(60)
+        events = pygame.event.get()
+        for e in events:
+            if e.type == pygame.QUIT:
                 is_running = False
-        if e.type == pygame.MOUSEBUTTONDOWN:
-            link = formatted_text.on_mouse_button(e)
-            show_tooltip = process_tooltip(link, show_tooltip, tooltip_text)
+            if e.type == pygame.KEYDOWN:
+                rich_panel.on_key_press(e)
+                if e.key in [pygame.K_q, pygame.K_ESCAPE]:
+                    is_running = False
+            if e.type == pygame.MOUSEBUTTONDOWN:
+                rich_panel.on_mouse_button(e)
+                # show_tooltip = process_tooltip(link, formatted_rich_tooltip_text, show_tooltip, tooltip_text)
 
         # comment out to disable hover effect
         # it will still be possible to click on the link
-        link = formatted_text.on_mouse_move(pygame.mouse.get_pos())
-        show_tooltip = process_tooltip(link, show_tooltip, tooltip_text)
-    # m.update(before_gui)
-    # before_gui()
-    screen.fill((30, 30, 30))
-    screen.blit(bck, (0, 0))  # blit background pic
+        rich_panel.on_mouse_move(pygame.mouse.get_pos())
+        # show_tooltip = process_tooltip(link, formatted_rich_tooltip_text, show_tooltip, tooltip_text)
+        # before_gui()
+        screen.fill((60, 90, 30))
+        # close_button.set_center(100, 100)
 
-    # updater.update(events=events)
-    # screen.blit(my_button.surface, (0, 0))
-    formatted_text.on_update()
-    screen.blit(canvas, screen_offset)
-    if show_tooltip:
-        # tooltip_text.on_update()
-        # print(tooltip_canvas.get_size())
-        screen.blit(tooltip_text.screen, pygame.mouse.get_pos())
-    pygame.display.flip()
+        # screen.blit(bck, (0, 0))  # blit background pic
 
-pygame.quit()
+        rich_panel.on_update()
+        screen.blit(rich_panel.get_panel(), screen_offset)
+        tp_updater.update(events=events)
+        # tp_loop.update(before_gui)
+
+        # screen.blit(close_button.surface, (W // 2, H - 200))
+        # screen.blit(close_button.surface, (0, 0))
+        if rich_panel.is_tooltip_available:
+            # tooltip_text.on_update()
+            # print(tooltip_canvas.get_size())
+            # screen.blit(tooltip_text.canvas, pygame.mouse.get_pos())
+            # screen.blit(rich_panel.get_tooltip(), pygame.mouse.get_pos())
+            screen.blit(*rich_panel.get_tooltip())
+        pygame.display.flip()
+
+    pygame.quit()
+
+
+if __name__ == "__main__":
+    main()

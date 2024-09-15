@@ -16,30 +16,36 @@ from maze_generator.maze_utils import (
     clear_maze_cache,
     get_gid_from_tmx_id
 )
-from objects import Collider, ItemSprite
+from objects import Collider, EmoteSprite, ItemSprite
 from particles import ParticleSystem
 from pyscroll.group import PyscrollGroup
 from pytmx import TiledMap, TiledObjectGroup, TiledTileLayer
 from pytmx.util_pygame import load_pygame
+from config_model.config import AttitudeEnum
 from settings import (
-    ACTIONS,
-    BG_COLOR,
-    CIRCLE_GRADIENT,
+    # ACTIONS,
+    # BG_COLOR,
+    # CIRCLE_GRADIENT,
     CUTSCENE_BG_COLOR,
     DAY_FILTER,
+    EMOTE_SHEET_DEFINITION,
+    EMOTE_SHEET_FILE,
     FONT_SIZE_MEDIUM,
+    FONT_SIZE_SMALL,
+    FONT_SIZE_TINY,
+    FRIENDLY_WAKE_DISTANCE,
     GAME_TIME_SPEED,
     HEIGHT,
     INITIAL_HOUR,
     INPUTS,
     MAPS_DIR,
     MAZE_DIR,
+    MONSTER_WAKE_DISTANCE,
     NIGHT_FILTER,
-    PANEL_BG_COLOR,
+    # PANEL_BG_COLOR,
     PARTICLES,
     SHADERS_NAMES,
     SHOW_DEBUG_INFO,
-    SHOW_HELP_INFO,
     TEXT_ROW_SPACING,
     USE_ALPHA_FILTER,
     USE_SHADERS,
@@ -49,8 +55,8 @@ from settings import (
     # ColorValue,
     Point,
     to_point,
-    to_vector,
-    tuple_to_vector,
+    # to_vector,
+    # tuple_to_vector,
     vec,
     vec3,
     vector_to_tuple
@@ -94,6 +100,9 @@ class Scene(State):
         # self.transition = Transition(self)
         self.transition = TransitionCircle(self)
 
+        self.emotes: dict[str, list[pygame.Surface]] = {}
+        self.import_emote_sheet(str(EMOTE_SHEET_FILE))
+
         # moved here to avoid circular imports
         from characters import Player
         self.player: Player = Player(
@@ -103,7 +112,8 @@ class Scene(State):
             self.shadow_sprites,
             self.label_sprites,
             (WIDTH // 2, HEIGHT // 2),
-            "Player"
+            "Player",
+            self.emotes,
         )
         # pyscroll renderer (camera)
         self.map_view: pyscroll.BufferedRenderer
@@ -124,7 +134,7 @@ class Scene(State):
         # self.circle_gradient: pygame.Surface = (CIRCLE_GRADIENT).convert_alpha()
 
         self.load_map()
-        self.ui = UI(self, self.game.fonts[FONT_SIZE_MEDIUM])
+        self.ui = UI(self, tiny_font=self.game.fonts[FONT_SIZE_SMALL], medium_font=self.game.fonts[FONT_SIZE_MEDIUM])
         # self.set_camera_on_player()
 
     #############################################################################################################
@@ -252,7 +262,8 @@ class Scene(State):
                     self.label_sprites,
                     (obj.x, obj.y),
                     obj.name,
-                    waypoint
+                    self.emotes,
+                    waypoint,
                 )
                 self.NPC.append(npc)
 
@@ -274,7 +285,8 @@ class Scene(State):
                     self.label_sprites,
                     pos,
                     monster_name,
-                    ()
+                    self.emotes,
+                    (),
                 )
                 self.NPC.append(npc)
 
@@ -301,6 +313,14 @@ class Scene(State):
             # camera stops at map borders (no black area around), player blocked to be stopped separately
             clamp_camera = True,
         )
+
+        # npc label with name needs to be rendered on HUD surface
+        # using screen coordinates, not map coordinates
+        # for npc in self.NPC:
+        #     npc.health_bar.translate_pos = self.map_view.translate_point
+
+        # self.player.health_bar.translate_pos = self.map_view.translate_point
+
         # TODO fix zoom
         # self.map_view.zoom = self.camera.zoom
 
@@ -345,14 +365,15 @@ class Scene(State):
                 tile_1_gid = tileset_map.get_tile_properties(x, y, 1)
                 # base step cost
                 step_cost = 100
-                if tile_0_gid and "step_cost" in tile_0_gid.keys():
+                if tile_0_gid and "step_cost" in tile_0_gid:  # .keys():
                     step_cost = tile_0_gid["step_cost"]
-                if tile_1_gid and "step_cost" in tile_1_gid.keys():
+                if tile_1_gid and "step_cost" in tile_1_gid:  # .keys():
                     step_cost = tile_1_gid["step_cost"]
                 self.path_finding_grid[y][x] = -step_cost
 
         self.set_camera_on_player()
-        self.group.center(self.camera.target)
+        # self.group.center(self.camera.target)
+        self.group.center(self.player.pos)
 
         # string with coma separated names of particle systems active in this map
         map_particles = tileset_map.properties.get("particles", "").replace(" ", "").strip().lower().split(",")
@@ -361,8 +382,36 @@ class Scene(State):
         for particle in map_particles:
             if particle in PARTICLES:
                 particle_class = PARTICLES[particle]
+                # TODO: enable particles
+                continue
                 self.particles.append(particle_class(self.game.canvas, self.group, self.camera))
                 self.game.register_custom_event(self.particles[-1].custom_event_id, self.particles[-1].add)
+
+    #############################################################################################################
+
+    def import_emote_sheet(self, path: str) -> None:
+        """
+        Load sprite sheet and cut it into animation names and frames using EMOTE_SHEET_DEFINITION dict.
+        """
+        img = pygame.image.load(path).convert_alpha()
+        img_rect = img.get_rect()
+        EMOTE_WIDTH = 14
+        EMOTE_HEIGHT = 13
+
+        for key, definition in EMOTE_SHEET_DEFINITION.items():
+            anim = []
+            for coord in definition:
+                x, y = coord
+                rec = pygame.Rect(x * EMOTE_WIDTH, y * EMOTE_HEIGHT, EMOTE_WIDTH, EMOTE_HEIGHT)
+                if rec.colliderect(img_rect):
+                    img_part = img.subsurface(rec)
+                    anim.append(img_part)
+                else:
+                    print(f"ERROR! {self.current_scene}: coordinate {x}x{
+                          y} not inside sprite sheet for {key} animation")
+                    continue
+            if anim:
+                self.emotes[key] = anim
 
     #############################################################################################################
     def __repr__(self) -> str:
@@ -597,6 +646,7 @@ class Scene(State):
         # self.waypoints = {}
         # self.map_view.reload()
         self.player.shadow = self.player.create_shadow(self.shadow_sprites)
+        self.player.emote = EmoteSprite(self.label_sprites, vector_to_tuple(self.player.pos), self.emotes)
         self.player.health_bar = self.player.create_health_bar(self.label_sprites, vector_to_tuple(self.player.pos))
 
         self.load_map()
@@ -615,6 +665,9 @@ class Scene(State):
     def update(self, dt: float, events: list[pygame.event.EventType]) -> None:
         # MARK: update
         global INPUTS
+
+        # TODO move inside UI
+        self.ui.update(events)
 
         self.group.update(dt)
         self.animations.update(dt)
@@ -678,10 +731,26 @@ class Scene(State):
         # else:
         #     colliders = self.walls + [self.player]
 
+        self.player.npc_met = None
         for npc in self.NPC:
+            npc.npc_met = None
             if npc.feet.collidelist(colliders) > -1:
                 # npc.move_back(dt)
                 npc.slide(colliders)
+
+            distance_from_player = (npc.pos - self.player.pos).magnitude_squared()
+            # enable talk to npc when player is near
+            if npc.model.attitude == AttitudeEnum.friendly.value and distance_from_player < FRIENDLY_WAKE_DISTANCE**2:
+                npc.health_bar.set_bar(npc.model.health / npc.model.max_health, self.game)
+
+                if npc.has_dialog and npc.dialogs:
+                    self.player.npc_met = npc
+                    npc.npc_met = self.player
+                    # self.ui.dialog_panel.set_text(npc.dialogs)
+                    # self.ui.dialog_panel.formatted_text.scroll_top()
+                    break
+            else:
+                npc.health_bar.set_bar(-1, self.game)
 
         # exit from current state and go back to previous
         if INPUTS["quit"]:
@@ -705,14 +774,19 @@ class Scene(State):
             self.start_intro()
             INPUTS["intro"] = False
 
-        global SHOW_HELP_INFO
         if INPUTS["help"]:
-            SHOW_HELP_INFO = not SHOW_HELP_INFO
+            self.ui.show_help_info = not self.ui.show_help_info
             INPUTS["help"] = False
 
         if INPUTS["use_item"]:
             self.player.use_item()
             INPUTS["use_item"] = False
+
+        for idx in range(1, 7):
+            if INPUTS[f"item_{idx}"]:
+                if idx - 1 < len(self.player.items):
+                    self.player.selected_item_idx = idx - 1
+                INPUTS[f"item_{idx}"] = False
 
         if INPUTS["next_item"]:
             if len(self.player.items) > 0:
@@ -766,7 +840,8 @@ class Scene(State):
         if INPUTS["jump"]:
             # self.player.is_jumping = not self.player.is_jumping
             if not self.player.is_flying and not self.player.is_attacking and \
-                    not self.player.is_stunned and not self.player.is_jumping:
+                not self.player.is_stunned and not self.player.is_jumping and \
+                    not self.player.is_talking:
                 self.player.is_jumping = True
                 self.player.jump()
                 # when airborn move one layer above so it's not colliding with obstacles on the ground
@@ -796,6 +871,7 @@ class Scene(State):
         # live reload map
         if INPUTS["reload"]:
             self.reload_map()
+            self.ui.reset()
             INPUTS["reload"] = False
 
         # camera zoom in/out
@@ -812,6 +888,11 @@ class Scene(State):
 
     # TODO Rename this here and in `update`
     def reload_map(self) -> None:
+        self.game.time_elapsed = 0.0
+        self.hour = INITIAL_HOUR
+        self.minute = 0
+        self.minute_f = 0.0
+
         # shadow = self.player.shadow
         self.label_sprites.empty()
         self.draw_sprites.empty()
@@ -821,40 +902,21 @@ class Scene(State):
         self.shadow_sprites.empty()
         self.group.empty()
         # self.map_view.reload()
-        self.player.shadow = self.player.create_shadow(self.shadow_sprites)
-        self.player.health_bar = self.player.create_health_bar(self.label_sprites, vector_to_tuple(self.player.pos))
+        # self.player.shadow = self.player.create_shadow(self.shadow_sprites)
+        # self.player.emote = EmoteSprite(self.label_sprites, vector_to_tuple(self.player.pos), self.emotes)
+        # self.player.health_bar = self.player.create_health_bar(self.label_sprites, vector_to_tuple(self.player.pos))
+        self.player.reset()
         self.load_map()
 
     #############################################################################################################
 
-    def show_help(self) -> None:
-        # list actions to be displayed by the property "show"
-        show_actions = [action for action in ACTIONS.values() if action["show"]]
-        # render semitransparent panel in background
-        rect = pygame.Rect(
-            WIDTH - 400 - 4,
-            30 + FONT_SIZE_MEDIUM * TEXT_ROW_SPACING,
-            400 - 2,
-            (len(show_actions) + 1) * FONT_SIZE_MEDIUM * TEXT_ROW_SPACING
-        )
-
-        self.game.render_panel(rect, PANEL_BG_COLOR)
-
-        for i, action in enumerate(show_actions, start=1):
-            self.game.render_text(
-                f"{', '.join(action['show']):>11} - {action['msg']}",
-                (WIDTH - 400, 40 + int(i * FONT_SIZE_MEDIUM * TEXT_ROW_SPACING)),
-                shadow = True
-            )
-
-    #############################################################################################################
     def draw(self, screen: pygame.Surface, dt: float) -> None:
         # MARK: draw
         # center map on player
-        # self.group.center(self.player.pos)
+        self.group.center(self.player.pos)
         # self.map_view.center(self.camera.target)
         # self.map_view.zoom = self.camera.zoom
-        self.group.center(self.camera.target)
+        # self.group.center(self.camera.target)
 
         self.group.draw(screen)
 
@@ -892,16 +954,6 @@ class Scene(State):
             #     self.player.selected_weapon.model.damage}]" if self.player.selected_weapon else "n/a"
 
             # self.debug([fps, stats, f"Items[{weight}]: {inventory}", f"Weapon: {weapon}"])
-
-        if SHOW_HELP_INFO:
-            self.show_help()
-        else:
-            self.game.render_text(
-                "press [h] for help",
-                (WIDTH // 2, int(HEIGHT - FONT_SIZE_MEDIUM * TEXT_ROW_SPACING)),
-                shadow = True,
-                centred = True
-            )
 
         self.ui.display(self.player, self.game.time_elapsed)
     #############################################################################################################
@@ -1061,6 +1113,7 @@ class Scene(State):
                 f"px={npc.pos.x // 1:3} y={(npc.pos.y - 4) // 1:3}",
                 # f"gx={npc.tileset_coord.x:3} y={npc.tileset_coord.y:3}",
                 # f"s ={npc.state} j={npc.is_flying}",
+                f"s ={npc.state}",
                 # f"wc={npc.waypoints_cnt} wn={npc.current_waypoint_no}",
                 # f"tx={npc.get_tileset_coord(npc.target).x:3} y={npc.get_tileset_coord(npc.target).y:3}",
             ]

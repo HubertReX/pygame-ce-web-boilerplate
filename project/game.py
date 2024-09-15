@@ -19,6 +19,7 @@ from settings import (
     DEFAULT_SHADER,
     FONT_COLOR,
     FONT_SIZE_DEFAULT,
+    FONT_SIZE_HUGE,
     FONT_SIZE_LARGE,
     FONT_SIZE_MEDIUM,
     FONT_SIZE_SMALL,
@@ -39,6 +40,7 @@ from settings import (
     JOY_MOVE_MULTIPLIER,
     MAIN_FONT,
     LOGO_IMG,
+    MENU_FONT,
     MOUSE_CURSOR_IMG,
     PANEL_BG_COLOR,
     PROGRAM_ICON,
@@ -138,11 +140,14 @@ class Game:
         self.save_frame: bool = False
 
         self.fonts: dict[int, pygame.font.Font] = {}
-        font_sizes = [FONT_SIZE_TINY, FONT_SIZE_SMALL, FONT_SIZE_MEDIUM, FONT_SIZE_LARGE]
+        self.thin_fonts: dict[int, pygame.font.Font] = {}
+        font_sizes = [FONT_SIZE_TINY, FONT_SIZE_SMALL, FONT_SIZE_MEDIUM, FONT_SIZE_LARGE, FONT_SIZE_HUGE]
         for font_size in font_sizes:
             self.fonts[font_size] = pygame.font.Font(MAIN_FONT, font_size)
+            self.thin_fonts[font_size] = pygame.font.Font(MENU_FONT, font_size)
 
         self.font = self.fonts[FONT_SIZE_DEFAULT]
+
         self.is_running = True
         self.is_paused = False
 
@@ -189,7 +194,7 @@ class Game:
         self.render_text(
             "Loading...",
             (WIDTH * SCALE // 2, HEIGHT * SCALE // 2),
-            font_size=FONT_SIZE_LARGE,
+            font_size=FONT_SIZE_HUGE,
             centred=True,
             bg_color=PANEL_BG_COLOR,
         )
@@ -246,6 +251,7 @@ class Game:
             bg_color:  pygame._common.ColorValue = 0,
             shadow:    pygame._common.ColorValue = CUTSCENE_BG_COLOR,
             font_size: int = 0,
+            thin_fonts: bool = False,
             centred:   bool = False,
             surface:   pygame.Surface | None = None
     ) -> None:
@@ -267,19 +273,20 @@ class Game:
             if font_size == 0:
                 font_size = FONT_SIZE_SMALL
             new_pos = (pos[0], pos[1] + int(line_no * font_size * TEXT_ROW_SPACING))
-            self.render_text(text, new_pos, color, bg_color, shadow, font_size, centred, surface)
+            self.render_text(text, new_pos, color, bg_color, shadow, font_size, thin_fonts, centred, surface)
 
     #############################################################################################################
     def render_text(
             self,
-            text:      str,
-            pos:       tuple[int, int],
-            color:     pygame._common.ColorValue = FONT_COLOR,
-            bg_color:  pygame._common.ColorValue = 0,
-            shadow:    pygame._common.ColorValue = CUTSCENE_BG_COLOR,
-            font_size: int = 0,
-            centred:   bool = False,
-            surface:   pygame.Surface | None = None
+            text:       str,
+            pos:        tuple[int, int],
+            color:      pygame._common.ColorValue = FONT_COLOR,
+            bg_color:   pygame._common.ColorValue = 0,
+            shadow:     pygame._common.ColorValue = CUTSCENE_BG_COLOR,
+            font_size:  int = 0,
+            thin_fonts: bool = False,
+            centred:    bool = False,
+            surface:    pygame.Surface | None = None
     ) -> None:
         """
         Blit line of text on `surface` or on `game.HUD` if `surface` is not provided
@@ -298,9 +305,15 @@ class Game:
         if not surface:
             surface = self.HUD
 
-        selected_font = self.font
-        if self.fonts.get(font_size, False):
-            selected_font = self.fonts[font_size]
+        if thin_fonts:
+            font_type = self.thin_fonts
+        else:
+            font_type = self.fonts
+
+        if font_type.get(font_size, False):
+            selected_font = font_type[font_size]
+        else:
+            selected_font = self.font
 
         surf: pygame.surface.Surface = selected_font.render(text, False, color)
         rect: pygame.Rect = surf.get_rect(center=pos) if centred else surf.get_rect(topleft=pos)
@@ -321,6 +334,11 @@ class Game:
             surface.blit(surf_shadow, (rect.x + offset, rect.y))
             surface.blit(surf_shadow, (rect.x,          rect.y - offset))
             surface.blit(surf_shadow, (rect.x,          rect.y + offset))
+
+            surface.blit(surf_shadow, (rect.x + offset, rect.y + offset))
+            surface.blit(surf_shadow, (rect.x - offset, rect.y - offset))
+            surface.blit(surf_shadow, (rect.x + offset, rect.y - offset))
+            surface.blit(surf_shadow, (rect.x - offset, rect.y + offset))
 
         surface.blit(surf, rect)
 
@@ -596,7 +614,7 @@ class Game:
         self.render_text(
             "SAVING...",
             (WIDTH * SCALE // 2, HEIGHT * SCALE // 2),
-            font_size=FONT_SIZE_LARGE,
+            font_size=FONT_SIZE_HUGE,
             centred=True,
             bg_color=PANEL_BG_COLOR,
         )
@@ -640,7 +658,7 @@ class Game:
         self.render_text(
             "PAUSED",
             (WIDTH * SCALE // 2, HEIGHT * SCALE // 2),
-            font_size=FONT_SIZE_LARGE,
+            font_size=FONT_SIZE_HUGE,
             centred=True,
             bg_color=PANEL_BG_COLOR,
         )

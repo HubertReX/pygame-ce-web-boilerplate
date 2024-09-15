@@ -3,7 +3,7 @@ import pygame
 import pygame_menu
 import scene
 import splash_screen
-from settings import ABOUT, FPS_CAP, HEIGHT, INPUTS, IS_WEB, MAIN_FONT, PANEL_BG_COLOR, SHOW_DEBUG_INFO, WIDTH
+from settings import ABOUT, FPS_CAP, HEIGHT, HUD_DIR, INPUTS, IS_WEB, MENU_FONT, PANEL_BG_COLOR, SHOW_DEBUG_INFO, WIDTH
 from state import State
 
 #######################################################################################################################
@@ -11,9 +11,10 @@ from state import State
 
 
 class MenuScreen(State):
-    def __init__(self, game: game.Game, name: str) -> None:
+    def __init__(self, game: game.Game, name: str, bg_image: pygame.Surface | None = None) -> None:
         super().__init__(game)
         self.name = name
+        self.bg_image = bg_image
         # print("MenuScreen.__init__", game.__class__.__name__)
 
         self.menu = self.create_menu()
@@ -64,7 +65,9 @@ class MenuScreen(State):
 
     #############################################################################################################
     def draw(self, screen: pygame.Surface, dt: float) -> None:
-        # screen.fill(PANEL_BG_COLOR)
+        screen.fill((85, 99, 77))
+        if self.bg_image:
+            screen.blit(self.bg_image, (0, 0))
         # self.game.render_text(f"{self.__class__.__name__}: # press space to continue",
         #   (WIDTH / 2, 32), centred=True)
         if self.menu.is_enabled():
@@ -93,15 +96,54 @@ class MainMenuScreen(MenuScreen):
     def create_menu(self) -> pygame_menu.Menu:
         # print("AboutMenuScreen.create_menu", self.game.__class__.__name__)
 
-        main_theme = pygame_menu.themes.THEME_BLUE.copy()
-        main_theme.title_font = MAIN_FONT
-        main_theme.widget_font = MAIN_FONT
+        main_theme = pygame_menu.themes.THEME_DARK.copy()
+
+        self.border_image = pygame_menu.baseimage.BaseImage(
+            # image_path=pygame_menu.baseimage.IMAGE_EXAMPLE_GRAY_LINES,
+            # image_path="dark_panel.png",
+            image_path=str(HUD_DIR / "Theme" / "nine_patch_06b.png"),
+            # drawing_mode=pygame_menu.baseimage.IMAGE_MODE_REPEAT_XY,
+            # drawing_mode=pygame_menu.baseimage.IMAGE_MODE_CENTER,
+
+            # drawing_mode=pygame_menu.baseimage.IMAGE_MODE_FILL,
+            # drawing_mode=pygame_menu.baseimage.IMAGE_MODE_SIMPLE,
+            # drawing_offset=(0, 0)
+        ).scale(4, 4, smooth=False)  # resize(18 * 4, 18 * 4, smooth=False)
+        # my_image.set_alpha(64)
+        # my_image.set_at((0, 0), (0, 0, 0, 0))
+
+        # main_theme.background_color = (0, 0, 0, 0)
+        i_w, i_h = self.border_image.get_size()
+        main_theme.background_color = self.border_image.get_at((i_w // 2, i_h // 2))
+        main_theme.border_color = self.border_image
+        # main_theme.border_width = 20
+        # main_theme.scrollarea_outer_margin = (6, 6)
+        # main_theme.widget_border_inflate = (4, 4)
+        # main_theme.widget_border_width = 5
+
+        # main_theme.widget_margin = (24, 24)
+        # main_theme.widget_box_margin = (24, 24)
+
+        # main_theme.widget_padding = (24, 24)
+
+        # font_name = pygame_menu.font.FONT_MUNRO  # FONT_MUNRO FONT_DIGITAL FONT_8BIT
+        main_theme.title_font = MENU_FONT
+        main_theme.widget_font = MENU_FONT
+
+        main_theme.title_font_size = 48
+        main_theme.widget_font_size = 36
+
+        # MENUBAR_STYLE_UNDERLINE MENUBAR_STYLE_UNDERLINE_TITLE
+        main_theme.title_bar_style = pygame_menu.widgets.MENUBAR_STYLE_NONE
 
         main_menu = pygame_menu.Menu(
-            width=WIDTH * 0.6,
-            height=HEIGHT * 0.6,
+            width=WIDTH * 0.2,
+            height=HEIGHT * 0.4,
+            # position = (2 * WIDTH // 3, 50, False),
+            position=(50, HEIGHT // 2, False),
             theme=main_theme,
             title="Main Menu",
+            mouse_visible=False,
         )
 
         # am = AboutMenuScreen(self.game, "AboutMenu")
@@ -110,7 +152,7 @@ class MainMenuScreen(MenuScreen):
         # main_menu.add.button("Play", Scene(self.game, "grasslands", "start").enter_state)
         main_menu.add.button("Play",     scene.Scene(self.game, "Village", "start").enter_state)
         main_menu.add.button("Settings", splash_screen.SplashScreen(self.game, "Settings").enter_state)
-        main_menu.add.button("About",    AboutMenuScreen(self.game, "AboutMenu").enter_state)
+        main_menu.add.button("About",    AboutMenuScreen(self.game, "AboutMenu", self.bg_image).enter_state)
         # main_menu.add.button("Close menu", self.deactivate)
         if not IS_WEB:
             main_menu.add.button("Quit", pygame_menu.events.EXIT)
@@ -139,7 +181,12 @@ class MainMenuScreen(MenuScreen):
             self.game.save_screenshot()
 
     #############################################################################################################
-    # def draw(self, screen: pygame.Surface):
+    # def draw(self, screen: pygame.Surface, dt: float) -> None:
+    #     super().draw(screen, dt)
+
+    #     screen.blit(self.bg_image.get_surface(new=False), (WIDTH - 300, HEIGHT // 4))
+    #     s = self.menu._scrollarea._border_tiles[2]
+    #     screen.blit(s, (WIDTH - 300, 3 * HEIGHT // 4))
     #     # screen.fill(COLORS["blue"])
     #     # self.game.render_text(f"{self.__class__.__name__}:
     # press space to continue", (WIDTH / 2, HEIGHT / 2), centred=True)
@@ -157,14 +204,39 @@ class AboutMenuScreen(MenuScreen):
     def create_menu(self) -> pygame_menu.Menu:
         # print("AboutMenuScreen.create_menu", self.game.__class__.__name__)
 
-        about_theme = pygame_menu.themes.THEME_DEFAULT.copy()
+        about_theme = pygame_menu.themes.THEME_DARK.copy()
+
+        self.border_image = pygame_menu.baseimage.BaseImage(
+            # image_path=pygame_menu.baseimage.IMAGE_EXAMPLE_GRAY_LINES,
+            # image_path="dark_panel.png",
+            image_path=str(HUD_DIR / "Theme" / "nine_patch_12b.png"),
+            # drawing_mode=pygame_menu.baseimage.IMAGE_MODE_REPEAT_XY,
+            # drawing_mode=pygame_menu.baseimage.IMAGE_MODE_CENTER,
+
+            # drawing_mode=pygame_menu.baseimage.IMAGE_MODE_FILL,
+            # drawing_mode=pygame_menu.baseimage.IMAGE_MODE_SIMPLE,
+            # drawing_offset=(0, 0)
+        ).scale(4, 4, smooth=False)  # resize(18 * 4, 18 * 4, smooth=False)
+        # self.bg_image.set_alpha(64)
+        # self.bg_image.set_at((0, 0), (0, 0, 0, 0))
+
+        # about_theme.background_color = (0, 0, 0, 0)
+        i_w, i_h = self.border_image.get_size()
+        about_theme.background_color = self.border_image.get_at((i_w // 2, i_h // 2))
+        about_theme.border_color = self.border_image
+
         about_theme.widget_margin = (0, 0)
-        about_theme.title_font = MAIN_FONT
-        about_theme.widget_font = MAIN_FONT
+        # font_name = pygame_menu.font.FONT_MUNRO  # FONT_MUNRO FONT_DIGITAL FONT_8BIT
+        about_theme.title_font = MENU_FONT
+        about_theme.widget_font = MENU_FONT
+
+        about_theme.title_font_size = 48
+        about_theme.title_bar_style = pygame_menu.widgets.MENUBAR_STYLE_NONE
 
         about_menu = pygame_menu.Menu(
-            width = WIDTH * 0.6,
-            height = HEIGHT * 0.6,
+            width = WIDTH * 0.2,
+            height = HEIGHT * 0.4,
+            position=(50, HEIGHT // 2, False),
             theme = about_theme,
             title = "About",
         )
