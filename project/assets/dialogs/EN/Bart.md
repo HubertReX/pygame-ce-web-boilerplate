@@ -1,15 +1,15 @@
 
-[h2][bold]Hej[/bold] :exclamation:[/h2]
+[h3][bold]Hi[/bold] :exclamation:[/h3]
+
+Welcome to our [loc]Tavern[/loc]! I'm [char]Barman Bart[/char] :smile: .
+
+I was practically [italic]born in this [loc]Tavern[/loc][/italic].
+Actually, my birthplace is in that table in the corner.
 
 
-Witaj w naszej [loc]Karczmie[/loc]! Ja jestem [act]Barman Absyntent[/act] :smile: .
+[char]My father[/char] is the owner of this [loc]Tavern[/loc], and I helped him since I can remember. I know everybody in the area.
 
-Ja się praktycznie [italic]urodziłem w tej [loc]karczmie[/loc][/italic].
-Tak dokładnie rzecz biorąc to akuszerka przyjeła mój poród na tamtym stole w rogu.
-[b]Mój ojciec[/b] jest właścicielem tej [loc]karczmy[/loc], a ja od małego mu pomagałem.
-Znam tu praktycznie wszystkich w okolicy.
+For the right price :blink: , I can [act]fix[/act] this and that. And for my [b]friends[/b] I have preferential rates.
 
-Za odpowiednią opłatą :blink: , potrafię załatwić to i owo, a dla przyjaciół mam preferencyjne stawki.
-
-A Ty kim jesteś :red_question:
+And you are  :red_question:.
 
