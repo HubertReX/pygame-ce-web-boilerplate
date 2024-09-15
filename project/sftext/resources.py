@@ -33,6 +33,7 @@
 
 import sys
 import os
+from typing import Any, Callable, ClassVar
 
 import pygame
 import weakref
@@ -40,11 +41,14 @@ import weakref
 
 class Resources(object):
 
-    _names = {}
+    _names: dict[str, str] = {}
+    cache: dict[str, Any] | weakref.WeakValueDictionary = {}
+    loader: Callable | pygame.font.Font
 
     @classmethod
-    def __init__(cls, loader, path, types, weak_ref=True):
+    def __init__(cls, loader: Callable | pygame.font.Font, path: str, types: list[str], weak_ref: bool = True) -> None:
         cls._index(path, types)
+
         if weakref:
             cls.cache = weakref.WeakValueDictionary()
         else:
@@ -52,20 +56,21 @@ class Resources(object):
         cls.loader = loader
 
     @classmethod
-    def __getattr__(cls, name):
+    def __getattr__(cls, name: str) -> None:
         try:
             img = cls.cache[name]
         except KeyError:
-            img = cls.loader(cls._names[name])
-            cls.cache[name] = img
+            if type(cls.loader) is Callable:
+                img = cls.loader(cls._names[name])
+                cls.cache[name] = img
         return img
 
     @classmethod
-    def load(cls, name):
+    def load(cls, name: str) -> None:
         return cls.__getattr__(name)
 
     @classmethod
-    def _index(cls, path, types):
+    def _index(cls, path: str, types: list[str]) -> None:
         if sys.version_info >= (3, 5):
             # Python version >=3.5 supports glob
             import glob
@@ -88,7 +93,7 @@ class Resources(object):
 
 class Images(Resources):
     @classmethod
-    def __init__(cls, path=".", types=['*.jpg', '*.png', '*.bmp']):
+    def __init__(cls, path: str = ".", types: list[str] = ['*.jpg', '*.png', '*.bmp']) -> None:
         super().__init__(
             loader=pygame.image.load,
             path=path,
@@ -97,7 +102,7 @@ class Images(Resources):
 
 class Fonts(Resources):
     @classmethod
-    def __init__(cls, path=".", types=['*.ttf']):
+    def __init__(cls, path: str = ".", types: list[str] = ['*.ttf']) -> None:
         super().__init__(
             loader=pygame.font.Font,
             path=path,
@@ -105,7 +110,7 @@ class Fonts(Resources):
             weak_ref=False)
 
     @classmethod
-    def __getattr__(cls, name, size):
+    def __getattr__(cls, name: str, size: int) -> pygame.font.Font:
         try:
             font = cls.cache[name, size]
         except KeyError:
@@ -114,5 +119,5 @@ class Fonts(Resources):
         return font
 
     @classmethod
-    def load(cls, name, size):
+    def load(cls, name: str, size: int) -> pygame.font.Font:
         return cls.__getattr__(name, size)
