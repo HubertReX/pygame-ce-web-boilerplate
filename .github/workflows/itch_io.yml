@@ -25,6 +25,6 @@ jobs:
       env:
         BUTLER_CREDENTIALS: ${{ secrets.ITCH_IO_API_KEY }}
         CHANNEL: HTML
-        ITCH_GAME: top-down-rpg
+        ITCH_GAME: misadventures-of-malachi
         ITCH_USER: hubertnafalski
         PACKAGE: project/build/web
