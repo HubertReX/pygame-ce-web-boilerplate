@@ -81,8 +81,8 @@ async def custom_site():
 
     # compose()
 
-    platform.window.transfer.hidden = true
-    platform.window.canvas.style.visibility = "visible"
+    # platform.window.transfer.hidden = true
+    # platform.window.canvas.style.visibility = "visible"
 
 
 
@@ -342,7 +342,8 @@ config = {
 
 <body>
 
-    <div id="transfer" align=center>
+    <div id="prog" align="center">Please wait...</div>
+    <div id="transfer" align="center">
 <!--        <div class="spinner" id='spinner'></div> -->
         <div class="emscripten" id="status">Downloading...</div>
         <div class="emscripten">
@@ -351,7 +352,7 @@ config = {
     </div>
 
 
-    <canvas class="emscripten" id="canvas"
+    <canvas hidden="hidden" class="emscripten" id="canvas"
 width="1px"
 height="1px"
     oncontextmenu="event.preventDefault()" tabindex=1>
@@ -423,7 +424,7 @@ frameborder="1"
 
         pyconsole.hidden = debug_hidden
         system.hidden = debug_hidden
-        transfer.hidden = debug_hidden
+        // transfer.hidden = debug_hidden
         info.hidden = debug_hidden
         box.hidden =  debug_hidden
 
@@ -443,9 +444,20 @@ frameborder="1"
         document.body.removeChild(element);
     }
 
+    function show_canvas(show) {
+        let canvas = document.getElementById("canvas");
+        // let hidden = canvas.getAttribute("hidden");
+
+        if (show) {
+            canvas.removeAttribute("hidden");
+        } else {
+            canvas.setAttribute("hidden", "hidden");
+        }
+    }
+
     function download_from_browser_fs(filename, mime_type) {
         let link = document.createElement('a');
-        link.download = filename.replace(/^.*[\\\/]/, ''); 
+        link.download = filename.replace(/^.*[\\\/]/, '');
         let fs_file = VM.FS.readFile(filename);
         let blob = new Blob([fs_file], {type: mime_type});
 
@@ -457,7 +469,7 @@ frameborder="1"
             link.click();
         };
     }
-    
+
     function custom_prerun(){
         // no python main and no (MEMFS + VFS) yet.
         console.log(__FILE__, "custom_prerun")

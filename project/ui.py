@@ -81,7 +81,7 @@ class UI:
         self.weapon_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(weapon_s, weapon_s)
         self.health_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(500, 170)
 
-        help_w = int(22 * FONT_SIZE_MEDIUM * 2.2)
+        help_w = int(24 * FONT_SIZE_MEDIUM * 2.2)
         self.help_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(400 - 2, help_w)
 
         # self.panel_border_size = self.panel_border.get_size()

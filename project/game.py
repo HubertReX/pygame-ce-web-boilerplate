@@ -39,7 +39,7 @@ from settings import (
     JOY_DRIFT,
     JOY_MOVE_MULTIPLIER,
     MAIN_FONT,
-    LOGO_IMG,
+    # LOGO_IMG,
     MENU_FONT,
     MOUSE_CURSOR_IMG,
     PANEL_BG_COLOR,
@@ -151,6 +151,7 @@ class Game:
         self.is_running = True
         self.is_paused = False
 
+        # self.show_loading_screen()
         self.shader.create_pipeline()
         # self.loading_screen()
 
@@ -709,6 +710,10 @@ class Game:
     #############################################################################################################
 
     async def loop(self) -> None:
+        if IS_WEB:
+            import platform
+            platform.window.show_canvas(True)  # type: ignore[attr-defined]
+
         # MARK: loop
         self.fps: float = 0.0
         # self.avg_fps_3s: float = 0.0
