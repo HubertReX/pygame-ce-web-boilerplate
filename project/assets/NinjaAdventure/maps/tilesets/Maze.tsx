@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.10.2" name="tilemap_packed" tilewidth="16" tileheight="16" tilecount="132" columns="12">
+<tileset version="1.10" tiledversion="1.11.0" name="tilemap_packed" tilewidth="16" tileheight="16" tilecount="132" columns="12">
  <image source="../../../kenney_tinyDungeon/Tilemap/tilemap_packed.png" trans="000000" width="192" height="176"/>
  <tile id="12">
   <properties>

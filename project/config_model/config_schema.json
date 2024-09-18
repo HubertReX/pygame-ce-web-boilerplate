@@ -10,11 +10,11 @@
             "type": "string"
         },
         "Character": {
+            "additionalProperties": false,
             "properties": {
                 "name": {
                     "description": "Unique character name",
                     "minLength": 3,
-                    "rozen": true,
                     "title": "Name",
                     "type": "string"
                 },
@@ -54,6 +54,14 @@
                     "title": "Max Health",
                     "type": "integer"
                 },
+                "items": {
+                    "description": "list of character's items",
+                    "items": {
+                        "type": "string"
+                    },
+                    "title": "Items",
+                    "type": "array"
+                },
                 "max_carry_weight": {
                     "default": 15.0,
                     "description": "maximal carrying weight in kg",
@@ -86,11 +94,11 @@
             "type": "object"
         },
         "Item": {
+            "additionalProperties": false,
             "properties": {
                 "name": {
-                    "description": "Unique item name",
+                    "description": "Item display name",
                     "minLength": 3,
-                    "rozen": true,
                     "title": "Name",
                     "type": "string"
                 },
@@ -178,6 +186,7 @@
             "type": "string"
         }
     },
+    "additionalProperties": false,
     "properties": {
         "characters": {
             "additionalProperties": {
@@ -192,12 +201,13 @@
             },
             "title": "Items",
             "type": "object"
-        }
+        },
+        "$schema": "./config_schema.json"
     },
     "required": [
         "characters",
         "items"
     ],
-    "title": "Config",
+    "title": "ConfigForSchemaGen",
     "type": "object"
 }

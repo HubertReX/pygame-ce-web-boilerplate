@@ -221,13 +221,15 @@ class HealthBar(pygame.sprite.Sprite):
 class Object(pygame.sprite.Sprite):
     def __init__(
         self,
-        groups: pygame.sprite.Group,
+        group: pygame.sprite.Group | None,
         pos: tuple[int, int],
         image: pygame.Surface  = pygame.Surface((TILE_SIZE, TILE_SIZE)),
         # z: str = "blocks",
     ) -> None:
-
-        super().__init__(groups)
+        if group is not None:
+            super().__init__(group)
+        else:
+            super().__init__()
 
         self.image = image
         self.rect: pygame.FRect = image.get_frect(topleft = pos)
@@ -327,8 +329,8 @@ class EmoteSprite(Object):
 class ItemSprite(Object):
     def __init__(
         self,
-        groups: pygame.sprite.Group,
-        gid: int,
+        group: pygame.sprite.Group | None,
+        # gid: int,
         pos: tuple[int, int],
         # z: str = "blocks",
         name: str,
@@ -336,10 +338,10 @@ class ItemSprite(Object):
         image: pygame.Surface = pygame.Surface((TILE_SIZE, TILE_SIZE)),
     ) -> None:
 
-        super().__init__(groups, pos, image)
+        super().__init__(group, pos, image)
         # decrease the size of rectangle for collisions aka. hitbox
         # self.hitbox: pygame.FRect = self.rect.copy().inflate(0, -self.rect.height / 2)
-        self.gid = gid
+        # self.gid = gid
         self.name = name
         self.model = model
         if model.type == ItemTypeEnum.weapon:

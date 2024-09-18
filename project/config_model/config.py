@@ -10,6 +10,10 @@ from typing import Annotated, Any, Dict, List, Literal, Tuple
 ###################################################################################################################
 
 
+# class AutoStr(auto):
+#     value: str = _auto_null
+
+
 class RaceEnum(StrEnum):
     humanoid = auto()
     animal = auto()
@@ -64,6 +68,7 @@ class Character():
     attitude:     AttitudeEnum
     health:       Annotated[int,          field(repr=False)]
     max_health:   Annotated[int,          field(repr=False)]
+    items:        Annotated[list[str],    field(repr=False)]
     max_carry_weight: Annotated[float,    field(repr=False)]
     money:        Annotated[int,          field(repr=False)]
     damage:       Annotated[int,          field(repr=False)]
@@ -77,15 +82,17 @@ class Character():
             attitude = AttitudeEnum(data.get("attitude", "")),
             health = data.get("health", 30),
             max_health = data.get("max_health", 30),
+            items = data.get("items", []),
             max_carry_weight = data.get("max_carry_weight", 15.0),
             money = data.get("money", 0),
             damage = data.get("damage", 10),
         )
 
 
-@dataclass
+@dataclass(slots=True)
 class Item():
-    name: str
+    # id:            Annotated[str,          field(repr=False)]
+    name:          str
     type:          ItemTypeEnum
     value:         Annotated[int,          field(repr=False)]
     health_impact: Annotated[int,          field(repr=False)]
@@ -98,6 +105,7 @@ class Item():
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Item":
         return cls(
+            # id            = data.get("id", ""),
             name          = data.get("name", ""),
             type          = ItemTypeEnum(data.get("type", "")),
             value         = data.get("value", 50),
@@ -120,8 +128,8 @@ class Item():
 
 @dataclass
 class Config():
-    characters: Dict[str, Character]
-    items: Dict[str, Item]
+    characters: dict[str, Character]
+    items: dict[str, Item]
 
     @classmethod
     def build(cls, data: dict[str, Any]) -> "Config":

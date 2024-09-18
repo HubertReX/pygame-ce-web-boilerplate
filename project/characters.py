@@ -2,7 +2,7 @@ import copy
 import math
 import os
 import random
-from enum import StrEnum, auto
+from enum import Enum, auto
 from typing import Any
 
 import pygame
@@ -23,6 +23,7 @@ from settings import (
     MONSTER_WAKE_DISTANCE,
     PUSHED_TIME,
     RECALCULATE_PATH_DISTANCE,
+    SCALE,
     SPRITE_SHEET_DEFINITION,
     STUNNED_COLOR,
     STUNNED_TIME,
@@ -49,12 +50,12 @@ from animation.transitions import AnimationTransition
 #################################################################################################################
 
 
-class NPCEventActionEnum(StrEnum):
-    stunned  = auto()
-    pushed   = auto()
-    standard = auto()
-    attacking = auto()
-    switching_weapon = auto()
+class NPCEventActionEnum(Enum):
+    stunned: int  = auto()
+    pushed: int   = auto()
+    standard: int = auto()
+    attacking: int = auto()
+    switching_weapon: int = auto()
 
 
 #################################################################################################################
@@ -177,7 +178,7 @@ class NPC(pygame.sprite.Sprite):
         self.state.enter_time = self.scene.game.time_elapsed
 
     def load_dialogs(self) -> None:
-        if self.model.attitude == AttitudeEnum.friendly.value:
+        if self.model.attitude == AttitudeEnum.friendly:
             modal_panel_file = DIALOGS_DIR / f"{self.model.name}.md"
             if modal_panel_file.exists():
                 self.dialogs = modal_panel_file.read_text()
@@ -337,7 +338,7 @@ class NPC(pygame.sprite.Sprite):
         # activate monsters in maze when player is near
         # no designated waypoints, distance from player in range, is enemy
         if self.waypoints_cnt == 0 and distance_from_player < MONSTER_WAKE_DISTANCE**2 and \
-                self.model.attitude == AttitudeEnum.enemy.value:
+                self.model.attitude == AttitudeEnum.enemy:
             self.target = self.scene.player.pos.copy()
             self.emote.set_temporary_emote("red_exclamation_anim", 4.0)
             self.find_path()
@@ -350,7 +351,7 @@ class NPC(pygame.sprite.Sprite):
             # if (self.waypoints_cnt == 0 or not self.target == self.scene.player.pos) and \
             #     self.model.attitude == AttitudeEnum.enemy.value:
             if (distance_player_moved > RECALCULATE_PATH_DISTANCE ** 2) \
-                    and self.model.attitude == AttitudeEnum.enemy.value:
+                    and self.model.attitude == AttitudeEnum.enemy:
                 self.target = self.scene.player.pos.copy()
                 self.find_path()
 
@@ -493,15 +494,33 @@ class NPC(pygame.sprite.Sprite):
     def check_scene_exit(self) -> None:
         for exit in self.scene.exit_sprites:
             if self.feet.colliderect(exit.rect):
-                self.die()
+                self.die(drop_items=False)
                 # TODO NPC goes to another map
 
+    def get_random_pos(self, x_tiles: int = 1, y_tiles: int = 1) -> vec:
+        return vec(random.randint(-x_tiles * TILE_SIZE * SCALE, x_tiles * TILE_SIZE * SCALE),
+                   random.randint(-y_tiles * TILE_SIZE * SCALE, y_tiles * TILE_SIZE * SCALE))
+
     #############################################################################################################
-    def die(self) -> None:
+    def die(self, drop_items: bool = True) -> None:
         self.scene.NPC = [npc for npc in self.scene.NPC if npc != self]
         self.shadow.kill()
         self.health_bar.kill()
         self.emote.kill()
+        # drop items and money on the ground
+        if self.name != "Player" and drop_items:
+            for item in self.items:
+                self.selected_item_idx = len(self.items) - 1
+                if self.drop_item():
+                    item.rect.center = self.pos + self.get_random_pos()  # type: ignore[assignment]
+                    self.scene.item_sprites.add(item)
+                    self.scene.group.add(item, layer=self.scene.sprites_layer - 1)
+            if self.model.money >  0:
+                pos: vec = self.pos + self.get_random_pos()  # type: ignore[assignment]
+                item = self.scene.create_item("golden_coin", int(pos[0]), int(pos[1]))
+                item.model.value = self.model.money
+                self.scene.item_sprites.add(item)
+                self.scene.group.add(item, layer=self.scene.sprites_layer - 1)
         if self.name == "Player" and self.model.health <= 0:
             self.scene.exit_state()
             scene.Scene(self.game, "Village", "start").enter_state()
@@ -556,11 +575,11 @@ class NPC(pygame.sprite.Sprite):
         # if self.model.name == "Player":
         #     print(kwargs["action"])
 
-        if kwargs.get("action", "") == NPCEventActionEnum.pushed.value:
+        if kwargs.get("action", "") == NPCEventActionEnum.pushed:
             # pushed state is invalidated
             # show health bar
             self.health_bar.set_bar(-1.0, self.game)
-        elif kwargs.get("action", "") ==  NPCEventActionEnum.stunned.value:
+        elif kwargs.get("action", "") ==  NPCEventActionEnum.stunned:
             # stunned state is invalidated
             # show health bar
             self.health_bar.set_bar(-1.0, self.game)
@@ -568,11 +587,11 @@ class NPC(pygame.sprite.Sprite):
             if self.model.health == 0:
                 self.die()
 
-        elif kwargs.get("action", "") ==  NPCEventActionEnum.attacking.value:
+        elif kwargs.get("action", "") ==  NPCEventActionEnum.attacking:
             # attack cool off end
             self.is_attacking = False
             self.scene.group.remove(self.selected_weapon)
-        elif kwargs.get("action", "") ==  NPCEventActionEnum.switching_weapon.value:
+        elif kwargs.get("action", "") ==  NPCEventActionEnum.switching_weapon:
             # switching weapon cool off end
             self.can_switch_weapon = True
         else:
@@ -581,7 +600,7 @@ class NPC(pygame.sprite.Sprite):
     #############################################################################################################
     # MARK: encounter
     def encounter(self, oponent: "NPC") -> None:
-        if oponent.model.attitude == AttitudeEnum.enemy.value:
+        if oponent.model.attitude == AttitudeEnum.enemy:
             # deal damage
             self.model.health -= oponent.model.damage
             if self.selected_weapon:
@@ -646,7 +665,7 @@ class NPC(pygame.sprite.Sprite):
     #############################################################################################################
     # MARK: hit
     def hit(self, oponent: "NPC") -> None:
-        if oponent.model.attitude == AttitudeEnum.enemy.value and self.is_attacking and self.selected_weapon:
+        if oponent.model.attitude == AttitudeEnum.enemy and self.is_attacking and self.selected_weapon:
             # deal damage to oponent only since we hit wit weapon
             damage = self.selected_weapon.model.damage
             oponent.model.health -= damage
@@ -690,7 +709,7 @@ class NPC(pygame.sprite.Sprite):
 
     #############################################################################################################
     def set_event_timer(self, npc: "NPC", action: NPCEventActionEnum, interval: int, repeat: int) -> None:
-        event = pygame.event.Event(npc.custom_event_id, action=action.value)
+        event = pygame.event.Event(npc.custom_event_id, action=action)
         pygame.time.set_timer(event, interval, repeat)
 
     #############################################################################################################
@@ -760,9 +779,81 @@ class NPC(pygame.sprite.Sprite):
             for i, msg in enumerate(msgs):
                 self.game.render_text(msg, (0, HEIGHT - 25 - i * 25))
 
+    #############################################################################################################
+    def pick_up(self, item: ItemSprite) -> bool:
+        result: bool = False
+
+        if item.model.type == ItemTypeEnum.money:
+            self.model.money += item.model.value
+            # self.items.append(item)
+            result = True
+        else:
+            if len(self.items) < MAX_HOTBAR_ITEMS:
+                item_total_weight = item.model.weight  # * item.model.count
+                if self.total_items_weight + item_total_weight <= self.model.max_carry_weight:
+                    self.total_items_weight += item_total_weight
+                    found = False
+                    # increase amount if already owned
+                    for idx, owned_item in enumerate(self.items):
+                        if owned_item.name == item.name:
+                            self.items[idx].model.count += 1
+                            found = True
+                            break
+
+                    # add new item if not owned
+                    if not found:
+                        self.items.append(item)
+
+                    # if it's the first owned item, set it as selected
+                    if self.selected_item_idx < 0:
+                        self.selected_item_idx = 0
+                    result = True
+                else:
+                    print("ERROR: Max carry weight exceeded!")  # TODO: add notification
+            else:
+                print("ERROR: No more free items slot!")
+        # print(f"Picked up {item.name}({item.model.type.value})")
+
+        return result
+
+    #############################################################################################################
+    def drop_item(self) -> ItemSprite | None:
+        if (
+            not self.items or self.selected_item_idx < 0 or self.selected_item_idx > len(self.items) - 1
+        ):
+            return None  # TODO: add notification
+
+        selected_item = self.items[self.selected_item_idx]
+        self.total_items_weight -= selected_item.model.weight  # * selected_item.model.count
+
+        if selected_item.model.count > 1:
+            org_item = selected_item
+            org_item.model.count -= 1
+
+            # selected_item = copy.copy(org_item)
+            selected_item = self.scene.create_item(org_item.name, int(self.pos[0]), int(self.pos[1]))
+            # selected_item.rect = org_item.rect.copy()
+            # selected_item.model = copy.copy(org_item.model)
+            # selected_item.model.count = 1
+        else:
+            # are we dropping currently selected weapon
+            if selected_item.model.type == ItemTypeEnum.weapon and self.selected_weapon and \
+                    self.selected_weapon.name == selected_item.name:
+                self.selected_weapon = None
+
+            self.items.remove(selected_item)
+            self.scene.item_sprites.add(selected_item)
+            selected_item.rect.center = self.pos  # type: ignore[assignment]
+            if self.selected_item_idx >= len(self.items):
+                self.selected_item_idx -= 1
+        # item = self.items.pop(-1)
+
+        return selected_item
 
 #################################################################################################################
 # MARK: Player
+
+
 class Player(NPC):
     def __init__(
             self,
@@ -929,7 +1020,7 @@ class Player(NPC):
                 self.set_event_timer(self, NPCEventActionEnum.switching_weapon, self.switch_duration_cooldown, 1)
 
                 if self.selected_weapon:
-                    if self.selected_weapon.model.name == item.model.name:
+                    if self.selected_weapon.name == item.name:
                         # self.scene.group.remove(self.selected_weapon)
                         self.selected_weapon = None
                     else:
@@ -939,69 +1030,3 @@ class Player(NPC):
                 else:
                     self.selected_weapon = item
                     # self.scene.group.add(self.selected_weapon)
-
-    #############################################################################################################
-    def pick_up(self, item: ItemSprite) -> bool:
-        result: bool = False
-
-        if item.model.type == ItemTypeEnum.money:
-            self.model.money += item.model.value
-            # self.items.append(item)
-            result = True
-        else:
-            if len(self.items) < MAX_HOTBAR_ITEMS:
-                item_total_weight = item.model.weight  # * item.model.count
-                if self.total_items_weight + item_total_weight <= self.model.max_carry_weight:
-                    self.total_items_weight += item_total_weight
-                    found = False
-                    # increase amount if already owned
-                    for idx, owned_item in enumerate(self.items):
-                        if owned_item.model.name == item.model.name:
-                            self.items[idx].model.count += 1
-                            found = True
-                            break
-
-                    # add new item if not owned
-                    if not found:
-                        self.items.append(item)
-
-                    # if it's the first owned item, set it as selected
-                    if self.selected_item_idx < 0:
-                        self.selected_item_idx = 0
-                    result = True
-            else:
-                print("No more free items slot")
-        # print(f"Picked up {item.name}({item.model.type.value})")
-
-        return result
-
-    #############################################################################################################
-    def drop_item(self) -> ItemSprite | None:
-        if (
-            not self.items or self.selected_item_idx < 0 or self.selected_item_idx > len(self.items) - 1
-        ):
-            return None
-
-        selected_item = self.items[self.selected_item_idx]
-        self.total_items_weight -= selected_item.model.weight  # * selected_item.model.count
-
-        if selected_item.model.count > 1:
-            org_item = selected_item
-            org_item.model.count -= 1
-
-            selected_item = copy.copy(org_item)
-            selected_item.rect = org_item.rect.copy()
-            selected_item.model = copy.copy(org_item.model)
-            selected_item.model.count = 1
-        else:
-            # are we dropping currently selected weapon
-            if selected_item.model.type == ItemTypeEnum.weapon and self.selected_weapon and \
-                    self.selected_weapon.model.name == selected_item.model.name:
-                self.selected_weapon = None
-
-            self.items.remove(selected_item)
-            if self.selected_item_idx >= len(self.items):
-                self.selected_item_idx -= 1
-        # item = self.items.pop(-1)
-
-        return selected_item

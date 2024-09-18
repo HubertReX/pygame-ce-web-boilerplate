@@ -50,11 +50,10 @@ WALL_DECORS_MAX = 8
 # FLOOR_DECORS_IDS = [49, 42]
 ITEMS_MAX_COUNT = {
     "golden_coin": 2,
-    "flask_health": 2,
+    "life_pot": 2,
     "axe": 1,
     "sword_short": 1,
-    "sword_long": 1,
-    "staff_violet": 1,
+    "sword_long": 1
 }
 
 MARGIN = 3

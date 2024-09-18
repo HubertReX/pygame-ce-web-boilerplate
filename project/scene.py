@@ -1,7 +1,7 @@
 import contextlib
 import random
 from typing import cast
-
+from rich import print
 import game
 import menus
 import pygame
@@ -38,6 +38,7 @@ from settings import (
     HEIGHT,
     INITIAL_HOUR,
     INPUTS,
+    ITEMS_DIR,
     MAPS_DIR,
     MAZE_DIR,
     MONSTER_WAKE_DISTANCE,
@@ -88,6 +89,8 @@ class Scene(State):
         self.maze_cols = maze_cols
         self.maze_rows = maze_rows
         self.waypoints: dict[str, tuple[Point, ...]] = {}
+        self.items: list[ItemSprite] = []
+        self.items_defs: dict[str, pygame.Surface] = {}
 
         self.label_sprites: pygame.sprite.Group = pygame.sprite.Group()
         self.shadow_sprites: pygame.sprite.Group = pygame.sprite.Group()
@@ -132,10 +135,41 @@ class Scene(State):
         # are we outdoors? shell there be night and day cycle?
         self.outdoor: bool = False
         # self.circle_gradient: pygame.Surface = (CIRCLE_GRADIENT).convert_alpha()
-
+        self.load_items_def()
         self.load_map()
         self.ui = UI(self, tiny_font=self.game.fonts[FONT_SIZE_SMALL], medium_font=self.game.fonts[FONT_SIZE_MEDIUM])
         # self.set_camera_on_player()
+
+    #############################################################################################################
+    def create_item(self, name: str, x: int, y: int, show: bool = True) -> ItemSprite:
+        group = self.item_sprites if show else None
+        return ItemSprite(
+            group,
+            (x, y),
+            name,  # tile.item_name,
+            image=self.items_defs[name],
+            model=self.game.conf.items[name]
+        )
+
+    #############################################################################################################
+
+    def load_items_def(self) -> None:
+        items_map = load_pygame(str(ITEMS_DIR / "Items.tmx"))
+        items_layer = cast(TiledTileLayer, items_map.get_layer_by_name("Items"))
+
+        self.items_defs = {}
+        for x, y, tile in items_layer.tiles():
+            gid = items_layer.data[y][x]
+            # skip item defs that don't have item_name property set
+            if gid not in items_map.tile_properties:
+                continue
+
+            name = items_map.tile_properties[gid]["item_name"]
+            if name in self.game.conf.items:
+                self.items_defs[name] = tile
+            else:
+                if name:
+                    print(f"[red]ERROR![/] {name} item has no definition in config.json")
 
     #############################################################################################################
 
@@ -191,11 +225,6 @@ class Scene(State):
                 # blocked from walking (wall)
                 self.path_finding_grid[y][x] = 100
 
-        # for tileset in tileset_map.tilesets:
-        #     if tileset.name == "items":
-        #         print(tileset)
-        #         from pytmx import TiledTileset
-        #         t = TiledTileset()
         self.items = []
         self.item_sprites.empty()
         if "items" in self.layers:
@@ -204,17 +233,9 @@ class Scene(State):
             for x, y, tile in items_layer.tiles():
                 gid = items_layer.data[y][x]
                 name = tileset_map.tile_properties[gid]["item_name"]
-                item = ItemSprite(
-                    self.item_sprites,
-                    gid,
-                    (x * TILE_SIZE, y * TILE_SIZE),
-                    # (tile.width, tile.height),
-                    name,  # tile.item_name,
-                    image=tile,
-                    model=self.game.conf.items[name]
-                )
+
+                item = self.create_item(name, x * TILE_SIZE, y * TILE_SIZE)
                 self.items.append(item)
-                # print(item.model)
             items_layer.visible = False
 
         if "exits" in self.layers:
@@ -265,7 +286,16 @@ class Scene(State):
                     self.emotes,
                     waypoint,
                 )
+                # init items
+                for item_name in npc.model.items:
+                    item = self.create_item(item_name, 0, 0, show=False)
+                    npc.pick_up(item)
                 self.NPC.append(npc)
+
+        # init items
+        for item_name in self.player.model.items:
+            item = self.create_item(item_name, 0, 0, show=False)
+            self.player.pick_up(item)
 
         if self.is_maze:
             # spawning 4 random NPCs in upper right, lower right, lower left corners and in the middle of the map
@@ -330,7 +360,7 @@ class Scene(State):
             self.player.pos = vec(ep.x, ep.y)
             self.player.adjust_rect()
         else:
-            print("[red]no entry point found!")
+            print("[red]ERROR![/] no entry point found!")
             # fallback - put the player in the center of the map
             self.player.pos = self.map_view.map_rect.center
 
@@ -407,7 +437,7 @@ class Scene(State):
                     img_part = img.subsurface(rec)
                     anim.append(img_part)
                 else:
-                    print(f"ERROR! {self.current_scene}: coordinate {x}x{
+                    print(f"[red]ERROR![/] {self.current_scene}: coordinate {x}x{
                           y} not inside sprite sheet for {key} animation")
                     continue
             if anim:
@@ -740,14 +770,12 @@ class Scene(State):
 
             distance_from_player = (npc.pos - self.player.pos).magnitude_squared()
             # enable talk to npc when player is near
-            if npc.model.attitude == AttitudeEnum.friendly.value and distance_from_player < FRIENDLY_WAKE_DISTANCE**2:
+            if npc.model.attitude == AttitudeEnum.friendly and distance_from_player < FRIENDLY_WAKE_DISTANCE**2:
                 npc.health_bar.set_bar(npc.model.health / npc.model.max_health, self.game)
 
                 if npc.has_dialog and npc.dialogs:
                     self.player.npc_met = npc
                     npc.npc_met = self.player
-                    # self.ui.dialog_panel.set_text(npc.dialogs)
-                    # self.ui.dialog_panel.formatted_text.scroll_top()
                     break
             else:
                 npc.health_bar.set_bar(-1, self.game)
@@ -806,11 +834,8 @@ class Scene(State):
             # drop item from inventory to ground
             if len(self.player.items) > 0 and not self.player.is_attacking and not self.player.is_stunned:
                 if item := self.player.drop_item():
-                    # item.pos = self.player.pos
-                    item.rect.center = self.player.pos  # type: ignore[assignment]
-                    self.item_sprites.add(item)
                     self.group.add(item, layer=self.sprites_layer - 1)
-                    print(f"Dropped {item.name}[{item.model.type.value}]")
+                    print(f"Dropped {item.name}[{item.model.type.value}]")  # TODO: add notification
                 else:
                     print("No item to drop!")
             INPUTS["drop"] = False

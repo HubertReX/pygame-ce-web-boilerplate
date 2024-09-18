@@ -1,29 +1,77 @@
 {
     "$schema": "./config_schema.json",
     "items": {
+        "hammer": {
+            "name": "War hammer",
+            "type": "weapon",
+            "weight": 5.0,
+            "damage": 25,
+            "cooldown_time": 0.5,
+            "value": 70
+        },
+        "club": {
+            "name": "War hammer",
+            "type": "weapon",
+            "weight": 7.0,
+            "damage": 30,
+            "cooldown_time": 0.6,
+            "value": 50
+        },
         "axe": {
             "name": "War Axe",
             "type": "weapon",
             "weight": 5.0,
             "damage": 35,
+            "cooldown_time": 0.5,
+            "value": 170
+        },
+        "stick": {
+            "name": "Stick",
+            "type": "weapon",
+            "weight": 1,
+            "damage": 5,
+            "cooldown_time": 0.2,
+            "value": 20
+        },
+        "pitchfork": {
+            "name": "Pitchfork",
+            "type": "weapon",
+            "weight": 2.5,
+            "damage": 10,
             "cooldown_time": 0.4,
-            "value": 150
+            "value": 50
         },
         "lance": {
             "name": "Lance",
             "type": "weapon",
             "weight": 2.5,
+            "damage": 15,
+            "cooldown_time": 0.4,
+            "value": 150
+        },
+        "katana": {
+            "name": "Katana",
+            "type": "weapon",
+            "weight": 2.5,
             "damage": 20,
             "cooldown_time": 0.3,
-            "value": 150
+            "value": 250
         },
         "sword_long": {
             "name": "Long sword",
             "type": "weapon",
             "weight": 3.0,
-            "damage": 25,
-            "cooldown_time": 0.3,
-            "value": 200
+            "damage": 30,
+            "cooldown_time": 0.5,
+            "value": 250
+        },
+        "rapier": {
+            "name": "Rapier",
+            "type": "weapon",
+            "weight": 1.0,
+            "damage": 10,
+            "cooldown_time": 0.1,
+            "value": 50
         },
         "sword_short": {
             "name": "Short sword",
@@ -33,13 +81,13 @@
             "cooldown_time": 0.1,
             "value": 50
         },
-        "staff_violet": {
-            "name": "Violet staff",
+        "sai": {
+            "name": "Sai",
             "type": "weapon",
-            "weight": 0.8,
-            "damage": 20,
-            "cooldown_time": 0.2,
-            "value": 150
+            "weight": 1.0,
+            "damage": 10,
+            "cooldown_time": 0.1,
+            "value": 20
         },
         "golden_coin": {
             "name": "Golden coin",
@@ -53,17 +101,44 @@
             "weight": 0.01,
             "value": 500
         },
-        "flask_health": {
-            "name": "Life flask",
+        "golden_key": {
+            "name": "Golden key",
+            "type": "key",
+            "weight": 0.01,
+            "value": 500
+        },
+        "beef": {
+            "name": "Baked beef",
             "type": "consumable",
             "health_impact": 50,
+            "weight": 2.0,
+            "value": 30
+        },
+        "honey": {
+            "name": "Bee honey",
+            "type": "consumable",
+            "health_impact": 40,
+            "weight": 1.0,
+            "value": 20
+        },
+        "empty_pot": {
+            "name": "Empty pot",
+            "type": "consumable",
+            "health_impact": 0,
+            "weight": 0.1,
+            "value": 10
+        },
+        "water_pot": {
+            "name": "Water pot",
+            "type": "consumable",
+            "health_impact": 5,
             "weight": 0.15,
-            "value": 300
+            "value": 20
         },
         "life_pot": {
             "name": "Life potion",
             "type": "consumable",
-            "health_impact": 50,
+            "health_impact": 100,
             "weight": 0.15,
             "value": 300
         },
@@ -104,6 +179,11 @@
             "attitude": "friendly",
             "health": 100,
             "max_health": 100,
+            "items": [
+                "axe",
+                "shashlik",
+                "shashlik"
+            ],
             "money": 20
         },
         "Johny": {
@@ -164,8 +244,11 @@
             "attitude": "enemy",
             "health": 50,
             "max_health": 50,
+            "items": [
+                "life_pot"
+            ],
             "damage": 20,
-            "money": 0
+            "money": 1000
         },
         "Spirit_01": {
             "name": "Spirit",

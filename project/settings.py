@@ -331,6 +331,7 @@ ASSET_PACK        = "NinjaAdventure"
 RESOURCES_DIR     = ASSETS_DIR / ASSET_PACK
 DIALOGS_DIR       = ASSETS_DIR / "dialogs" / LANG
 MAPS_DIR          = RESOURCES_DIR / "maps"
+ITEMS_DIR          = RESOURCES_DIR / "items"
 MAZE_DIR          = ASSETS_DIR / "MazeTileset"
 CHARACTERS_DIR    = RESOURCES_DIR / "characters"
 PARTICLES_DIR     = RESOURCES_DIR / "particles"

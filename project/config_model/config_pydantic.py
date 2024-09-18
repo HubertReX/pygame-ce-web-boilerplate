@@ -3,9 +3,9 @@ from dataclasses import dataclass, field
 from enum import Enum, IntEnum, StrEnum, auto
 from os import PathLike
 from pathlib import Path
-from typing import Annotated, Any, Dict, List, Literal, Tuple
+from typing import Annotated, Any
 
-from pydantic import BaseModel, Field, PositiveInt, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, PositiveInt, ValidationError
 
 ###################################################################################################################
 
@@ -42,6 +42,8 @@ class ItemTypeEnum(StrEnum):
 
 
 class Character(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: str   = Field(min_length=3, frozen=True, description="Unique character name")
     sprite: str = Field(
         min_length=3,
@@ -52,6 +54,8 @@ class Character(BaseModel):
     attitude:     Annotated[AttitudeEnum, Field(description="Attitude towards the player", repr=False)]
     health:       Annotated[int,          Field(30, ge=0, description="initial health value", repr=False)]
     max_health:   Annotated[int,          Field(30, ge=0, description="maximal health value", repr=False)]
+    # items:        Annotated[list["Item"], Field(description="list of character's items", default_factory = list)]
+    items:        Annotated[list[str],    Field(description="list of character's items", default_factory = list)]
     max_carry_weight: Annotated[float,    Field(15.0, ge=0, description="maximal carrying weight in kg", repr=False)]
     money:        Annotated[int,          Field(0,  ge=0, description="initial amount of possessed money", repr=False)]
     damage:       Annotated[int,          Field(10, ge=0, description="amount of damage delt to others", repr=False)]
@@ -61,8 +65,12 @@ class Character(BaseModel):
 
 
 class Item(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    # id: str   = Field(
+    #     min_length=3, frozen=True, description="Unique string identifier")
     name: str   = Field(
-        min_length=3, frozen=True, description="Unique item name")
+        min_length=3, frozen=True, description="Item display name")
     type:          Annotated[ItemTypeEnum, Field(
         description="Item type (e.g. weapon, tool, consumable)")]
     value:         Annotated[int,          Field(
@@ -91,8 +99,17 @@ class Item(BaseModel):
 # MARK: Config
 
 class Config(BaseModel):
-    characters: Dict[str, Character]
-    items: Dict[str, Item]
+    # this class is used only for crating instances of the config class
+    characters: dict[str, Character]
+    items: dict[str, Item]
+
+
+class ConfigForSchemaGen(Config):
+    # this class is used only for generating the config schema
+    # we can't use the same class since $schema won't validate
+    # json_schema_extra={'$schema': "./config_schema.json"}
+    model_config = ConfigDict(extra="forbid")
+
 
 ###################################################################################################################
 
@@ -103,7 +120,7 @@ def test() -> None:
     # except ValidationError as e:
     #     print(e.errors())
 
-    save_config_schema(Config, Path("config_schema.json"))
+    save_config_schema(ConfigForSchemaGen, Path("config_schema.json"))
 
     # c = load_config(Path("config.json"))
 
@@ -119,6 +136,8 @@ def generate_config_schema(model: type[Config]) -> dict[str, Any]:
 
 def save_config_schema(model: type[Config], file_name: PathLike) -> None:
     schema = generate_config_schema(model)
+    # hack allows to add additional property that $schema name
+    schema["properties"]["$schema"] = f"./{file_name}"
     with open(file_name, "w", encoding="utf-8") as f:
         json.dump(schema, f, ensure_ascii=False, indent=4)
 
@@ -132,6 +151,7 @@ def save_config(model: Config, file_name: PathLike) -> None:
 
 ###################################################################################################################
 def load_config(file_name: PathLike) -> "Config":
+    config: Config | None = None
     with open(file_name, "r") as f:
         config_json = json.load(f)
 
@@ -141,7 +161,9 @@ def load_config(file_name: PathLike) -> "Config":
         config = Config(**config_json)
     # except ValidationError as e:
     except Exception as e:
-        print(e.args)
+        print("Error! Unable to create config - validation failed.")
+        print(e)
+        exit(1)
     # finally:
     #     print(config.characters)
     return config

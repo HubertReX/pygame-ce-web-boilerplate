@@ -417,7 +417,7 @@ class UI:
                 label = "consume"
             elif item.model.type == ItemTypeEnum.weapon:
                 if self.scene.player.selected_weapon:
-                    if self.scene.player.selected_weapon.model.name == item.model.name:
+                    if self.scene.player.selected_weapon.name == item.name:
                         label = "disarm"
                     else:
                         label = "equip"
