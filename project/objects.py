@@ -161,7 +161,7 @@ class HealthBar(pygame.sprite.Sprite):
                  #  translate_pos: Callable
                  ) -> None:
         super().__init__(groups)
-        self.image: pygame.Surface = pygame.Surface((100, 16)).convert_alpha()
+        self.image: pygame.Surface = pygame.Surface((100, 20)).convert_alpha()
         self.image.fill(TRANSPARENT_COLOR)
         self.model = model
         self.translate_pos: Callable = lambda pos:  pos
@@ -188,7 +188,7 @@ class HealthBar(pygame.sprite.Sprite):
         # leave image fully transparent (hide labels)
         if percentage < 0.0:
             return
-
+        y: int = 8
         # show health bar only for enemies
         if self.model.attitude == AttitudeEnum.enemy.value:
             self.image.blit(self.image_full, self.rect_full.topleft)
@@ -201,11 +201,13 @@ class HealthBar(pygame.sprite.Sprite):
 
             self.image.blit(tmp_img, (self.rect_full.left + width, 1))
 
+            y += 5
+
         # render name of the character
         game.render_text(
             self.model.name,
             # self.translate_pos((int(self.rect.width // 2), 10)),
-            (int(self.rect.width // 2), 10),
+            (int(self.rect.width // 2), y),
             self.color,
             font_size=FONT_SIZE_TINY,
             thin_fonts=True,

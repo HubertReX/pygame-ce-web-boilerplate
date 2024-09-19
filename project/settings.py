@@ -111,7 +111,7 @@ RUN_SPEED: float = 39.0
 # after how many seconds of Idle state player changes state to Bored
 BORED_TIME: float = 4.0
 # how long is NPC in stunned state [ms]
-STUNNED_TIME: int = 1000
+STUNNED_TIME: int = 800
 # how long is NPC in pushed state [ms]
 PUSHED_TIME: int = 1000
 

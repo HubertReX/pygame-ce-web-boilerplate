@@ -1,9 +1,11 @@
 import copy
+# from dataclasses import dataclass
 import math
 import os
 import random
 from enum import Enum, auto
 from typing import Any
+from rich import print
 
 import pygame
 from maze_generator.maze_utils import a_star_cached
@@ -60,6 +62,7 @@ class NPCEventActionEnum(Enum):
 
 #################################################################################################################
 # MARK: NPC
+# @dataclass(slots=True)
 class NPC(pygame.sprite.Sprite):
     def __init__(
             self,
@@ -74,10 +77,10 @@ class NPC(pygame.sprite.Sprite):
             waypoints: tuple[Point, ...] = (),
     ):
 
-        super().__init__(groups)
+        self.name = name
+        super(NPC, self).__init__(groups)
         self.game = game
         self.scene = scene
-        self.name = name
         self.model: Character = game.conf.characters[name]
         self.dialogs: str | None = None
         self.has_dialog: bool = False
@@ -88,7 +91,7 @@ class NPC(pygame.sprite.Sprite):
         self.health_bar = self.create_health_bar(label_group, pos)
         # self.weapon_group = groups[-1]
         # hide health bar at start (negative value makes it transparent)
-        self.health_bar.set_bar(-1.0, self.game)
+        self.hide_health_bar()
         self.items: list[ItemSprite] = []
         self.selected_weapon: ItemSprite | None = None
         self.selected_item_idx: int = -1
@@ -146,9 +149,11 @@ class NPC(pygame.sprite.Sprite):
 
         # basic planar (N,E, S, W) physics
         # speed in pixels per second
-        self.speed_walk: int = 30
-        self.speed_run: int = 40
+        self.speed_walk: int = self.model.speed_walk
+        self.speed_run: int = self.model.speed_run
         self.speed: int = random.choice([self.speed_walk, self.speed_run])
+        if self.model.attitude == AttitudeEnum.enemy:
+            self.speed = self.speed_walk
 
         # movement inertia
         self.force: int = 2000
@@ -176,6 +181,13 @@ class NPC(pygame.sprite.Sprite):
         # actual NPC state, mainly to determine type of animation and speed
         self.state: npc_state.NPC_State = npc_state.Idle()
         self.state.enter_time = self.scene.game.time_elapsed
+
+    #############################################################################################################
+
+    def __hash__(self) -> int:
+        return hash(self.name)
+
+    #############################################################################################################
 
     def load_dialogs(self) -> None:
         if self.model.attitude == AttitudeEnum.friendly:
@@ -340,6 +352,7 @@ class NPC(pygame.sprite.Sprite):
         if self.waypoints_cnt == 0 and distance_from_player < MONSTER_WAKE_DISTANCE**2 and \
                 self.model.attitude == AttitudeEnum.enemy:
             self.target = self.scene.player.pos.copy()
+            self.speed = self.speed_run
             self.emote.set_temporary_emote("red_exclamation_anim", 4.0)
             self.find_path()
         # if character has a set target (and needs to follow it) or there are no waypoints to follow any more
@@ -389,6 +402,9 @@ class NPC(pygame.sprite.Sprite):
         self.current_waypoint_no = 0
         self.acc = vec(0, 0)
         # self.vel = vec(0, 0)
+        if self.model.attitude == AttitudeEnum.enemy:
+            self.speed = self.speed_walk
+
         return
 
     #############################################################################################################
@@ -449,7 +465,7 @@ class NPC(pygame.sprite.Sprite):
 
         if self.tileset_coord.y < len(self.scene.path_finding_grid) and \
                 self.tileset_coord.x < len(self.scene.path_finding_grid[0]):
-            step_cost = abs(self.scene.path_finding_grid[self.tileset_coord.y][self.tileset_coord.x])
+            step_cost = abs(self.scene.path_finding_grid[self.tileset_coord.y][self.tileset_coord.x]) or 1
         else:
             step_cost = 1
         speed = (self.speed * (100 / step_cost))
@@ -523,6 +539,7 @@ class NPC(pygame.sprite.Sprite):
                 self.scene.group.add(item, layer=self.scene.sprites_layer - 1)
         if self.name == "Player" and self.model.health <= 0:
             self.scene.exit_state()
+            self.scene.player.reset()
             scene.Scene(self.game, "Village", "start").enter_state()
             splash_screen.SplashScreen(self.game, "GAME OVER").enter_state()
         self.kill()
@@ -578,11 +595,11 @@ class NPC(pygame.sprite.Sprite):
         if kwargs.get("action", "") == NPCEventActionEnum.pushed:
             # pushed state is invalidated
             # show health bar
-            self.health_bar.set_bar(-1.0, self.game)
+            self.hide_health_bar()
         elif kwargs.get("action", "") ==  NPCEventActionEnum.stunned:
             # stunned state is invalidated
             # show health bar
-            self.health_bar.set_bar(-1.0, self.game)
+            self.hide_health_bar()
             self.is_stunned = False
             if self.model.health == 0:
                 self.die()
@@ -596,6 +613,14 @@ class NPC(pygame.sprite.Sprite):
             self.can_switch_weapon = True
         else:
             print("unknown action", self.model.name, kwargs)
+
+    #############################################################################################################
+    def hide_health_bar(self) -> None:
+        self.health_bar.set_bar(-1.0, self.game)
+
+    #############################################################################################################
+    def show_health_bar(self) -> None:
+        self.health_bar.set_bar(self.model.health / self.model.max_health, self.game)
 
     #############################################################################################################
     # MARK: encounter
@@ -628,7 +653,7 @@ class NPC(pygame.sprite.Sprite):
 
             # show health bar (for STUNNED_TIME ms)
             # self.health_bar.set_bar(self.model.health / self.model.max_health, self.game)
-            oponent.health_bar.set_bar(oponent.model.health / oponent.model.max_health, self.game)
+            oponent.show_health_bar()
 
             # push the npc
             player_move = self.pos - oponent.pos
@@ -656,7 +681,7 @@ class NPC(pygame.sprite.Sprite):
 
             # show health bar (for PUSHED_TIME ms)
             # self.health_bar.set_bar(self.model.health / self.model.max_health, self.game)
-            oponent.health_bar.set_bar(oponent.model.health / oponent.model.max_health, self.game)
+            oponent.show_health_bar()
             # if oponent.has_dialog and oponent.dialogs:
             #     self.npc_met = oponent
             #     self.scene.ui.dialog_panel.set_text(oponent.dialogs)
@@ -680,7 +705,7 @@ class NPC(pygame.sprite.Sprite):
 
             # show health bar (for STUNNED_TIME ms)
             # self.health_bar.set_bar(self.model.health / self.model.max_health, self.game)
-            oponent.health_bar.set_bar(oponent.model.health / oponent.model.max_health, self.game)
+            oponent.show_health_bar()
 
             # push the npc
             player_move = self.pos - oponent.pos
@@ -729,6 +754,8 @@ class NPC(pygame.sprite.Sprite):
         self.is_jumping = False
         self.is_stunned = False
         self.is_talking = False
+        self.items = []
+        self.model.health = self.model.max_health
 
     #############################################################################################################
 
@@ -809,9 +836,9 @@ class NPC(pygame.sprite.Sprite):
                         self.selected_item_idx = 0
                     result = True
                 else:
-                    print("ERROR: Max carry weight exceeded!")  # TODO: add notification
+                    print(f"\n[red]ERROR:[/] {self.name} Max carry weight exceeded!\n")  # TODO: add notification
             else:
-                print("ERROR: No more free items slot!")
+                print(f"\n[red]ERROR:[/] {self.name} No more free items slot!\n")
         # print(f"Picked up {item.name}({item.model.type.value})")
 
         return result
@@ -854,6 +881,8 @@ class NPC(pygame.sprite.Sprite):
 # MARK: Player
 
 
+# @dataclass(slots=True, unsafe_hash=True)
+# @dataclass(slots=True, frefrozen=True)
 class Player(NPC):
     def __init__(
             self,
@@ -866,21 +895,28 @@ class Player(NPC):
             name: str,
             emotes: dict[str, list[pygame.Surface]]
     ):
-        super().__init__(game, scene, groups, shadow_group, label_group, pos, name, emotes)
+        self.name = name
+        super(Player, self).__init__(game, scene, groups, shadow_group, label_group, pos, name, emotes)
         # give player some super powers
         self.speed_run  = int(self.speed_run * 1.7)
         self.speed_walk = int(self.speed_walk * 1.4)
         self.speed = self.speed_run
         self.health_bar_ui = self.create_health_bar_ui(label_group, pos, 4)
         label_group.remove(self.health_bar)
+    #############################################################################################################
+
+    def __hash__(self) -> int:
+        return hash(self.name)
 
     #############################################################################################################
+
     def create_health_bar_ui(
         self,
         label_group: pygame.sprite.Group,
         pos: tuple[int, int],
         scale: int = 1
     ) -> HealthBarUI:
+        # self.wrong: bool = True
         return HealthBarUI(self.model, label_group, pos, scale)
 
     #############################################################################################################
@@ -915,18 +951,28 @@ class Player(NPC):
             y = target.y // self.scene.map_view._real_ratio_y - my
             rect = pygame.Rect(x, y, 2, 2)
             fix_exit_target = False
+            skip = False
             exit_sprites = list(self.scene.exit_sprites)
             if rect.collidelist(exit_sprites) > -1:
                 fix_exit_target = True
                 y += TILE_SIZE
-            self.target = vec(x, y + 8)
-            self.find_path()
+            else:
+                cell_x = int(x // TILE_SIZE)
+                cell_y = int(y // TILE_SIZE)
+                walk_cost = self.scene.path_finding_grid[cell_y][cell_x]
+                if walk_cost > 0:
+                    print("[yellow]INFO[/] destination unreachable")
+                    skip = True
 
-            if fix_exit_target:
-                exit_target = Point(int(x), int(y - TILE_SIZE))
-                waypoints_l = list(self.waypoints)
-                self.waypoints = tuple(waypoints_l + [exit_target])
-                self.waypoints_cnt = len(waypoints_l)
+            if not skip:
+                self.target = vec(x, y + 8)
+                self.find_path()
+
+                if fix_exit_target:
+                    exit_target = Point(int(x), int(y - TILE_SIZE))
+                    waypoints_l = list(self.waypoints)
+                    self.waypoints = tuple(waypoints_l + [exit_target])
+                    self.waypoints_cnt = len(waypoints_l)
 
             INPUTS["left_click"] = False
 
@@ -988,12 +1034,16 @@ class Player(NPC):
 
     #############################################################################################################
     def check_scene_exit(self) -> None:
+        if self.scene.transition.exiting:
+            return
+
         for exit in self.scene.exit_sprites:
             if self.feet.colliderect(exit.rect):
                 # if exit.to_map == "Maze":
                 #     pass
                 self.scene.new_scene = exit
                 self.scene.transition.exiting = True
+                break
                 # self.scene.go_to_scene()
 
     #############################################################################################################

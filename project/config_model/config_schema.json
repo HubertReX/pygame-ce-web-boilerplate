@@ -82,6 +82,20 @@
                     "minimum": 0,
                     "title": "Damage",
                     "type": "integer"
+                },
+                "speed_walk": {
+                    "default": 30,
+                    "description": "walking speed",
+                    "gr": 0,
+                    "title": "Speed Walk",
+                    "type": "integer"
+                },
+                "speed_run": {
+                    "default": 40,
+                    "description": "walking speed",
+                    "gr": 0,
+                    "title": "Speed Run",
+                    "type": "integer"
                 }
             },
             "required": [

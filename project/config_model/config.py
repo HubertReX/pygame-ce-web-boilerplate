@@ -10,10 +10,6 @@ from typing import Annotated, Any, Dict, List, Literal, Tuple
 ###################################################################################################################
 
 
-# class AutoStr(auto):
-#     value: str = _auto_null
-
-
 class RaceEnum(StrEnum):
     humanoid = auto()
     animal = auto()
@@ -72,6 +68,8 @@ class Character():
     max_carry_weight: Annotated[float,    field(repr=False)]
     money:        Annotated[int,          field(repr=False)]
     damage:       Annotated[int,          field(repr=False)]
+    speed_walk:   Annotated[int,          field(repr=False)]
+    speed_run:    Annotated[int,          field(repr=False)]
 
     @classmethod
     def from_dict(cls: type["Character"], data: dict[str, Any]) -> "Character":
@@ -86,6 +84,8 @@ class Character():
             max_carry_weight = data.get("max_carry_weight", 15.0),
             money = data.get("money", 0),
             damage = data.get("damage", 10),
+            speed_walk = data.get("speed_walk", 30),
+            speed_run = data.get("speed_run", 40),
         )
 
 

@@ -56,6 +56,7 @@ from settings import (
     # ColorValue,
     Point,
     to_point,
+    tuple_to_vector,
     # to_vector,
     # tuple_to_vector,
     vec,
@@ -91,6 +92,7 @@ class Scene(State):
         self.waypoints: dict[str, tuple[Point, ...]] = {}
         self.items: list[ItemSprite] = []
         self.items_defs: dict[str, pygame.Surface] = {}
+        self.walls: list[pygame.Rect] = []
 
         self.label_sprites: pygame.sprite.Group = pygame.sprite.Group()
         self.shadow_sprites: pygame.sprite.Group = pygame.sprite.Group()
@@ -219,7 +221,7 @@ class Scene(State):
             # 100 => wall (not walkable)
             self.path_finding_grid = [[0 for _ in range(walls_width)] for _ in range(walls_height)]
 
-            for x, y, surf in cast(TiledTileLayer, tileset_map.get_layer_by_name("walls")).tiles():
+            for x, y, surf in cast(TiledTileLayer, walls).tiles():
                 rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, surf.get_width(), surf.get_height())
                 self.walls.append(rect)
                 # blocked from walking (wall)
@@ -238,6 +240,7 @@ class Scene(State):
                 self.items.append(item)
             items_layer.visible = False
 
+        # print("[yellow]Exits[/]")
         if "exits" in self.layers:
             for obj in cast(TiledObjectGroup, tileset_map.get_layer_by_name("exits")):
                 Collider(
@@ -252,6 +255,15 @@ class Scene(State):
                     getattr(obj, "maze_rows", 0),
                     getattr(obj, "return_entry_point", ""),
                 )
+                # print(
+                #     obj.name,
+                #     obj.to_map,
+                #     obj.entry_point,
+                #     obj.is_maze,
+                #     getattr(obj, "maze_cols", 0),
+                #     getattr(obj, "maze_rows", 0),
+                #     getattr(obj, "return_entry_point", ""),
+                # )
         self.waypoints = {}
         # layer of invisible objects consisting of points that layout a list waypoints to follow by NPCs
         if "waypoints" in self.layers:
@@ -286,20 +298,11 @@ class Scene(State):
                     self.emotes,
                     waypoint,
                 )
-                # init items
-                for item_name in npc.model.items:
-                    item = self.create_item(item_name, 0, 0, show=False)
-                    npc.pick_up(item)
                 self.NPC.append(npc)
-
-        # init items
-        for item_name in self.player.model.items:
-            item = self.create_item(item_name, 0, 0, show=False)
-            self.player.pick_up(item)
 
         if self.is_maze:
             # spawning 4 random NPCs in upper right, lower right, lower left corners and in the middle of the map
-            spawn_positions = [
+            spawn_positions: list[tuple[int, int]] = [
                 ((5 + ((self.maze_cols  - 1) * 6)) * TILE_SIZE + 2, ((7 + (self.maze_rows  - 1) * 6)) * TILE_SIZE + 2),
                 ((5)                               * TILE_SIZE + 2, ((7 + (self.maze_rows  - 1) * 6)) * TILE_SIZE + 2),
                 ((5 + ((self.maze_cols  - 1) * 6)) * TILE_SIZE + 2, ((7))                             * TILE_SIZE + 2),
@@ -319,6 +322,36 @@ class Scene(State):
                     (),
                 )
                 self.NPC.append(npc)
+
+            for _ in range(4):
+                x_r: int = random.randint(0, 5)
+                y_r: int = random.randint(0, 5)
+                pos_r: tuple[int, int] = ((5 + (x_r * 6)) * TILE_SIZE + 2, (7 + y_r * 6) * TILE_SIZE + 2)
+                monster_name = random.choice(["Snake_01", "Spider_01", "Spirit_01", "Slime_01",])
+                npc = NPC(
+                    self.game,
+                    self,
+                    self.draw_sprites,
+                    self.shadow_sprites,
+                    self.label_sprites,
+                    pos_r,
+                    monster_name,
+                    self.emotes,
+                    (),
+                )
+                self.NPC.append(npc)
+
+        for npc in self.NPC:
+            # init items
+            for item_name in npc.model.items:
+                item = self.create_item(item_name, 0, 0, show=False)
+                npc.pick_up(item)
+
+        # init items
+        if not self.transition.exiting:
+            for item_name in self.player.model.items:
+                item = self.create_item(item_name, 0, 0, show=False)
+                self.player.pick_up(item)
 
             # uncomment to test path finding (A*) performance
             # self.player.waypoints = [
@@ -360,9 +393,9 @@ class Scene(State):
             self.player.pos = vec(ep.x, ep.y)
             self.player.adjust_rect()
         else:
-            print("[red]ERROR![/] no entry point found!")
+            print("\n[red]ERROR![/] no entry point found!\n")
             # fallback - put the player in the center of the map
-            self.player.pos = self.map_view.map_rect.center
+            self.player.pos = tuple_to_vector(self.map_view.map_rect.center)
 
         # Pyscroll supports layered rendering.
         # Our map has several 'under' layers and 'over' layers in relations to Sprites.
@@ -661,7 +694,6 @@ class Scene(State):
         if not self.new_scene:
             return
 
-        self.transition.exiting = False
         self.return_scene = self.current_scene
         self.return_entry_point = self.new_scene.return_entry_point
 
@@ -675,11 +707,12 @@ class Scene(State):
         self.label_sprites.empty()
         # self.waypoints = {}
         # self.map_view.reload()
+        self.reset_sprite_groups()
         self.player.shadow = self.player.create_shadow(self.shadow_sprites)
         self.player.emote = EmoteSprite(self.label_sprites, vector_to_tuple(self.player.pos), self.emotes)
         self.player.health_bar = self.player.create_health_bar(self.label_sprites, vector_to_tuple(self.player.pos))
-
         self.load_map()
+        self.transition.exiting = False
         # new_scene = Scene(
         #     self.game,
         #     self.new_scene.to_map,
@@ -770,15 +803,16 @@ class Scene(State):
 
             distance_from_player = (npc.pos - self.player.pos).magnitude_squared()
             # enable talk to npc when player is near
-            if npc.model.attitude == AttitudeEnum.friendly and distance_from_player < FRIENDLY_WAKE_DISTANCE**2:
-                npc.health_bar.set_bar(npc.model.health / npc.model.max_health, self.game)
+            if npc.model.attitude == AttitudeEnum.friendly:
+                if distance_from_player < FRIENDLY_WAKE_DISTANCE**2:
+                    npc.show_health_bar()
 
-                if npc.has_dialog and npc.dialogs:
-                    self.player.npc_met = npc
-                    npc.npc_met = self.player
-                    break
-            else:
-                npc.health_bar.set_bar(-1, self.game)
+                    if npc.has_dialog and npc.dialogs:
+                        self.player.npc_met = npc
+                        npc.npc_met = self.player
+                        break
+                else:
+                    npc.hide_health_bar()
 
         # exit from current state and go back to previous
         if INPUTS["quit"]:
@@ -919,6 +953,15 @@ class Scene(State):
         self.minute_f = 0.0
 
         # shadow = self.player.shadow
+        self.reset_sprite_groups()
+        # self.map_view.reload()
+        # self.player.shadow = self.player.create_shadow(self.shadow_sprites)
+        # self.player.emote = EmoteSprite(self.label_sprites, vector_to_tuple(self.player.pos), self.emotes)
+        # self.player.health_bar = self.player.create_health_bar(self.label_sprites, vector_to_tuple(self.player.pos))
+        self.player.reset()
+        self.load_map()
+
+    def reset_sprite_groups(self) -> None:
         self.label_sprites.empty()
         self.draw_sprites.empty()
         self.exit_sprites.empty()
@@ -926,12 +969,6 @@ class Scene(State):
         self.block_sprites.empty()
         self.shadow_sprites.empty()
         self.group.empty()
-        # self.map_view.reload()
-        # self.player.shadow = self.player.create_shadow(self.shadow_sprites)
-        # self.player.emote = EmoteSprite(self.label_sprites, vector_to_tuple(self.player.pos), self.emotes)
-        # self.player.health_bar = self.player.create_health_bar(self.label_sprites, vector_to_tuple(self.player.pos))
-        self.player.reset()
-        self.load_map()
 
     #############################################################################################################
 
@@ -1138,7 +1175,7 @@ class Scene(State):
                 f"px={npc.pos.x // 1:3} y={(npc.pos.y - 4) // 1:3}",
                 # f"gx={npc.tileset_coord.x:3} y={npc.tileset_coord.y:3}",
                 # f"s ={npc.state} j={npc.is_flying}",
-                f"s ={npc.state}",
+                f"st ={npc.state} sp = {npc.speed}",
                 # f"wc={npc.waypoints_cnt} wn={npc.current_waypoint_no}",
                 # f"tx={npc.get_tileset_coord(npc.target).x:3} y={npc.get_tileset_coord(npc.target).y:3}",
             ]

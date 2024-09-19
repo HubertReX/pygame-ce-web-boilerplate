@@ -4,7 +4,7 @@ from enum import Enum, IntEnum, StrEnum, auto
 from os import PathLike
 from pathlib import Path
 from typing import Annotated, Any
-
+from rich import print
 from pydantic import BaseModel, ConfigDict, Field, PositiveInt, ValidationError
 
 ###################################################################################################################
@@ -59,6 +59,9 @@ class Character(BaseModel):
     max_carry_weight: Annotated[float,    Field(15.0, ge=0, description="maximal carrying weight in kg", repr=False)]
     money:        Annotated[int,          Field(0,  ge=0, description="initial amount of possessed money", repr=False)]
     damage:       Annotated[int,          Field(10, ge=0, description="amount of damage delt to others", repr=False)]
+    speed_walk:   Annotated[int,          Field(30, gr=0, description="walking speed", repr=False)]
+    speed_run:    Annotated[int,          Field(40, gr=0, description="walking speed", repr=False)]
+
 
 ##################################################################################################################
 # MARK: Item
@@ -140,6 +143,7 @@ def save_config_schema(model: type[Config], file_name: PathLike) -> None:
     schema["properties"]["$schema"] = f"./{file_name}"
     with open(file_name, "w", encoding="utf-8") as f:
         json.dump(schema, f, ensure_ascii=False, indent=4)
+    print(f"\n[light_green]INFO[/] Config schema regenerated and saved to '{file_name}'\n")
 
 ###################################################################################################################
 
@@ -161,7 +165,7 @@ def load_config(file_name: PathLike) -> "Config":
         config = Config(**config_json)
     # except ValidationError as e:
     except Exception as e:
-        print("Error! Unable to create config - validation failed.")
+        print("[red]Error![/] Unable to create config - validation failed.")
         print(e)
         exit(1)
     # finally:
@@ -171,4 +175,4 @@ def load_config(file_name: PathLike) -> "Config":
 
 ###################################################################################################################
 if __name__ == "__main__":
-    test()
+    save_config_schema(ConfigForSchemaGen, Path("config_schema.json"))

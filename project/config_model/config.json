@@ -177,10 +177,10 @@
             "sprite": "GreenNinja",
             "race": "humanoid",
             "attitude": "friendly",
-            "health": 100,
-            "max_health": 100,
+            "health": 80,
+            "max_health": 80,
             "items": [
-                "axe",
+                "stick",
                 "shashlik",
                 "shashlik"
             ],
@@ -248,7 +248,8 @@
                 "life_pot"
             ],
             "damage": 20,
-            "money": 1000
+            "money": 0,
+            "speed_run": 75
         },
         "Spirit_01": {
             "name": "Spirit",
@@ -265,8 +266,8 @@
             "sprite": "Slime",
             "race": "monster",
             "attitude": "enemy",
-            "health": 20,
-            "max_health": 20,
+            "health": 40,
+            "max_health": 40,
             "damage": 10,
             "money": 0
         },
@@ -275,8 +276,8 @@
             "sprite": "SpiderRed",
             "race": "monster",
             "attitude": "enemy",
-            "health": 40,
-            "max_health": 40,
+            "health": 60,
+            "max_health": 60,
             "damage": 20,
             "money": 0
         }
