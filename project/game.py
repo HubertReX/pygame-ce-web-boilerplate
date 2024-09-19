@@ -11,6 +11,7 @@ import pygame
 from opengl_shader import OpenGL_shader
 from PIL import Image
 from rich import print, traceback
+from objects import NotificationTypeEnum
 from settings import (
     ACTIONS,
     BG_COLOR,
@@ -137,6 +138,7 @@ class Game:
 
         size = self.screen.get_size()
         self.shader = OpenGL_shader(size, DEFAULT_SHADER)
+        self.rec_process: Any | None = None
         self.save_frame: bool = False
 
         self.fonts: dict[int, pygame.font.Font] = {}
@@ -405,12 +407,15 @@ class Game:
                 animations |= {file: []}
         return animations
 
+    def add_notification_dummy(self, text: str, type: NotificationTypeEnum = NotificationTypeEnum.info) -> None:
+        pass
+
     #############################################################################################################
-    def save_screenshot(self, data: bytes | None = None) -> bool:
+    def save_screenshot(self, add_notification: Callable, data: bytes | None = None) -> bool:
         """
         save current screen to SCREENSHOT_FOLDER as PNG with timestamp in name
         """
-        if self.save_frame:
+        if self.save_frame and data:
             # in previous loop, frame was saved back to screen
             # so now we can store it and disable frame saving
             self.save_frame = False
@@ -426,6 +431,9 @@ class Game:
                     file_name.as_posix(), "image/png")
             else:
                 print(f"screenshot saved to file '{file_name}'")
+                if ".." in str(file_name):
+                    short_name = str(file_name).split("..")[-1]
+                add_notification(f"screenshot saved to file '{short_name}'", NotificationTypeEnum.info)
             return True
         else:
             # next frame rendered by pipeline needs to be saved back to screen
@@ -573,7 +581,7 @@ class Game:
             INPUTS["record"] = False
 
         if INPUTS["screenshot"]:
-            INPUTS["screenshot"] = not self.save_screenshot()
+            INPUTS["screenshot"] = not self.save_screenshot(self.add_notification_dummy)
 
         if INPUTS["run"]:
             for joystick in self.joysticks.values():
@@ -605,7 +613,7 @@ class Game:
 
     #############################################################################################################
     def save_recording(self) -> None:
-        if not self.save_frame:
+        if not self.save_frame or not self.rec_process:
             return
 
         self.save_frame = False
@@ -676,7 +684,9 @@ class Game:
             # scene = self.states[-1]
             positions, ratio = scene.get_lights()
             scale = scene.camera.zoom
+            add_notification = scene.add_notification
         else:
+            add_notification = self.add_notification_dummy
             positions = []
             ratio = -1.0
             scale = 1.0
@@ -702,9 +712,9 @@ class Game:
             # USE_SHADERS
         )  # self.save_frame)
 
-        if self.save_frame:
+        if self.save_frame and self.rec_process:
             if INPUTS["screenshot"]:
-                self.save_screenshot(res)
+                self.save_screenshot(add_notification, res)
             else:
                 self.rec_process.stdin.write(res)
     #############################################################################################################

@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+from enum import StrEnum, auto
 from typing import Callable
 import pygame
 from settings import (
@@ -362,3 +364,21 @@ class ItemSprite(Object):
             self.mask: pygame.mask.Mask = self.masks["up"]
 
 #################################################################################################################
+
+
+class NotificationTypeEnum(StrEnum):
+    debug = auto()
+    info = auto()
+    warning = auto()
+    error = auto()
+    success = auto()
+    failure = auto()
+
+################################################################################################################
+
+
+@dataclass(slots=True)
+class Notification():
+    type: NotificationTypeEnum
+    message: str
+    create_time: float

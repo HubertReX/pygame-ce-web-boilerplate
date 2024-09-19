@@ -46,7 +46,7 @@ import game
 import npc_state
 import scene
 import splash_screen
-from objects import EmoteSprite, HealthBar, HealthBarUI, ItemSprite, Shadow
+from objects import EmoteSprite, HealthBar, HealthBarUI, ItemSprite, NotificationTypeEnum, Shadow
 from animation.transitions import AnimationTransition
 
 #################################################################################################################
@@ -417,7 +417,8 @@ class NPC(pygame.sprite.Sprite):
         if path := a_star_cached(start=start, goal=goal, grid=self.scene.path_finding_grid):
             self.generate_waypoints_from_path(path, start)
         else:
-            print(f"{self.name}: Path not found!")
+            print(f"Path not found for npc '{self.name}'!")
+            self.scene.add_notification(f"Path not found for npc '{self.name}", NotificationTypeEnum.debug)
             self.waypoints = ()
             self.waypoints_cnt = 0
             self.acc = vec(0, 0)
@@ -592,11 +593,12 @@ class NPC(pygame.sprite.Sprite):
         # if self.model.name == "Player":
         #     print(kwargs["action"])
 
-        if kwargs.get("action", "") == NPCEventActionEnum.pushed:
+        action = kwargs.get("action", "")
+        if action == NPCEventActionEnum.pushed:
             # pushed state is invalidated
             # show health bar
             self.hide_health_bar()
-        elif kwargs.get("action", "") ==  NPCEventActionEnum.stunned:
+        elif action ==  NPCEventActionEnum.stunned:
             # stunned state is invalidated
             # show health bar
             self.hide_health_bar()
@@ -604,15 +606,16 @@ class NPC(pygame.sprite.Sprite):
             if self.model.health == 0:
                 self.die()
 
-        elif kwargs.get("action", "") ==  NPCEventActionEnum.attacking:
+        elif action ==  NPCEventActionEnum.attacking:
             # attack cool off end
             self.is_attacking = False
             self.scene.group.remove(self.selected_weapon)
-        elif kwargs.get("action", "") ==  NPCEventActionEnum.switching_weapon:
+        elif action ==  NPCEventActionEnum.switching_weapon:
             # switching weapon cool off end
             self.can_switch_weapon = True
         else:
-            print("unknown action", self.model.name, kwargs)
+            print(f"unknown action '{action}' for npc '{self.name}'")
+            self.scene.add_notification(f"unknown action '{action}' for npc '{self.name}'", NotificationTypeEnum.debug)
 
     #############################################################################################################
     def hide_health_bar(self) -> None:
@@ -837,8 +840,13 @@ class NPC(pygame.sprite.Sprite):
                     result = True
                 else:
                     print(f"\n[red]ERROR:[/] {self.name} Max carry weight exceeded!\n")  # TODO: add notification
+                    self.scene.add_notification(
+                        "Max carry weight exceeded!", scene.NotificationTypeEnum.failure)
+
             else:
                 print(f"\n[red]ERROR:[/] {self.name} No more free items slot!\n")
+                self.scene.add_notification(
+                    "No more free items slot!", scene.NotificationTypeEnum.failure)
         # print(f"Picked up {item.name}({item.model.type.value})")
 
         return result
@@ -962,6 +970,7 @@ class Player(NPC):
                 walk_cost = self.scene.path_finding_grid[cell_y][cell_x]
                 if walk_cost > 0:
                     print("[yellow]INFO[/] destination unreachable")
+                    self.scene.add_notification("destination unreachable", NotificationTypeEnum.failure)
                     skip = True
 
             if not skip:

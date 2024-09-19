@@ -16,7 +16,7 @@ from maze_generator.maze_utils import (
     clear_maze_cache,
     get_gid_from_tmx_id
 )
-from objects import Collider, EmoteSprite, ItemSprite
+from objects import Collider, EmoteSprite, ItemSprite, Notification, NotificationTypeEnum
 from particles import ParticleSystem
 from pyscroll.group import PyscrollGroup
 from pytmx import TiledMap, TiledObjectGroup, TiledTileLayer
@@ -70,6 +70,8 @@ from ui import UI
 
 ################################################################################################################
 # MARK: Scene
+
+
 class Scene(State):
     def __init__(
             self,
@@ -82,6 +84,7 @@ class Scene(State):
     ) -> None:
 
         super().__init__(game)
+        self.notifications: list[Notification] = []
         self.game.time_elapsed = 0.0
         self.current_scene = current_scene
         self.entry_point = entry_point
@@ -143,6 +146,16 @@ class Scene(State):
         # self.set_camera_on_player()
 
     #############################################################################################################
+    def add_notification(self, text: str, type: NotificationTypeEnum = NotificationTypeEnum.info) -> None:
+        self.notifications.append(Notification(type, text, self.game.time_elapsed))
+
+    #############################################################################################################
+    def remove_old_notifications(self) -> None:
+        NOTIFICATION_DURATION: float = 5.0
+        self.notifications = [n for n in self.notifications
+                              if n.create_time  + NOTIFICATION_DURATION  > self.game.time_elapsed]
+
+    #############################################################################################################
     def create_item(self, name: str, x: int, y: int, show: bool = True) -> ItemSprite:
         group = self.item_sprites if show else None
         return ItemSprite(
@@ -172,6 +185,8 @@ class Scene(State):
             else:
                 if name:
                     print(f"[red]ERROR![/] {name} item has no definition in config.json")
+                    self.add_notification(f"ERROR! '{name}' item has no definition in config.json",
+                                          NotificationTypeEnum.debug)
 
     #############################################################################################################
 
@@ -394,6 +409,7 @@ class Scene(State):
             self.player.adjust_rect()
         else:
             print("\n[red]ERROR![/] no entry point found!\n")
+            self.add_notification("no entry point found!", NotificationTypeEnum.debug)
             # fallback - put the player in the center of the map
             self.player.pos = tuple_to_vector(self.map_view.map_rect.center)
 
@@ -472,6 +488,8 @@ class Scene(State):
                 else:
                     print(f"[red]ERROR![/] {self.current_scene}: coordinate {x}x{
                           y} not inside sprite sheet for {key} animation")
+                    self.add_notification(f"{self.current_scene}: coordinate {x}x{
+                        y} not inside sprite sheet for {key} animation", NotificationTypeEnum.debug)
                     continue
             if anim:
                 self.emotes[key] = anim
@@ -729,7 +747,7 @@ class Scene(State):
         # MARK: update
         global INPUTS
 
-        # TODO move inside UI
+        self.remove_old_notifications()
         self.ui.update(events)
 
         self.group.update(dt)
@@ -870,6 +888,7 @@ class Scene(State):
                 if item := self.player.drop_item():
                     self.group.add(item, layer=self.sprites_layer - 1)
                     print(f"Dropped {item.name}[{item.model.type.value}]")  # TODO: add notification
+                    self.add_notification(f"Dropped '{item.name}'", NotificationTypeEnum.info)
                 else:
                     print("No item to drop!")
             INPUTS["drop"] = False
@@ -879,13 +898,15 @@ class Scene(State):
                 items: list[ItemSprite] = self.item_sprites.sprites()
                 collided_index = self.player.feet.collidelist(items)   # type: ignore[type-var]
                 if collided_index > -1:
-                    if self.player.pick_up(items[collided_index]):
+                    item = items[collided_index]
+                    if self.player.pick_up(item):
+                        self.add_notification(f"Picked up '{item.name}'", NotificationTypeEnum.success)
                         with contextlib.suppress(KeyError):
-                            # if self.group.has(items[collided_index]):
-                            self.group.remove(items[collided_index])
-                            self.item_sprites.remove(items[collided_index])
-                    else:
-                        print(f"You can't pick up '{items[collided_index].model.name}' - it's too heavy.")
+                            # if self.group.has(item):
+                            self.group.remove(item)
+                            self.item_sprites.remove(item)
+                    # else:
+                    #     print(f"You can't pick up '{item.model.name}' - it's too heavy.")
             INPUTS["pick_up"] = False
 
         if INPUTS["run"]:

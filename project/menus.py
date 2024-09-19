@@ -178,7 +178,7 @@ class MainMenuScreen(MenuScreen):
             self.deactivate()
 
         if INPUTS["screenshot"]:
-            self.game.save_screenshot()
+            self.game.save_screenshot(self.game.add_notification_dummy)
 
     #############################################################################################################
     # def draw(self, screen: pygame.Surface, dt: float) -> None:
@@ -276,7 +276,7 @@ class AboutMenuScreen(MenuScreen):
             self.deactivate()
 
         if INPUTS["screenshot"]:
-            self.game.save_screenshot()
+            self.game.save_screenshot(self.game.add_notification_dummy)
 
         # if INPUTS["help"]:
         #     self.deactivate()

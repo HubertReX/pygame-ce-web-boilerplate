@@ -4,7 +4,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pygame
-from objects import ItemSprite, InventorySlot
+from objects import ItemSprite, InventorySlot, Notification, NotificationTypeEnum
+from animation.transitions import AnimationTransition
+
 
 if TYPE_CHECKING:
     from characters import Player
@@ -52,6 +54,15 @@ if IS_WEB:
 else:
     from config_model.config_pydantic import ItemTypeEnum  # type: ignore[assignment]
 
+NOTIFICATION_TYPE_ICONS: dict[str, str] = {
+    NotificationTypeEnum.debug.value:   "human",
+    NotificationTypeEnum.info.value:    "dots_anim",
+    NotificationTypeEnum.warning.value: "exclamation",
+    NotificationTypeEnum.error.value:   "red_exclamation_anim",
+    NotificationTypeEnum.success.value: "blessed_anim",
+    NotificationTypeEnum.failure.value: "shocked_anim",
+}
+
 
 class UI:
     def __init__(self, scene: Scene, tiny_font: pygame.font.Font, medium_font: pygame.font.Font) -> None:
@@ -76,6 +87,7 @@ class UI:
         self.dialog_panel_bg = NinePatch(file="nine_patch_01c.png", scale=4).get_scaled_to(WIDTH - 200, HEIGHT // 3)
         self.name_panel_bg = NinePatch(file="nine_patch_13.png", scale=4).get_scaled_to(26 * TILE_SIZE, 1 * TILE_SIZE)
         self.available_action_bg = NinePatch(file="panel_brown.png", scale=4, border=3).get_scaled_to(200, 36)
+        self.notification_bg = NinePatch(file="panel_brown.png", scale=4, border=3)
 
         weapon_s = 24 + TILE_SIZE * 8
         self.weapon_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(weapon_s, weapon_s)
@@ -386,14 +398,49 @@ class UI:
         row_spacing = row * row_height
         label = label or ACTIONS[action]["msg"]
         icon: pygame.Surface = self.icons_dict[ACTIONS[action]["show"][0]]
+        label_w, _ = self.font.size(label)
         self.display_surface.blit(self.available_action_bg,
                                   (WIDTH - TILE_SIZE - 200,
                                    HEIGHT - (2 * TILE_SIZE) - 16 - row_spacing))
         self.display_surface.blit(icon,
                                   (WIDTH - (2 * TILE_SIZE) - 16,
                                    HEIGHT - (2 * TILE_SIZE) - 14 - row_spacing))
-        self.display_text(label, (WIDTH - TILE_SIZE - 180,
+        self.display_text(label, (WIDTH - TILE_SIZE - label_w - 40,
                                   HEIGHT - (2 * TILE_SIZE) - 7 - row_spacing), border=True)
+
+    #############################################################################################################
+    def show_notification(self, notification: Notification, row: int) -> None:
+        row_height: int = 50
+        row_spacing = row * row_height
+        time_elapsed = self.scene.game.time_elapsed - notification.create_time
+
+        NOTIFICATION_Y_TOP: int = 200
+        NOTIFICATION_Y_BOTTOM: int = HEIGHT - TILE_SIZE
+        notification_y_stop = NOTIFICATION_Y_TOP + row_spacing
+
+        slide_in_duration = 1.0
+        factor = time_elapsed / slide_in_duration if time_elapsed < slide_in_duration else 1.0
+        factor = AnimationTransition.in_out_expo(factor)
+        y = int(NOTIFICATION_Y_BOTTOM + (notification_y_stop - NOTIFICATION_Y_BOTTOM) * factor)
+
+        label = notification.message
+        label_w, label_h = self.font.size(label)
+        # icon: pygame.Surface = self.icons_dict[ACTIONS[action]["show"][0]]
+        anim = self.scene.emotes[NOTIFICATION_TYPE_ICONS[notification.type]]
+        animation_speed = 5
+        frame_index = (animation_speed * time_elapsed)
+
+        # if int(frame_index) >= len(anim):
+        frame_index = frame_index % len(anim)
+        icon = anim[int(frame_index)]
+        scale = 2
+
+        self.display_surface.blit(self.notification_bg.get_scaled_fit(label_w + 36, label_h + 6),
+                                  (TILE_SIZE, y))
+        self.display_surface.blit(pygame.transform.scale_by(icon, scale),
+                                  (TILE_SIZE + 10, y + 10))
+        self.display_text(label,
+                          (TILE_SIZE + 46, y + 16), border=True)
 
     #############################################################################################################
     def show_available_actions(self) -> None:
@@ -507,6 +554,11 @@ class UI:
 
         self.display_text(
             f"Money   {player.model.money}", (TILE_SIZE + left_margin, TILE_SIZE + + top_margin + row_height * 3))
+
+        # left middle
+        # show notifications
+        for row, notification in enumerate(self.scene.notifications):
+            self.show_notification(notification, row)
 
         # upper right corner
         # FPS counter
