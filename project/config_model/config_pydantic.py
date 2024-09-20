@@ -74,17 +74,13 @@ class Item(BaseModel):
     #     min_length=3, frozen=True, description="Unique string identifier")
     name: str   = Field(
         min_length=3, frozen=True, description="Item display name")
-    type:          Annotated[ItemTypeEnum, Field(
-        description="Item type (e.g. weapon, tool, consumable)")]
-    value:         Annotated[int,          Field(
-        50, ge=0, description="Monetary value", repr=False)]
+    type:          Annotated[ItemTypeEnum, Field(description="Item type (e.g. weapon, tool, consumable)")]
+    value:         Annotated[int,          Field(50, ge=0, description="Monetary value", repr=False)]
     health_impact: Annotated[int,          Field(
         0, ge=0,
         description="The impact on health when consumed (e.g. apple => +30, poison => -10)",
         repr=False)]
-    in_use:        Annotated[bool,         Field(
-        False,
-        description="Whether the item is currently in use", repr=False)]
+    in_use:        Annotated[bool,         Field(False, description="Whether the item is currently in use", repr=False)]
     count:         Annotated[int,          Field(
         1, ge=1, description="Number of items in the stack", repr=False)]
     weight:        Annotated[float,        Field(
@@ -99,12 +95,25 @@ class Item(BaseModel):
 
 
 ###################################################################################################################
+class Chest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    # id: str   = Field(
+    #     min_length=3, frozen=True, description="Unique string identifier")
+    name: str = Field(min_length=3, frozen=True, description="Chest display name")
+    is_small:   Annotated[bool,      Field(True, description="Is it small or big", repr=False)]
+    is_closed:  Annotated[bool,      Field(True, description="Is it closed or open", repr=False)]
+    items:      Annotated[list[str], Field(description="list of items in the chest", default_factory = list)]
+
+###################################################################################################################
 # MARK: Config
+
 
 class Config(BaseModel):
     # this class is used only for crating instances of the config class
     characters: dict[str, Character]
     items: dict[str, Item]
+    chests: dict[str, Chest]
 
 
 class ConfigForSchemaGen(Config):

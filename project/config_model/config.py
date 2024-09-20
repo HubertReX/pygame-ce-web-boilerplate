@@ -56,7 +56,7 @@ class ItemTypeEnum(StrEnum):
 # dataclass version
 
 
-@dataclass
+@dataclass(slots=True)
 class Character():
     name: str
     sprite: str = field(repr=False)
@@ -117,6 +117,24 @@ class Item():
             cooldown_time = data.get("cooldown_time", 1.0),
         )
 
+
+@dataclass(slots=True)
+class Chest():
+    name:         str
+    is_small:     Annotated[bool,         field(repr=False)]
+    is_closed:    Annotated[bool,         field(repr=False)]
+    items:        Annotated[list[str],    field(repr=False)]
+
+    @classmethod
+    def from_dict(cls: type["Chest"], data: dict[str, Any]) -> "Chest":
+        return cls(
+            name      = data.get("name", ""),
+            is_small  = data.get("is_small", True),
+            is_closed = data.get("is_closed", True),
+            items     = data.get("items", []),
+        )
+
+
 ###################################################################################################################
 # MARK: Config
 
@@ -129,23 +147,27 @@ class Item():
 @dataclass
 class Config():
     characters: dict[str, Character]
-    items: dict[str, Item]
+    items:      dict[str, Item]
+    chests:     dict[str, Chest]
 
     @classmethod
     def build(cls, data: dict[str, Any]) -> "Config":
         chars = {}
-        for name, chr in data["characters"].items():
-            # print(name, chr)
-            character = Character.from_dict(chr)
+        for name, character_dict in data["characters"].items():
+            character = Character.from_dict(character_dict)
             chars[name] = character
 
         items = {}
-        for name, itm in data["items"].items():
-            # print(name, itm)
-            item = Item.from_dict(itm)
+        for name, item_dict in data["items"].items():
+            item = Item.from_dict(item_dict)
             items[name] = item
 
-        return cls(chars, items)
+        chests = {}
+        for name, chest_dict in data["chests"].items():
+            chest = Chest.from_dict(chest_dict)
+            chests[name] = chest
+
+        return cls(chars, items, chests)
 ###################################################################################################################
 
 

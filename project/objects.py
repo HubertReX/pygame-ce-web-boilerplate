@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import StrEnum, auto
 from typing import Callable
 import pygame
+
 from settings import (
     BLACK_COLOR,
     CHAR_NAME_COLOR,
@@ -17,9 +18,10 @@ from settings import (
 
 import game
 if IS_WEB:
-    from config_model.config import AttitudeEnum, Character, Item, ItemTypeEnum
+    from config_model.config import AttitudeEnum, Character, Item, ItemTypeEnum, Chest
 else:
-    from config_model.config_pydantic import AttitudeEnum, Character, Item, ItemTypeEnum  # type: ignore[assignment]
+    from config_model.config_pydantic import AttitudeEnum, Character, Item  # type: ignore[assignment]
+    from config_model.config_pydantic import ItemTypeEnum, Chest  # type: ignore[assignment]
 
 #################################################################################################################
 
@@ -362,6 +364,41 @@ class ItemSprite(Object):
                 self.masks[direction] = pygame.mask.from_surface(self.image_directions[direction])
 
             self.mask: pygame.mask.Mask = self.masks["up"]
+
+#################################################################################################################
+
+
+class ChestSprite(Object):
+    def __init__(
+        self,
+        group: pygame.sprite.Group | None,
+        pos: tuple[int, int],
+        # name: str,
+        model: Chest,
+        chests_sprites: dict[str, list[pygame.Surface]]
+        # image_open: pygame.Surface = pygame.Surface((TILE_SIZE, TILE_SIZE)),
+        # image_closed: pygame.Surface = pygame.Surface((TILE_SIZE, TILE_SIZE)),
+    ) -> None:
+
+        self.image_closed = chests_sprites["small_chest"][0] if model.is_small else chests_sprites["big_chest"][0]
+        self.image_open = chests_sprites["small_chest"][1] if model.is_small else chests_sprites["big_chest"][1]
+        image = self.image_closed if model.is_closed else self.image_open
+        super().__init__(group, pos, image)
+        # self.rect.center = pos
+        self.model = model
+        self.name = model.name
+        # self.is_closed = True
+        # self.items: list[Item] = []
+
+#################################################################################################################
+    def open(self) -> None:
+        self.image = self.image_open
+        self.model.is_closed = False
+
+#################################################################################################################
+    def close(self) -> None:
+        self.image = self.image_closed
+        self.model.is_closed = True
 
 #################################################################################################################
 

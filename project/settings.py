@@ -100,7 +100,8 @@ RECORDING_FPS = 30
 MONSTER_WAKE_DISTANCE = 100
 # player will be able to talk to npc when in range of this distance
 FRIENDLY_WAKE_DISTANCE = 25
-
+# player will be able to open chest when in range of this distance
+CHEST_OPEN_DISTANCE = 22
 # path from monster will be recalculated
 # only if player moved by more then N pixels
 RECALCULATE_PATH_DISTANCE = 16
@@ -160,6 +161,7 @@ ACTIONS: dict[str, dict[str, Any]] = {
     "run":            {"show": ["key_Shift"],    "msg": "toggle run",  "keys": [pygame.K_LSHIFT, pygame.K_RSHIFT]},
     "jump":           {"show": None,             "msg": "jump",        "keys": [pygame.K_SPACE]},
     "fly":            {"show": ["key_Alt"],      "msg": "toggle fly",  "keys": [pygame.K_LALT, pygame.K_RALT]},
+    "open":           {"show": ["key_Space"],    "msg": "open",        "keys": [pygame.K_SPACE]},
     "attack":         {"show": ["key_Space"],    "msg": "attack",      "keys": [pygame.K_SPACE]},
     "talk":           {"show": ["key_Space"],    "msg": "talk",        "keys": [pygame.K_SPACE]},
     "pick_up":        {"show": ["key_E"],        "msg": "pick up",     "keys": [pygame.K_e]},
@@ -331,7 +333,8 @@ ASSET_PACK        = "NinjaAdventure"
 RESOURCES_DIR     = ASSETS_DIR / ASSET_PACK
 DIALOGS_DIR       = ASSETS_DIR / "dialogs" / LANG
 MAPS_DIR          = RESOURCES_DIR / "maps"
-ITEMS_DIR          = RESOURCES_DIR / "items"
+ITEMS_DIR         = RESOURCES_DIR / "items"
+ITEMS_SHEET_FILE  = ITEMS_DIR / "items_trans_weapons.png"
 MAZE_DIR          = ASSETS_DIR / "MazeTileset"
 CHARACTERS_DIR    = RESOURCES_DIR / "characters"
 PARTICLES_DIR     = RESOURCES_DIR / "particles"
@@ -510,6 +513,11 @@ EMOTE_SHEET_DEFINITION = {
     "B":                    [(0, 7)],
     "X":                    [(1, 7)],
     "Y":                    [(2, 7)],
+}
+
+ITEMS_SHEET_DEFINITION = {
+    "big_chest":            [(2, 4), (3, 4)],
+    "small_chest":          [(2, 5), (3, 5)],
 }
 
 WEAPON_DIRECTION_OFFSET: dict[str, vec] = {

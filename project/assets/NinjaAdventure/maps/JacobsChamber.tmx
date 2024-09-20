@@ -112,6 +112,7 @@
    <properties>
     <property name="entry_point" value="JacobsChamberDoor"/>
     <property name="is_maze" type="bool" value="false"/>
+    <property name="obj_type" value="exit"/>
     <property name="to_map" value="Village"/>
    </properties>
   </object>

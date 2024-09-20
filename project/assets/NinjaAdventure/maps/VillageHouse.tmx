@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="12" height="10" tilewidth="16" tileheight="16" infinite="0" nextlayerid="12" nextobjectid="6">
+<map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="12" height="10" tilewidth="16" tileheight="16" infinite="0" nextlayerid="12" nextobjectid="7">
  <properties>
   <property name="outdoor" type="bool" value="false"/>
  </properties>
@@ -43,7 +43,7 @@
 0,0,0,0,0,0,0,0,0,0,0,0,
 0,1829,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,1832,0,
+0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,
@@ -56,7 +56,7 @@
 494,498,498,498,498,498,495,498,498,498,498,499,
 542,943,944,933,1620,936,576,941,942,965,937,547,
 542,0,0,0,0,0,576,0,0,0,0,547,
-605,608,608,608,527,0,576,1406,0,0,824,547,
+605,608,608,608,527,0,576,1406,0,0,1856,547,
 542,0,0,0,0,0,511,0,0,0,0,547,
 542,949,967,969,2147484597,0,0,0,0,0,0,547,
 542,0,0,0,0,0,623,1491,1492,1654,1722,547,
@@ -112,7 +112,13 @@
    <properties>
     <property name="entry_point" value="VillageHouseDoor"/>
     <property name="is_maze" type="bool" value="false"/>
+    <property name="obj_type" value="exit"/>
     <property name="to_map" value="Village"/>
+   </properties>
+  </object>
+  <object id="6" name="SmallChest_VillageHouse" x="160" y="48" width="16" height="16">
+   <properties>
+    <property name="obj_type" value="chest"/>
    </properties>
   </object>
  </objectgroup>

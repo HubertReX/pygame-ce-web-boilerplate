@@ -16,7 +16,7 @@ from maze_generator.maze_utils import (
     clear_maze_cache,
     get_gid_from_tmx_id
 )
-from objects import Collider, EmoteSprite, ItemSprite, Notification, NotificationTypeEnum
+from objects import ChestSprite, Collider, EmoteSprite, ItemSprite, Notification, NotificationTypeEnum
 from particles import ParticleSystem
 from pyscroll.group import PyscrollGroup
 from pytmx import TiledMap, TiledObjectGroup, TiledTileLayer
@@ -26,6 +26,7 @@ from settings import (
     # ACTIONS,
     # BG_COLOR,
     # CIRCLE_GRADIENT,
+    CHEST_OPEN_DISTANCE,
     CUTSCENE_BG_COLOR,
     DAY_FILTER,
     EMOTE_SHEET_DEFINITION,
@@ -39,6 +40,8 @@ from settings import (
     INITIAL_HOUR,
     INPUTS,
     ITEMS_DIR,
+    ITEMS_SHEET_DEFINITION,
+    ITEMS_SHEET_FILE,
     MAPS_DIR,
     MAZE_DIR,
     MONSTER_WAKE_DISTANCE,
@@ -95,12 +98,13 @@ class Scene(State):
         self.waypoints: dict[str, tuple[Point, ...]] = {}
         self.items: list[ItemSprite] = []
         self.items_defs: dict[str, pygame.Surface] = {}
+        self.chests: list[ChestSprite] = []
         self.walls: list[pygame.Rect] = []
 
         self.label_sprites: pygame.sprite.Group = pygame.sprite.Group()
         self.shadow_sprites: pygame.sprite.Group = pygame.sprite.Group()
         self.draw_sprites: pygame.sprite.Group = pygame.sprite.Group()
-        self.block_sprites: pygame.sprite.Group = pygame.sprite.Group()
+        self.chest_sprites: pygame.sprite.Group = pygame.sprite.Group()
         self.exit_sprites: pygame.sprite.Group = pygame.sprite.Group()
         self.item_sprites: pygame.sprite.Group = pygame.sprite.Group()
         self.animations: pygame.sprite.Group = pygame.sprite.Group()
@@ -108,8 +112,11 @@ class Scene(State):
         # self.transition = Transition(self)
         self.transition = TransitionCircle(self)
 
-        self.emotes: dict[str, list[pygame.Surface]] = {}
-        self.import_emote_sheet(str(EMOTE_SHEET_FILE))
+        self.emotes: dict[str, list[pygame.Surface]] = self.import_sheet(
+            str(EMOTE_SHEET_FILE), EMOTE_SHEET_DEFINITION, width=14, height=13)
+        # self.import_emote_sheet(str(EMOTE_SHEET_FILE))
+        self.chests_sheet: dict[str, list[pygame.Surface]] = self.import_sheet(
+            str(ITEMS_SHEET_FILE), ITEMS_SHEET_DEFINITION, width=16, height=16)
 
         # moved here to avoid circular imports
         from characters import Player
@@ -256,29 +263,43 @@ class Scene(State):
             items_layer.visible = False
 
         # print("[yellow]Exits[/]")
+        self.chests = []
         if "exits" in self.layers:
             for obj in cast(TiledObjectGroup, tileset_map.get_layer_by_name("exits")):
-                Collider(
-                    self.exit_sprites,
-                    (obj.x, obj.y),
-                    (obj.width, obj.height),
-                    obj.name,
-                    obj.to_map,
-                    obj.entry_point,
-                    obj.is_maze,
-                    getattr(obj, "maze_cols", 0),
-                    getattr(obj, "maze_rows", 0),
-                    getattr(obj, "return_entry_point", ""),
-                )
-                # print(
-                #     obj.name,
-                #     obj.to_map,
-                #     obj.entry_point,
-                #     obj.is_maze,
-                #     getattr(obj, "maze_cols", 0),
-                #     getattr(obj, "maze_rows", 0),
-                #     getattr(obj, "return_entry_point", ""),
-                # )
+                if getattr(obj, "obj_type", "") == "exit":
+                    Collider(
+                        self.exit_sprites,
+                        (obj.x, obj.y),
+                        (obj.width, obj.height),
+                        obj.name,
+                        obj.to_map,
+                        obj.entry_point,
+                        obj.is_maze,
+                        getattr(obj, "maze_cols", 0),
+                        getattr(obj, "maze_rows", 0),
+                        getattr(obj, "return_entry_point", ""),
+                    )
+                    # print(
+                    #     obj.name,
+                    #     obj.to_map,
+                    #     obj.entry_point,
+                    #     obj.is_maze,
+                    #     getattr(obj, "maze_cols", 0),
+                    #     getattr(obj, "maze_rows", 0),
+                    #     getattr(obj, "return_entry_point", ""),
+                    # )
+                elif getattr(obj, "obj_type", "") == "chest":
+                    rect = pygame.Rect(obj.x, obj.y, obj.width, obj.height)
+                    self.walls.append(rect)
+
+                    # blocked from walking (wall)
+                    self.path_finding_grid[int(obj.y // TILE_SIZE)][int(obj.x // TILE_SIZE)] = 100
+
+                    # chest = ChestSprite(self.chest_sprites, rect.center,
+                    chest = ChestSprite(self.chest_sprites, (obj.x, obj.y),
+                                        self.game.conf.chests[obj.name], self.chests_sheet,)
+                    self.chests.append(chest)
+                    print("[light_green]Chest[/]", chest.name, rect)
         self.waypoints = {}
         # layer of invisible objects consisting of points that layout a list waypoints to follow by NPCs
         if "waypoints" in self.layers:
@@ -423,6 +444,7 @@ class Scene(State):
         self.group.add(self.shadow_sprites, layer = self.sprites_layer - 2)
         self.group.add(self.item_sprites,   layer = self.sprites_layer - 1)
         self.group.add(self.label_sprites,  layer = self.sprites_layer + 1)
+        self.group.add(self.chest_sprites,  layer = self.sprites_layer - 1)
         # add Player to the group
         self.group.add(self.player, layer=self.sprites_layer)
         # add all NPCs to the group
@@ -468,20 +490,22 @@ class Scene(State):
 
     #############################################################################################################
 
-    def import_emote_sheet(self, path: str) -> None:
+    def import_sheet(self,
+                     sheet_path: str,
+                     sheet_definition: dict[str, list[tuple[int, int]]],
+                     width: int, height: int) -> dict[str, list[pygame.Surface]]:
         """
         Load sprite sheet and cut it into animation names and frames using EMOTE_SHEET_DEFINITION dict.
         """
-        img = pygame.image.load(path).convert_alpha()
+        result: dict[str, list[pygame.Surface]] = {}
+        img = pygame.image.load(sheet_path).convert_alpha()
         img_rect = img.get_rect()
-        EMOTE_WIDTH = 14
-        EMOTE_HEIGHT = 13
 
-        for key, definition in EMOTE_SHEET_DEFINITION.items():
+        for key, definition in sheet_definition.items():
             anim = []
             for coord in definition:
                 x, y = coord
-                rec = pygame.Rect(x * EMOTE_WIDTH, y * EMOTE_HEIGHT, EMOTE_WIDTH, EMOTE_HEIGHT)
+                rec = pygame.Rect(x * width, y * height, width, height)
                 if rec.colliderect(img_rect):
                     img_part = img.subsurface(rec)
                     anim.append(img_part)
@@ -492,9 +516,12 @@ class Scene(State):
                         y} not inside sprite sheet for {key} animation", NotificationTypeEnum.debug)
                     continue
             if anim:
-                self.emotes[key] = anim
+                result[key] = anim
+
+        return result
 
     #############################################################################################################
+
     def __repr__(self) -> str:
         # MARK: __repr__
         return f"{self.__class__.__name__}: {self.current_scene}"
@@ -812,6 +839,15 @@ class Scene(State):
         # else:
         #     colliders = self.walls + [self.player]
 
+        self.player.chest_in_range = None
+        for chest in self.chests:
+            # if self.player.feet.colliderect(chest.rect):
+            distance_from_player = (chest.rect.center - self.player.pos).magnitude_squared()
+            # chest_model = self.game.conf.chests[chest]
+            if distance_from_player < CHEST_OPEN_DISTANCE**2 and chest.model.is_closed:
+                self.player.chest_in_range = chest
+                break
+
         self.player.npc_met = None
         for npc in self.NPC:
             npc.npc_met = None
@@ -987,7 +1023,7 @@ class Scene(State):
         self.draw_sprites.empty()
         self.exit_sprites.empty()
         self.item_sprites.empty()
-        self.block_sprites.empty()
+        self.chest_sprites.empty()
         self.shadow_sprites.empty()
         self.group.empty()
 

@@ -46,7 +46,7 @@ import game
 import npc_state
 import scene
 import splash_screen
-from objects import EmoteSprite, HealthBar, HealthBarUI, ItemSprite, NotificationTypeEnum, Shadow
+from objects import ChestSprite, EmoteSprite, HealthBar, HealthBarUI, ItemSprite, NotificationTypeEnum, Shadow
 from animation.transitions import AnimationTransition
 
 #################################################################################################################
@@ -131,6 +131,8 @@ class NPC(pygame.sprite.Sprite):
 
         # NPC met in the game
         self.npc_met: NPC | None = None
+        # Chest object near player
+        self.chest_in_range: ChestSprite | None = None
 
         # is in attacking state
         self.is_attacking: bool = False
@@ -934,7 +936,19 @@ class Player(NPC):
 
         global INPUTS
 
-        if INPUTS["talk"]:
+        if INPUTS["open"]:
+            if self.chest_in_range and self.chest_in_range.model.is_closed and not self.is_talking:
+                chest = self.chest_in_range
+                chest.open()
+                self.scene.add_notification("Chest opened!", NotificationTypeEnum.success)
+                for item_name in chest.model.items:
+                    # print(f"[light_green] '{item_name}' item from chest")
+                    pos: vec = self.pos + self.get_random_pos()  # type: ignore[assignment]
+                    item = self.scene.create_item(item_name, int(pos[0]), int(pos[1]))
+                    self.scene.items.append(item)
+                    self.scene.group.add(item, layer=self.scene.sprites_layer - 1)
+            INPUTS["open"] = False
+        elif INPUTS["talk"]:
             if self.npc_met and self.npc_met.has_dialog and not self.is_talking:
                 self.scene.ui.show_dialog_panel = True
                 self.scene.ui.dialog_panel.set_text(self.npc_met.dialogs or "")

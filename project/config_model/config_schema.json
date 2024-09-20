@@ -107,6 +107,42 @@
             "title": "Character",
             "type": "object"
         },
+        "Chest": {
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "description": "Chest display name",
+                    "minLength": 3,
+                    "title": "Name",
+                    "type": "string"
+                },
+                "is_small": {
+                    "default": true,
+                    "description": "Is it small or big",
+                    "title": "Is Small",
+                    "type": "boolean"
+                },
+                "is_closed": {
+                    "default": true,
+                    "description": "Is it closed or open",
+                    "title": "Is Closed",
+                    "type": "boolean"
+                },
+                "items": {
+                    "description": "list of items in the chest",
+                    "items": {
+                        "type": "string"
+                    },
+                    "title": "Items",
+                    "type": "array"
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "title": "Chest",
+            "type": "object"
+        },
         "Item": {
             "additionalProperties": false,
             "properties": {
@@ -216,11 +252,19 @@
             "title": "Items",
             "type": "object"
         },
+        "chests": {
+            "additionalProperties": {
+                "$ref": "#/$defs/Chest"
+            },
+            "title": "Chests",
+            "type": "object"
+        },
         "$schema": "./config_schema.json"
     },
     "required": [
         "characters",
-        "items"
+        "items",
+        "chests"
     ],
     "title": "ConfigForSchemaGen",
     "type": "object"

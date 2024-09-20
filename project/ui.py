@@ -473,7 +473,9 @@ class UI:
 
             self.show_action("use_item", 3, label=label)
 
-        if self.scene.player.npc_met:
+        if self.scene.player.chest_in_range:
+            self.show_action("open", 4, label="open chest")
+        elif self.scene.player.npc_met:
             self.show_action("talk", 4)
     #############################################################################################################
 

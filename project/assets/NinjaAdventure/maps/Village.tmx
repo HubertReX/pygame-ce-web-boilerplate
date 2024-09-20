@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="70" height="70" tilewidth="16" tileheight="16" infinite="0" nextlayerid="12" nextobjectid="30">
+<map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="70" height="70" tilewidth="16" tileheight="16" infinite="0" nextlayerid="12" nextobjectid="32">
  <properties>
   <property name="outdoor" type="bool" value="true"/>
   <property name="particles" value="leafs,rain"/>
@@ -462,6 +462,7 @@
    <properties>
     <property name="entry_point" value="Door"/>
     <property name="is_maze" type="bool" value="false"/>
+    <property name="obj_type" value="exit"/>
     <property name="to_map" value="VillageHouse"/>
    </properties>
   </object>
@@ -469,6 +470,7 @@
    <properties>
     <property name="entry_point" value="Door"/>
     <property name="is_maze" type="bool" value="false"/>
+    <property name="obj_type" value="exit"/>
     <property name="to_map" value="JacobsChamber"/>
    </properties>
   </object>
@@ -478,8 +480,14 @@
     <property name="is_maze" type="bool" value="true"/>
     <property name="maze_cols" type="int" value="10"/>
     <property name="maze_rows" type="int" value="7"/>
+    <property name="obj_type" value="exit"/>
     <property name="return_entry_point" value="Stairs"/>
     <property name="to_map" value="Maze"/>
+   </properties>
+  </object>
+  <object id="31" name="BigChest_Village" x="880" y="720" width="16" height="16">
+   <properties>
+    <property name="obj_type" value="chest"/>
    </properties>
   </object>
  </objectgroup>

@@ -281,5 +281,22 @@
             "damage": 20,
             "money": 0
         }
+    },
+    "chests": {
+        "SmallChest_VillageHouse": {
+            "name": "SmallChest_VillageHouse",
+            "items": [
+                "golden_coin"
+            ]
+        },
+        "BigChest_Village": {
+            "name": "BigChest_Village",
+            "is_small": false,
+            "items": [
+                "sai",
+                "beef",
+                "shrimp"
+            ]
+        }
     }
 }
