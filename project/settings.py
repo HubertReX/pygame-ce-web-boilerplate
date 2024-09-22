@@ -73,6 +73,7 @@ SCALE = 1
 ZOOM_LEVEL = 3.25
 
 IS_WEB = __import__("sys").platform == "emscripten"
+IS_LINUX = __import__("sys").platform == "linux"
 IS_FULLSCREEN = False
 IS_PAUSED = False
 USE_ALPHA_FILTER = False
@@ -229,6 +230,36 @@ GAMEPAD_XBOX_CONTROL_NAMES: dict[str, dict[str, int]] = {
         "RT":                  5,
     }
 }
+GAMEPAD_STEAM_DECK_CONTROL_NAMES: dict[str, dict[str, int]] = {
+    "buttons": {
+        "A":               3,
+        "B":               4,
+        "X":               5,
+        "Y":               6,
+        "context":        11,
+        "xbox":           13,
+        "dots":            2,
+        "settings":       12,
+        "leftjoy_click":  14,
+        "rightjoy_click": 15,
+        "LB":              9,
+        "RB":             10,
+        "dpad_up":        16,
+        "dpad_down":      17,
+        "dpad_left":      18,
+        "dpad_right":     19,
+
+    },
+    "axis": {
+        "leftjoy_horizontal":  0,
+        "leftjoy_vertical":    1,
+        "rightjoy_horizontal": 2,
+        "rightjoy_vertical":   3,
+        "LT":                  4,
+        "RT":                  5,
+    }
+}
+
 GAMEPAD_WEB_CONTROL_NAMES: dict[str, dict[str, int]] = {
     "buttons": {
         "A":              0,

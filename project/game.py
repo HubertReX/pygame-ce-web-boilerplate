@@ -27,6 +27,7 @@ from settings import (
     FONT_SIZE_TINY,
     FPS_CAP,
     GAME_NAME,
+    GAMEPAD_STEAM_DECK_CONTROL_NAMES,
     GAMEPAD_WEB_CONTROL_NAMES,
     GAMEPAD_XBOX_AXIS2ACTIONS,
     GAMEPAD_XBOX_BUTTON2ACTIONS,
@@ -35,6 +36,7 @@ from settings import (
     HUD_DIR,
     INPUTS,
     IS_FULLSCREEN,
+    IS_LINUX,
     IS_WEB,
     JOY_COOLDOWN,
     JOY_DRIFT,
@@ -536,9 +538,13 @@ class Game:
             for joystick in self.joysticks.values():
                 if IS_WEB:
                     gamepad_controls = GAMEPAD_WEB_CONTROL_NAMES
+                elif IS_LINUX:
+                    gamepad_controls = GAMEPAD_STEAM_DECK_CONTROL_NAMES
                 else:
                     gamepad_controls = GAMEPAD_XBOX_CONTROL_NAMES
+
                 for button_name, action in GAMEPAD_XBOX_BUTTON2ACTIONS.items():
+                    # print(f"{button_name=}")
                     pressed = joystick.get_button(gamepad_controls["buttons"][button_name])
                     # if pressed:
                     #     print(f"{button_name} pressed")
@@ -720,6 +726,9 @@ class Game:
     #############################################################################################################
 
     async def loop(self) -> None:
+        # import platform
+        # print(platform.platform())  # Linux-6.1.52-valve16-1-neptune-61-x86_64-with-glibc2.37
+
         if IS_WEB:
             import platform
             platform.window.show_canvas(True)  # type: ignore[attr-defined]
