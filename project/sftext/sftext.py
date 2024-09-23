@@ -31,7 +31,7 @@
 #  extended by Hubert Nafalski, July 2024
 # ---------------------------------------------------------
 
-import re
+from rich import print
 from typing import Any
 import pygame
 
@@ -260,7 +260,9 @@ class SFText():
                 if self.debug:
                     print("all_fit iterations: {}".format(all_fit_iter), guessed_length * 5)
                 if all_fit_iter >= guessed_length * 5:
-                    print("SFTEXT wrap_text FAILED: can't fit text - breaking to prevent infinite loop")
+                    print(
+                        f"[red]ERROR![/] SFTEXT wrap_text FAILED: can't fit text '{text}' - breaking to prevent infinite loop")
+
                     # exit()
                     break
                 # DEBUG #
@@ -280,7 +282,8 @@ class SFText():
                             print("fit iterations: {}, iter_length: {}".format(fit_iter, iter_length))
                         # fit failed - break to prevent infinite loop
                         if fit_iter >= guessed_length * 5:
-                            print("SFTEXT wrap_text FAILED: can't fit text - breaking to prevent infinite loop")
+                            print(
+                                f"[red]ERROR![/] SFTEXT wrap_text FAILED: can't fit text '{text}' - breaking to prevent infinite loop")
                             # exit()
                             break
                         # DEBUG #

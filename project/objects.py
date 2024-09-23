@@ -418,4 +418,7 @@ class NotificationTypeEnum(StrEnum):
 class Notification():
     type: NotificationTypeEnum
     message: str
+    message_text: str
+    width: int
+    height: int
     create_time: float

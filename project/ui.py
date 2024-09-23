@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING
-
+from rich import print
 import pygame
 from objects import ItemSprite, InventorySlot, Notification, NotificationTypeEnum
 from animation.transitions import AnimationTransition
+from sftext.style import Style
+from sftext.sftext import SFText
 
 
 if TYPE_CHECKING:
@@ -28,6 +31,7 @@ from settings import (
     FONT_SIZE_LARGE,
     FONT_SIZE_TINY,
     FONT_SIZE_MEDIUM,
+    FONTS_PATH,
     HEIGHT,
     HUD_DIR,
     HUD_ICONS,
@@ -54,13 +58,18 @@ if IS_WEB:
 else:
     from config_model.config_pydantic import ItemTypeEnum  # type: ignore[assignment]
 
+# TODO: add support for animations
 NOTIFICATION_TYPE_ICONS: dict[str, str] = {
     NotificationTypeEnum.debug.value:   "human",
-    NotificationTypeEnum.info.value:    "dots_anim",
+    # NotificationTypeEnum.info.value:    "dots_anim",
+    NotificationTypeEnum.info.value:    "dots",
     NotificationTypeEnum.warning.value: "exclamation",
-    NotificationTypeEnum.error.value:   "red_exclamation_anim",
-    NotificationTypeEnum.success.value: "blessed_anim",
-    NotificationTypeEnum.failure.value: "shocked_anim",
+    # NotificationTypeEnum.error.value:   "red_exclamation_anim",
+    NotificationTypeEnum.error.value:   "red_exclamation",
+    # NotificationTypeEnum.success.value: "blessed_anim",
+    NotificationTypeEnum.success.value: "blessed",
+    # NotificationTypeEnum.failure.value: "shocked_anim",
+    NotificationTypeEnum.failure.value: "shocked",
 }
 
 
@@ -87,7 +96,8 @@ class UI:
         self.dialog_panel_bg = NinePatch(file="nine_patch_01c.png", scale=4).get_scaled_to(WIDTH - 200, HEIGHT // 3)
         self.name_panel_bg = NinePatch(file="nine_patch_13.png", scale=4).get_scaled_to(26 * TILE_SIZE, 1 * TILE_SIZE)
         self.available_action_bg = NinePatch(file="panel_brown.png", scale=4, border=3).get_scaled_to(200, 36)
-        self.notification_bg = NinePatch(file="panel_brown.png", scale=4, border=3)
+        # self.notification_bg = NinePatch(file="panel_brown.png", scale=4, border=3)
+        self.notification_bg = NinePatch(file="nine_patch_01c.png", scale=4)
 
         weapon_s = 24 + TILE_SIZE * 8
         self.weapon_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(weapon_s, weapon_s)
@@ -103,8 +113,8 @@ class UI:
         #      self.panel_border_size[1] - self.factor * 2)).convert_alpha()
         # self.panel_background.fill((0, 0, 0, 0))
 
-        self.show_modal_panel: bool = False
-        self.show_dialog_panel: bool = False
+        self.show_modal_panel_flag: bool = False
+        self.show_dialog_panel_flag: bool = False
         self.show_nine_patch_test: bool = False
 
         if self.show_nine_patch_test:
@@ -121,9 +131,10 @@ class UI:
             self.np_11 = NinePatch(file="nine_patch_11.png", scale=4).get_scaled_to_image(text_surf)
             self.np_12 = NinePatch(file="nine_patch_12.png", scale=4).get_scaled_to_image(text_surf)
 
+        # self.modal_panel: RichPanel | None = None
         modal_panel_file = DIALOGS_DIR / "welcome_message.md"
         modal_panel_text = modal_panel_file.read_text()
-        modal_panel_tooltip = """[h3][act]This is a tooltip[/act][/h3]\n\n[bold]%s"""
+        modal_panel_tooltip = """[h3][act]This is a tooltip[/act][/h3]\n\n[bold]%s[/bold]"""
         self.modal_panel_offset = (100, 50)
         self.modal_panel = RichPanel(
             modal_panel_text,
@@ -134,9 +145,11 @@ class UI:
             tooltip_offset=self.game.cursor_img.get_size(),
         )
 
+        # self.dialog_panel: RichPanel | None = None
+        # if self.show_dialog_panel:
         # dialog_panel_file = Path("rich_text_dialog.md")
         # dialog_panel_text = dialog_panel_file.read_text()
-        dialog_panel_tooltip = """[h3][act]Hint[/act][/h3]\n\n[bold]%s"""
+        dialog_panel_tooltip = """[h3][act]Hint[/act][/h3]\n\n[bold]%s[/bold]"""
         self.dialog_panel_offset = (100, HEIGHT - self.dialog_panel_bg.get_rect().height - 10)
         self.dialog_panel = RichPanel(
             "<blank>",
@@ -150,11 +163,66 @@ class UI:
         self.icons_dict: dict[str, pygame.Surface] = self.load_icons()
 
     #############################################################################################################
+    @lru_cache(maxsize = 128)
+    def create_rich_text(self, text: str, size: tuple[int, int]) -> SFText:
+        default_font_color: tuple[int, int, int] = (0, 197, 199)
+        shadow_color: tuple[int, int, int] = (130, 32, 32)
+        shadow_offset: tuple[int, int] = (4, 4)
+        border_size: tuple[int, int] = (0, 0)
+
+        # processed_text = RichPanel._parse_text(text)
+        # print(processed_text)
+
+        pixel_art_style = Style().get_default("")
+        pixel_art_style["size"] = 16
+        pixel_art_style["font"] = "font_pixel.ttf"
+        # s["font"] = "Homespun.ttf"
+        pixel_art_style["separate_italic"] = None
+        pixel_art_style["separate_bold"] = None
+        pixel_art_style["separate_bolditalic"] = None
+        # pixel_art_style["indent"] = 10 # indent is actually not implemented in sftext
+        # default text color
+        pixel_art_style["color"] = default_font_color
+        # default text shadow color
+        pixel_art_style["shadow_color"] = shadow_color
+        # direction of the shadow offset, needs to be aligned with the font size
+        pixel_art_style["shadow_offset"] = shadow_offset
+
+        # background_canvas_size = background_canvas.get_size()
+
+        text_canvas = pygame.Surface(
+            (size[0] - border_size[0] * 2,
+             size[1] - border_size[1] * 2)).convert_alpha()
+        text_canvas.fill((0, 0, 0, 0))
+
+        formatted_text = SFText(
+            text=text,
+            images=self.icons_dict,
+            canvas=text_canvas,
+            # font_path=os.path.join(".", "sftext", "resources"),
+            font_path=str(FONTS_PATH),
+            style=pixel_art_style,
+            debug=False
+        )
+        # in order to detect mouse hover over a link,
+        # sftext object needs to know it's offset relative to the main screen
+        # formatted_text.canvas_offset = (
+        #     screen_offset[0] + border_size[0],
+        #     screen_offset[1] + border_size[0])
+        formatted_text.show_scrollbar = False
+        formatted_text.MARGIN_HORIZONTAL = 0
+        formatted_text.MARGIN_VERTICAL = 0
+        formatted_text.on_update()
+
+        return formatted_text
+    #############################################################################################################
+
     def reset(self) -> None:
-        self.show_modal_panel = False
-        self.show_dialog_panel = False
+        self.show_modal_panel_flag = False
+        self.show_dialog_panel_flag = False
 
         self.modal_panel.formatted_text.scroll_top()
+
         self.dialog_panel.formatted_text.scroll_top()
 
     #############################################################################################################
@@ -257,8 +325,9 @@ class UI:
     #     pygame.draw.rect(surface, UI_BORDER_COLOR, bg_rect, UI_BORDER_WIDTH)
 
     #############################################################################################################
-    def display_hotbar(self, player: Player) -> None:
+    def show_hotbar(self) -> None:
 
+        player: Player = self.scene.player
         for i in range(MAX_HOTBAR_ITEMS):
             tl = self.inventory_slot.rect.topleft
 
@@ -333,7 +402,17 @@ class UI:
         return bg_rect
 
     #############################################################################################################
-    def weapon_overlay(self, weapon: ItemSprite | None, has_switched: bool, cooldown: int) -> None:
+    def show_weapon_panel(self, weapon: ItemSprite | None, has_switched: bool, elapsed_time: float) -> None:
+        player = self.scene.player
+        if player.is_attacking:
+            now = elapsed_time - player.attack_time
+            weapon_cooldown = player.selected_weapon.model.cooldown_time if player.selected_weapon else 0.0
+            limit = (player.attack_cooldown / 1000.0) + weapon_cooldown
+            cooldown = int(now / limit * 100)
+            cooldown = min(100, cooldown)
+        else:
+            cooldown = 100
+
         bg_rect = self.selection_box(TILE_SIZE, HEIGHT - (TILE_SIZE * 9), has_switched, cooldown)
         if weapon:
             weapon_surf = pygame.transform.scale(weapon.image_directions["up"], (TILE_SIZE * 7, TILE_SIZE * 7))
@@ -346,7 +425,7 @@ class UI:
                 pos = bg_rect.move(4, 18).topright
                 surface.blit(self.icons_dict["key_Space"], pos)
 
-    # def magic_overlay(self, magic_index, has_switched) -> None:
+    # def show_magic_panel(self, magic_index, has_switched) -> None:
     #     bg_rect = self.selection_box(80, 635, has_switched)
     #     magic_surf = self.magic_graphics[magic_index]
     #     magic_rect = magic_surf.get_rect(center = bg_rect.center)
@@ -423,8 +502,12 @@ class UI:
         factor = AnimationTransition.in_out_expo(factor)
         y = int(NOTIFICATION_Y_BOTTOM + (notification_y_stop - NOTIFICATION_Y_BOTTOM) * factor)
 
-        label = notification.message
-        label_w, label_h = self.font.size(label)
+        # label = f":blink: {notification.message}"
+        # parsed_label = RichPanel._parse_text(label)
+        # label_text, _ = Style.split(parsed_label)
+        # label_text = label_text.replace("{style}", "")
+        # # print(label_text)
+        # label_w, label_h = self.font.size(label_text)
         # icon: pygame.Surface = self.icons_dict[ACTIONS[action]["show"][0]]
         anim = self.scene.emotes[NOTIFICATION_TYPE_ICONS[notification.type]]
         animation_speed = 5
@@ -432,39 +515,43 @@ class UI:
 
         # if int(frame_index) >= len(anim):
         frame_index = frame_index % len(anim)
-        icon = anim[int(frame_index)]
-        scale = 2
+        # icon = anim[int(frame_index)]
+        # scale = 2
+        rich_text = self.create_rich_text(notification.message, (notification.width + 90, notification.height + 60))
 
-        self.display_surface.blit(self.notification_bg.get_scaled_fit(label_w + 36, label_h + 6),
-                                  (TILE_SIZE, y))
-        self.display_surface.blit(pygame.transform.scale_by(icon, scale),
-                                  (TILE_SIZE + 10, y + 10))
-        self.display_text(label,
-                          (TILE_SIZE + 46, y + 16), border=True)
+        self.display_surface.blit(
+            self.notification_bg.get_scaled_fit(notification.width + 36, notification.height + 4),
+            (TILE_SIZE, y))
+        # self.display_surface.blit(pygame.transform.scale_by(icon, scale),
+        #                           (TILE_SIZE + 10, y + 10))
+        # self.display_text(label,
+        #                   (TILE_SIZE + 46, y + 16), border=True)
+        self.display_surface.blit(rich_text.canvas,
+                                  (TILE_SIZE - 28, y - 14))
 
     #############################################################################################################
     def show_available_actions(self) -> None:
 
         if not self.show_help_info:
             self.show_action("help", 0)
-
-        if not self.scene.player.is_flying and not self.scene.player.is_attacking and not self.scene.player.is_stunned:
+        player: Player = self.scene.player
+        if not player.is_flying and not player.is_attacking and not player.is_stunned:
 
             items: list[ItemSprite] = self.scene.item_sprites.sprites()
-            collided_index = self.scene.player.feet.collidelist(items)   # type: ignore[type-var]
+            collided_index = player.feet.collidelist(items)   # type: ignore[type-var]
             if collided_index > -1:
                 self.show_action("pick_up", 1)
 
-        if self.scene.player.selected_item_idx >= 0:
+        if player.selected_item_idx >= 0:
             self.show_action("drop", 2)
 
-            item: ItemSprite = self.scene.player.items[self.scene.player.selected_item_idx]
+            item: ItemSprite = player.items[player.selected_item_idx]
             label: str = ""
             if item.model.type == ItemTypeEnum.consumable:
                 label = "consume"
             elif item.model.type == ItemTypeEnum.weapon:
-                if self.scene.player.selected_weapon:
-                    if self.scene.player.selected_weapon.name == item.name:
+                if player.selected_weapon:
+                    if player.selected_weapon.name == item.name:
                         label = "disarm"
                     else:
                         label = "equip"
@@ -473,27 +560,34 @@ class UI:
 
             self.show_action("use_item", 3, label=label)
 
-        if self.scene.player.chest_in_range:
+        if player.chest_in_range:
             self.show_action("open", 4, label="open chest")
-        elif self.scene.player.npc_met:
+        elif player.npc_met:
             self.show_action("talk", 4)
+    #############################################################################################################
+
+    def activate_dialog_panel(self, dialog_text: str) -> None:
+        self.show_dialog_panel_flag = True
+        self.dialog_panel.set_text(dialog_text)
+        self.dialog_panel.formatted_text.scroll_top()
+
     #############################################################################################################
 
     def update(self, events: list[pygame.event.EventType]) -> None:
         global INPUTS
         # if INPUTS["select"] or INPUTS["pick_up"]:
         if INPUTS["talk"]:
-            if self.show_modal_panel:
+            if self.show_modal_panel_flag:
                 if self.modal_panel.formatted_text.is_scroll_bottom():
-                    self.show_modal_panel = False
+                    self.show_modal_panel_flag = False
                 else:
                     self.modal_panel.formatted_text.scroll_page_down()
                 INPUTS["talk"] = False
                 # INPUTS["pick_up"] = False
 
-            if self.show_dialog_panel:
+            if self.show_dialog_panel_flag:
                 if self.dialog_panel.formatted_text.is_scroll_bottom():
-                    self.show_dialog_panel = False
+                    self.show_dialog_panel_flag = False
                     self.scene.player.is_talking = False
                     if self.scene.player.npc_met:
                         self.scene.player.npc_met.is_talking = False
@@ -505,29 +599,83 @@ class UI:
                 # INPUTS["pick_up"] = False
 
         for event in events:
-            if self.show_modal_panel:
+            if self.show_modal_panel_flag:
                 if event.type == pygame.KEYDOWN:
                     self.modal_panel.on_key_press(event)
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     self.modal_panel.on_mouse_button(event)
 
-            if self.show_dialog_panel:
+            if self.show_dialog_panel_flag:
                 if event.type == pygame.KEYDOWN:
                     self.dialog_panel.on_key_press(event)
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     self.dialog_panel.on_mouse_button(event)
 
         self.modal_panel.on_mouse_move()
-        self.dialog_panel.on_mouse_move()
-
         self.modal_panel.on_update()
+
+        self.dialog_panel.on_mouse_move()
         self.dialog_panel.on_update()
 
     #############################################################################################################
-    def display(self, player: Player, elapsed_time: float) -> None:
+    def display_ui(self, elapsed_time: float) -> None:
+        player: Player = self.scene.player
         # upper left corner
         # UI semitransparent background panel
         # self.box(TILE_SIZE, TILE_SIZE, 450, 125)
+        self.show_stats_panel(player)
+
+        # left middle
+        # show notifications
+        for row, notification in enumerate(self.scene.notifications):
+            self.show_notification(notification, row)
+
+        # upper right corner
+        # FPS counter
+        self.box(WIDTH - 200, TILE_SIZE, 180, 10 + (25 * 1))
+        self.display_text(f"FPS: {self.game.fps:5.1f}", (WIDTH - 200 + 10, TILE_SIZE + 10))
+
+        # lower left corner
+        # weapon panel
+        if not self.show_dialog_panel_flag:
+            self.show_weapon_panel(player.selected_weapon, not player.can_switch_weapon, elapsed_time)
+            # self.show_magic_panel(player.magic_index, not player.can_switch_magic)
+
+            # middle lower and right upper
+            # hot bar
+            self.show_hotbar()
+
+            # middle upper
+            # help panel
+            self.show_help()
+
+            # lower right corner
+            # available actions key shortcuts
+            self.show_available_actions()
+
+        if self.show_modal_panel_flag:
+            self.show_modal_panel()
+
+        if self.show_dialog_panel_flag:
+            self.show_dialog_panel()
+
+        if self.show_nine_patch_test:
+            # self.display_surface.blit(self.np_01, (200, 100))
+            # self.display_surface.blit(self.np_02, (200, 200))
+            # self.display_surface.blit(self.np_03, (200, 300))
+            # self.display_surface.blit(self.np_04, (200, 400))
+            self.display_surface.blit(self.np_05, (200, 500))
+            self.display_surface.blit(self.np_06, (200, 600))
+            self.display_surface.blit(self.np_07, (200, 700))
+            self.display_surface.blit(self.np_08, (200, 800))
+            self.display_surface.blit(self.np_09, (200, 900))
+
+            self.display_surface.blit(self.np_10, (200, 100))
+            self.display_surface.blit(self.np_11, (200, 200))
+            self.display_surface.blit(self.np_12, (200, 300))
+
+    #############################################################################################################
+    def show_stats_panel(self, player: Player) -> None:
         self.display_surface.blit(self.health_bg, (TILE_SIZE, TILE_SIZE))
 
         left_margin = 30
@@ -557,111 +705,52 @@ class UI:
         self.display_text(
             f"Money   {player.model.money}", (TILE_SIZE + left_margin, TILE_SIZE + + top_margin + row_height * 3))
 
-        # left middle
-        # show notifications
-        for row, notification in enumerate(self.scene.notifications):
-            self.show_notification(notification, row)
-
-        # upper right corner
-        # FPS counter
-        self.box(WIDTH - 200, TILE_SIZE, 180, 10 + (25 * 1))
-        self.display_text(f"FPS: {self.game.fps:5.1f}", (WIDTH - 200 + 10, TILE_SIZE + 10))
-
-        # lower left corner
-        # weapon panel
-        if player.is_attacking:
-            now = elapsed_time - player.attack_time
-            weapon_cooldown = player.selected_weapon.model.cooldown_time if player.selected_weapon else 0.0
-            limit = (player.attack_cooldown / 1000.0) + weapon_cooldown
-            res = int(now / limit * 100)
-            res = min(100, res)
-        else:
-            res = 100
-
-        if not self.show_dialog_panel:
-            self.weapon_overlay(player.selected_weapon, not player.can_switch_weapon, res)
-            # self.magic_overlay(player.magic_index, not player.can_switch_magic)
-
-            # middle lower and right upper
-            # hot bar
-            self.display_hotbar(player)
-
-            # middle upper
-            # help panel
-            self.show_help()
-
-            # lower right corner
-            # available actions key shortcuts
-            self.show_available_actions()
-
-        # np = NinePatch(scale=INVENTORY_ITEM_SCALE)
-        # np.get_scaled_to(300, 150)
-        # self.display_surface.blit(np.image, (200, 200))
-        # text_rect = text_surf.get_rect()
-
-        # self.display_surface.blit(self.panel_background, self.panel_screen_offset)
-
-        # self.panel_border_size
-        # self.display_surface.blit(self.panel_border, self.panel_screen_offset)
-
-        if self.show_modal_panel:
-            self.display_surface.blit(self.modal_panel.get_panel(), self.modal_panel_offset)
-            if self.modal_panel.is_tooltip_available:
-                tooltip_canvas, mouse_pos = self.modal_panel.get_tooltip()
-                self.display_surface.blit(tooltip_canvas, mouse_pos)
-
-        if self.show_dialog_panel:
-            dialog_panel_size = self.dialog_panel_bg.get_size()
-            # draw avatar of NPC
-            if self.scene.player.npc_met:
-                self.display_surface.blit(
-                    self.scene.player.npc_met.avatar,
-                    (self.dialog_panel_offset[0],
-                     self.dialog_panel_offset[1]  + 4 - TILE_SIZE * AVATAR_SCALE))
+    #############################################################################################################
+    def show_dialog_panel(self) -> None:
+        dialog_panel_size = self.dialog_panel_bg.get_size()
+        player = self.scene.player
+        # draw avatar of NPC
+        if player.npc_met:
+            self.display_surface.blit(
+                player.npc_met.avatar,
+                (self.dialog_panel_offset[0],
+                 self.dialog_panel_offset[1]  + 4 - TILE_SIZE * AVATAR_SCALE))
             # draw player avatar
-                self.display_surface.blit(
-                    self.scene.player.avatar,
-                    (self.dialog_panel_offset[0] + dialog_panel_size[0] - TILE_SIZE * AVATAR_SCALE,
-                     self.dialog_panel_offset[1] + 4 - TILE_SIZE * AVATAR_SCALE))
+            self.display_surface.blit(
+                player.avatar,
+                (self.dialog_panel_offset[0] + dialog_panel_size[0] - TILE_SIZE * AVATAR_SCALE,
+                 self.dialog_panel_offset[1] + 4 - TILE_SIZE * AVATAR_SCALE))
             # draw dialog panel
-            self.display_surface.blit(self.dialog_panel.get_panel(), self.dialog_panel_offset)
-            self.display_surface.blit(self.name_panel_bg,
-                                      (self.dialog_panel_offset[0] + 3 * TILE_SIZE,
-                                       self.dialog_panel_offset[1] - 3 * TILE_SIZE))
-            if self.scene.player.npc_met:
-                name = self.scene.player.npc_met.model.name
-            else:
-                name = "????"
-            self.display_text(name,
-                              (self.dialog_panel_offset[0] + 4 * TILE_SIZE,
-                               self.dialog_panel_offset[1] - int(1.5 * TILE_SIZE)),
-                              font=self.game.fonts[FONT_SIZE_LARGE],
-                              color=CHAR_NAME_COLOR)
-            # draw key shortcuts
-            pos = (self.dialog_panel_offset[0] + dialog_panel_size[0] - 15,
-                   self.dialog_panel_offset[1] + 40)
-            self.display_surface.blit(self.icons_dict["key_Space"], pos)
+        self.display_surface.blit(self.dialog_panel.get_panel(), self.dialog_panel_offset)
+        self.display_surface.blit(self.name_panel_bg,
+                                  (self.dialog_panel_offset[0] + 3 * TILE_SIZE,
+                                   self.dialog_panel_offset[1] - 3 * TILE_SIZE))
+        if player.npc_met:
+            name = player.npc_met.model.name
+        else:
+            name = "????"
+        self.display_text(name,
+                          (self.dialog_panel_offset[0] + 4 * TILE_SIZE,
+                           self.dialog_panel_offset[1] - int(1.5 * TILE_SIZE)),
+                          font=self.game.fonts[FONT_SIZE_LARGE],
+                          color=CHAR_NAME_COLOR)
+        # draw key shortcuts
+        pos = (self.dialog_panel_offset[0] + dialog_panel_size[0] - 15,
+               self.dialog_panel_offset[1] + 40)
+        self.display_surface.blit(self.icons_dict["key_Space"], pos)
 
-            # pos = (self.dialog_panel_offset[0] + dialog_panel_size[0] // 2,
-            #        self.dialog_panel_offset[1] + dialog_panel_size[1] - 15)
-            # self.display_surface.blit(self.icons_dict["key_Space"], pos)
+        # pos = (self.dialog_panel_offset[0] + dialog_panel_size[0] // 2,
+        #        self.dialog_panel_offset[1] + dialog_panel_size[1] - 15)
+        # self.display_surface.blit(self.icons_dict["key_Space"], pos)
 
-            # draw dialog tooltip
-            if self.dialog_panel.is_tooltip_available:
-                tooltip_canvas, mouse_pos = self.dialog_panel.get_tooltip()
-                self.display_surface.blit(tooltip_canvas, mouse_pos)
+        # draw dialog tooltip
+        if self.dialog_panel.is_tooltip_available:
+            tooltip_canvas, mouse_pos = self.dialog_panel.get_tooltip()
+            self.display_surface.blit(tooltip_canvas, mouse_pos)
 
-        if self.show_nine_patch_test:
-            # self.display_surface.blit(self.np_01, (200, 100))
-            # self.display_surface.blit(self.np_02, (200, 200))
-            # self.display_surface.blit(self.np_03, (200, 300))
-            # self.display_surface.blit(self.np_04, (200, 400))
-            self.display_surface.blit(self.np_05, (200, 500))
-            self.display_surface.blit(self.np_06, (200, 600))
-            self.display_surface.blit(self.np_07, (200, 700))
-            self.display_surface.blit(self.np_08, (200, 800))
-            self.display_surface.blit(self.np_09, (200, 900))
-
-            self.display_surface.blit(self.np_10, (200, 100))
-            self.display_surface.blit(self.np_11, (200, 200))
-            self.display_surface.blit(self.np_12, (200, 300))
+    #############################################################################################################
+    def show_modal_panel(self) -> None:
+        self.display_surface.blit(self.modal_panel.get_panel(), self.modal_panel_offset)
+        if self.modal_panel.is_tooltip_available:
+            tooltip_canvas, mouse_pos = self.modal_panel.get_tooltip()
+            self.display_surface.blit(tooltip_canvas, mouse_pos)

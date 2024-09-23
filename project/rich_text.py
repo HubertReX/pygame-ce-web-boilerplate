@@ -1,8 +1,10 @@
 from pathlib import Path
 import re
+from rich.markup import escape
+from rich import print
 import pygame
 import thorpy as tp
-from settings import EMOJIS_DICT, EMOJIS_PATH, HEIGHT, HUD_DIR, HUD_ICONS, WIDTH, vec
+from settings import EMOJIS_DICT, EMOJIS_PATH, FONTS_PATH, HEIGHT, HUD_DIR, HUD_ICONS, STYLE_TAGS_DICT, WIDTH, vec
 from sftext.sftext import SFText
 from sftext.style import Style
 # from utils.sftext import sftext
@@ -11,42 +13,12 @@ from sftext.style import Style
 
 class RichPanel():
 
-    FONTS_PATH = Path("assets") / "fonts"
     # custom styles, syntax:
     # [emphasis]this is important[/emphasis] -> {style}{bold True}{cast_shadow True}this is important{style}
     # or
     # [link WIKI_CHARACTERS_WOLF.md]bad wolf[/link] -> {style}{link WIKI_CHARACTERS_WOLF.md}bad wolf{style}
     # or
     # :angry: -> {style}{image angry}§{style}
-
-    STYLE_TAGS_DICT: dict[str, str] = {
-        "h1": "{align center}{size 42}{cast_shadow True}",
-        "h2": "{align left}{size 36}{cast_shadow True}",
-        "h3": "{align left}{size 28}{cast_shadow True}",
-        "shadow":    "{cast_shadow True}",
-        "dark":      "{shadow_color (30,30,30)}",
-        "light":     "{shadow_color (230,230,230)}",
-        "bold":      "{bold True}",
-        "b":         "{bold True}",
-        "italic":    "{italic True}",
-        "i":         "{italic True}",
-        "underline": "{underline True}",
-        "u":         "{underline True}",
-        "link( +[^\\]]+)?": "{underline True}{link LINK_URL}",
-        "big":       "{size 42}",
-        "small":     "{size 12}",
-        "left":      "{align left}",
-        "right":     "{align right}",
-        "center":    "{align center}",
-        "act":       "{color (255,110,104)}",
-        # "char":      "{color (255,252,103,255)}",
-        "char":      "{color (255,252,103)}",
-        "item":      "{color (104,113,255)}",
-        "loc":       "{color (95,250,104)}",
-        "num":       "{color (255,119,255)}",
-        "quest":     "{color (96,253,255)}",
-        "text":      "{color (0,197,199)}",
-    }
 
     def __init__(
             self,
@@ -159,7 +131,7 @@ class RichPanel():
             images=self.EMOJIS_IMAGE_DICT,
             canvas=self.text_canvas,
             # font_path=os.path.join(".", "sftext", "resources"),
-            font_path=str(self.FONTS_PATH),
+            font_path=str(FONTS_PATH),
             style=self.pixel_art_style,
             debug=self.debug
         )
@@ -194,7 +166,7 @@ class RichPanel():
             images=self.EMOJIS_IMAGE_DICT,
             canvas=self.tooltip_canvas,
             # font_path=os.path.join(".", "sftext", "resources"),
-            font_path=str(self.FONTS_PATH),
+            font_path=str(FONTS_PATH),
             style=self.tooltip_style,
             debug=self.debug
         )
@@ -299,7 +271,8 @@ class RichPanel():
 
         self.formatted_text.on_update()
 
-    def _parse_text(self, rich_text: str) -> str:
+    @staticmethod
+    def _parse_text(rich_text: str) -> str:
         """
         converts custom rich text to sftext format
         # [emphasis]this is important[/emphasis] -> {style}{bold True}{cast_shadow True}this is important{style}
@@ -315,7 +288,7 @@ class RichPanel():
             str: sftext formatted text
         """
 
-        tags_list = self.STYLE_TAGS_DICT.keys()
+        tags_list = STYLE_TAGS_DICT.keys()
         tags_pattern = "|".join(tags_list)
         opening_tag_pattern = f"\\[(/?)({tags_pattern})\\]"
         # print(opening_tag_pattern)
@@ -341,7 +314,7 @@ class RichPanel():
 
             before_tag = match.string[prev_tag_index:match.start()]
 
-            parsed_text += self._parse_emojis(before_tag, active_tags)
+            parsed_text += RichPanel._parse_emojis(before_tag, active_tags)
 
             if "/" not in res:
                 active_tags_list.append(res)
@@ -349,10 +322,14 @@ class RichPanel():
                 res = res.replace("/", "")
                 # if "link" in res:
                 #     print(f"res close: {res}")
-                active_tags_list.remove(res)
+                if res not in active_tags_list:
+                    print(
+                        f"[red]ERROR[/] parsing '{escape(rich_text)}' string failed - closing tag has no corresponding open tag '{escape(res)}'")
+                else:
+                    active_tags_list.remove(res)
 
             if active_tags_list:
-                active_tags = "".join([self.STYLE_TAGS_DICT[tag] for tag in active_tags_list])
+                active_tags = "".join([STYLE_TAGS_DICT[tag] for tag in active_tags_list])
                 if "LINK_URL" in active_tags:
                     active_tags = active_tags.replace("LINK_URL", url)
             else:
@@ -360,11 +337,12 @@ class RichPanel():
             parsed_text += f"{{style}}{active_tags}"
             prev_tag_index = match.end()
 
-        parsed_text += self._parse_emojis(rich_text[prev_tag_index:], active_tags)
+        parsed_text += RichPanel._parse_emojis(rich_text[prev_tag_index:], active_tags)
 
         return parsed_text
 
-    def _parse_emojis(self, text: str, active_tags: str) -> str:
+    @staticmethod
+    def _parse_emojis(text: str, active_tags: str) -> str:
         """
         converts emojis tags to sftext format
         :angry: -> {style}{image angry}§{style}
@@ -469,7 +447,7 @@ def main() -> None:
 
     screen_offset = (50, 50)
 
-    tooltip_rich_text = """[act][shadow][bold]This is a tooltip[/bold][/shadow][/act]\n\n[underline]%s"""
+    tooltip_rich_text = """[act][shadow][bold]This is a tooltip[/bold][/shadow][/act]\n\n[underline]%s[/[underline]]"""
     rich_panel = RichPanel(test_rich_text, tooltip_rich_text, bck, screen_offset)
 
     # print()

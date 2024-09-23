@@ -435,7 +435,7 @@ class Game:
                 print(f"screenshot saved to file '{file_name}'")
                 if ".." in str(file_name):
                     short_name = str(file_name).split("..")[-1]
-                add_notification(f"screenshot saved to file '{short_name}'", NotificationTypeEnum.info)
+                add_notification(f"screenshot saved to file '[u]{short_name}[/u]'", NotificationTypeEnum.info)
             return True
         else:
             # next frame rendered by pipeline needs to be saved back to screen
@@ -718,11 +718,12 @@ class Game:
             # USE_SHADERS
         )  # self.save_frame)
 
-        if self.save_frame and self.rec_process:
+        if self.save_frame:
             if INPUTS["screenshot"]:
                 self.save_screenshot(add_notification, res)
             else:
-                self.rec_process.stdin.write(res)
+                if self.rec_process:
+                    self.rec_process.stdin.write(res)
     #############################################################################################################
 
     async def loop(self) -> None:

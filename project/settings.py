@@ -153,6 +153,37 @@ DAY_FILTER: tuple[int, int, int, int] = (152, 152, 0, 20)
 # amount of light sources passed to shader
 MAX_LIGHTS_COUNT: int = 16
 
+STYLE_TAGS_DICT: dict[str, str] = {
+    "h1": "{align center}{size 42}{cast_shadow True}",
+    "h2": "{align left}{size 36}{cast_shadow True}",
+    "h3": "{align left}{size 28}{cast_shadow True}",
+    "shadow":    "{cast_shadow True}",
+    "dark":      "{shadow_color (30,30,30)}",
+    "light":     "{shadow_color (230,230,230)}",
+    "bold":      "{bold True}",
+    "b":         "{bold True}",
+    "italic":    "{italic True}",
+    "i":         "{italic True}",
+    "underline": "{underline True}",
+    "u":         "{underline True}",
+    "link( +[^\\]]+)?": "{underline True}{link LINK_URL}",
+    "big":       "{size 42}",
+    "small":     "{size 12}",
+    "left":      "{align left}",
+    "right":     "{align right}",
+    "center":    "{align center}",
+    "act":       "{color (255,110,104)}",
+    # "char":      "{color (255,252,103,255)}",
+    "char":      "{color (255,252,103)}",
+    "item":      "{color (104,113,255)}",
+    "loc":       "{color (95,250,104)}",
+    "num":       "{color (255,119,255)}",
+    "quest":     "{color (96,253,255)}",
+    "text":      "{color (0,197,199)}",
+    "error":     "{color (223,57,76)}",
+}
+
+
 ACTIONS: dict[str, dict[str, Any]] = {
     "quit":           {"show": ["key_Esc", "key_Q"], "msg": "main menu",   "keys": [pygame.K_ESCAPE,    pygame.K_q]},
     "debug":          {"show": ["key_`", "key_Z"],   "msg": "debug",       "keys": [pygame.K_BACKQUOTE, pygame.K_z]},
@@ -345,8 +376,9 @@ SCREENSHOTS_DIR = CURRENT_DIR if IS_WEB else CURRENT_DIR / ".." / "screenshots"
 ASSETS_DIR = CURRENT_DIR / "assets"
 # font_name = "font"
 font_name = "font_pixel"
-MAIN_FONT = ASSETS_DIR / "fonts" / f"{font_name}.ttf"
-MENU_FONT = ASSETS_DIR / "fonts" / "munro.ttf"
+FONTS_PATH = ASSETS_DIR / "fonts"
+MAIN_FONT = FONTS_PATH / f"{font_name}.ttf"
+MENU_FONT = FONTS_PATH / "munro.ttf"
 
 FONT_SIZES_DICT = {
     "font":       [8, 24, 38, 42, 55],

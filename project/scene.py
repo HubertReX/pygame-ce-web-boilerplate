@@ -22,6 +22,8 @@ from pyscroll.group import PyscrollGroup
 from pytmx import TiledMap, TiledObjectGroup, TiledTileLayer
 from pytmx.util_pygame import load_pygame
 from config_model.config import AttitudeEnum
+from rich_text import RichPanel
+from sftext.style import Style
 from settings import (
     # ACTIONS,
     # BG_COLOR,
@@ -68,7 +70,7 @@ from settings import (
 )
 from state import State
 from transition import Transition, TransitionCircle
-from ui import UI
+from ui import NOTIFICATION_TYPE_ICONS, UI
 
 
 ################################################################################################################
@@ -154,7 +156,15 @@ class Scene(State):
 
     #############################################################################################################
     def add_notification(self, text: str, type: NotificationTypeEnum = NotificationTypeEnum.info) -> None:
-        self.notifications.append(Notification(type, text, self.game.time_elapsed))
+        icon = NOTIFICATION_TYPE_ICONS[type]
+        label = f":{icon}: {text}"
+        parsed_label = RichPanel._parse_text(label)
+        label_text, _ = Style.split(parsed_label)
+        label_text = label_text.replace("{style}", "")
+        # print(label_text)
+        label_w, label_h = self.ui.font.size(label_text)
+        notification = Notification(type, parsed_label, label_text, label_w, label_h, self.game.time_elapsed)
+        self.notifications.append(notification)
 
     #############################################################################################################
     def remove_old_notifications(self) -> None:
@@ -191,8 +201,8 @@ class Scene(State):
                 self.items_defs[name] = tile
             else:
                 if name:
-                    print(f"[red]ERROR![/] {name} item has no definition in config.json")
-                    self.add_notification(f"ERROR! '{name}' item has no definition in config.json",
+                    print(f"[red]ERROR![/] '{name}' item has no definition in '[b][u]config.json[/u][/b]'")
+                    self.add_notification(f"[error]ERROR[/error] :red_exclamation: '[item]{name}[/item]' item has no definition in '[b][u]config.json[/u][/b]'",
                                           NotificationTypeEnum.debug)
 
     #############################################################################################################
@@ -430,7 +440,8 @@ class Scene(State):
             self.player.adjust_rect()
         else:
             print("\n[red]ERROR![/] no entry point found!\n")
-            self.add_notification("no entry point found!", NotificationTypeEnum.debug)
+            self.add_notification("[error]ERROR[/error]:red_exclamation: no entry point found",
+                                  NotificationTypeEnum.debug)
             # fallback - put the player in the center of the map
             self.player.pos = tuple_to_vector(self.map_view.map_rect.center)
 
@@ -510,10 +521,11 @@ class Scene(State):
                     img_part = img.subsurface(rec)
                     anim.append(img_part)
                 else:
-                    print(f"[red]ERROR![/] {self.current_scene}: coordinate {x}x{
-                          y} not inside sprite sheet for {key} animation")
-                    self.add_notification(f"{self.current_scene}: coordinate {x}x{
-                        y} not inside sprite sheet for {key} animation", NotificationTypeEnum.debug)
+                    print(
+                        f"[red]ERROR![/] {self.current_scene}: coordinate {x}x{y} not inside sprite sheet for '{key}' animation")
+                    self.add_notification(
+                        f"[error]ERROR[/error]:red_exclamation: {self.current_scene}: coordinate {x}x{y} not inside sprite sheet for '{key}' animation",
+                        NotificationTypeEnum.debug)
                     continue
             if anim:
                 result[key] = anim
@@ -924,7 +936,8 @@ class Scene(State):
                 if item := self.player.drop_item():
                     self.group.add(item, layer=self.sprites_layer - 1)
                     print(f"Dropped {item.name}[{item.model.type.value}]")  # TODO: add notification
-                    self.add_notification(f"Dropped '{item.name}'", NotificationTypeEnum.info)
+                    self.add_notification(
+                        f"Dropped '[item]{item.name}[/item]'", NotificationTypeEnum.info)
                 else:
                     print("No item to drop!")
             INPUTS["drop"] = False
@@ -936,7 +949,7 @@ class Scene(State):
                 if collided_index > -1:
                     item = items[collided_index]
                     if self.player.pick_up(item):
-                        self.add_notification(f"Picked up '{item.name}'", NotificationTypeEnum.success)
+                        self.add_notification(f"Picked up '[item]{item.name}[/item]'", NotificationTypeEnum.success)
                         with contextlib.suppress(KeyError):
                             # if self.group.has(item):
                             self.group.remove(item)
@@ -1074,7 +1087,7 @@ class Scene(State):
 
             # self.debug([fps, stats, f"Items[{weight}]: {inventory}", f"Weapon: {weapon}"])
 
-        self.ui.display(self.player, self.game.time_elapsed)
+        self.ui.display_ui(self.game.time_elapsed)
     #############################################################################################################
 
     # def apply_time_of_day_filter(self, screen: pygame.Surface) -> None:

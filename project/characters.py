@@ -15,8 +15,6 @@ from settings import (
     AVATAR_SCALE,
     CHARACTERS_DIR,
     DIALOGS_DIR,
-    EMOTE_SHEET_DEFINITION,
-    EMOTE_SHEET_FILE,
     HEIGHT,
     INPUTS,
     IS_WEB,
@@ -420,7 +418,8 @@ class NPC(pygame.sprite.Sprite):
             self.generate_waypoints_from_path(path, start)
         else:
             print(f"Path not found for npc '{self.name}'!")
-            self.scene.add_notification(f"Path not found for npc '{self.name}", NotificationTypeEnum.debug)
+            self.scene.add_notification(
+                f"Path not found for npc '[char]{self.name}[/char]'", NotificationTypeEnum.debug)
             self.waypoints = ()
             self.waypoints_cnt = 0
             self.acc = vec(0, 0)
@@ -617,7 +616,8 @@ class NPC(pygame.sprite.Sprite):
             self.can_switch_weapon = True
         else:
             print(f"unknown action '{action}' for npc '{self.name}'")
-            self.scene.add_notification(f"unknown action '{action}' for npc '{self.name}'", NotificationTypeEnum.debug)
+            self.scene.add_notification(
+                f"unknown action '[act]{action}[/act]' for npc '[char]{self.name}[/char]'", NotificationTypeEnum.debug)
 
     #############################################################################################################
     def hide_health_bar(self) -> None:
@@ -841,14 +841,17 @@ class NPC(pygame.sprite.Sprite):
                         self.selected_item_idx = 0
                     result = True
                 else:
-                    print(f"\n[red]ERROR:[/] {self.name} Max carry weight exceeded!\n")  # TODO: add notification
+                    print(
+                        f"\n[red]ERROR:[/] {self.name} Max carry weight '[num]{self.model.max_carry_weight:4.2f}[/num]' exceeded!\n")
                     self.scene.add_notification(
-                        "Max carry weight exceeded!", scene.NotificationTypeEnum.failure)
+                        f"Max carry weight '[num]{self.model.max_carry_weight:4.2f}[/num]' exceeded :red_exclamation:",
+                        scene.NotificationTypeEnum.failure)
 
             else:
-                print(f"\n[red]ERROR:[/] {self.name} No more free items slot!\n")
+                print(f"\n[red]ERROR:[/] {self.name} All '[num]{MAX_HOTBAR_ITEMS}[/num]' items slots are taken!\n")
                 self.scene.add_notification(
-                    "No more free items slot!", scene.NotificationTypeEnum.failure)
+                    f"All '[num]{MAX_HOTBAR_ITEMS}[/num]' items slots are taken :red_exclamation:",
+                    scene.NotificationTypeEnum.failure)
         # print(f"Picked up {item.name}({item.model.type.value})")
 
         return result
@@ -858,7 +861,7 @@ class NPC(pygame.sprite.Sprite):
         if (
             not self.items or self.selected_item_idx < 0 or self.selected_item_idx > len(self.items) - 1
         ):
-            return None  # TODO: add notification
+            return None
 
         selected_item = self.items[self.selected_item_idx]
         self.total_items_weight -= selected_item.model.weight  # * selected_item.model.count
@@ -940,7 +943,7 @@ class Player(NPC):
             if self.chest_in_range and self.chest_in_range.model.is_closed and not self.is_talking:
                 chest = self.chest_in_range
                 chest.open()
-                self.scene.add_notification("Chest opened!", NotificationTypeEnum.success)
+                self.scene.add_notification("Chest opened :red_exclamation:", NotificationTypeEnum.success)
                 for item_name in chest.model.items:
                     # print(f"[light_green] '{item_name}' item from chest")
                     pos: vec = self.pos + self.get_random_pos()  # type: ignore[assignment]
@@ -950,11 +953,9 @@ class Player(NPC):
             INPUTS["open"] = False
         elif INPUTS["talk"]:
             if self.npc_met and self.npc_met.has_dialog and not self.is_talking:
-                self.scene.ui.show_dialog_panel = True
-                self.scene.ui.dialog_panel.set_text(self.npc_met.dialogs or "")
-                self.scene.ui.dialog_panel.formatted_text.scroll_top()
-                self.is_talking = self.scene.ui.show_dialog_panel
-                self.npc_met.is_talking = self.scene.ui.show_dialog_panel
+                self.scene.ui.activate_dialog_panel(self.npc_met.dialogs or "")
+                self.is_talking = True
+                self.npc_met.is_talking = True
             INPUTS["talk"] = False
 
         # prevent player from moving and attacking while talking
@@ -984,7 +985,8 @@ class Player(NPC):
                 walk_cost = self.scene.path_finding_grid[cell_y][cell_x]
                 if walk_cost > 0:
                     print("[yellow]INFO[/] destination unreachable")
-                    self.scene.add_notification("destination unreachable", NotificationTypeEnum.failure)
+                    self.scene.add_notification("destination unreachable :red_exclamation:",
+                                                NotificationTypeEnum.failure)
                     skip = True
 
             if not skip:
