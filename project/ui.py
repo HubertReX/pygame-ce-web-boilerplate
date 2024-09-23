@@ -101,7 +101,7 @@ class UI:
 
         weapon_s = 24 + TILE_SIZE * 8
         self.weapon_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(weapon_s, weapon_s)
-        self.stats_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(500, 170)
+        self.stats_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(300, 190)
 
         help_w = int(24 * FONT_SIZE_MEDIUM * 2.2)
         self.help_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(400 - 2, help_w)
@@ -493,7 +493,7 @@ class UI:
         row_spacing = row * row_height
         time_elapsed = self.scene.game.time_elapsed - notification.create_time
 
-        NOTIFICATION_Y_TOP: int = 200
+        NOTIFICATION_Y_TOP: int = 230
         NOTIFICATION_Y_BOTTOM: int = HEIGHT - TILE_SIZE
         notification_y_stop = NOTIFICATION_Y_TOP + row_spacing
 
@@ -680,30 +680,57 @@ class UI:
 
         left_margin = 30
         top_margin = 40
-        row_height = 25
-        self.display_text("Health", (TILE_SIZE + left_margin, TILE_SIZE + top_margin))
+        row_height = 35
+        icon_scale = 2
+        icon_offset = TILE_SIZE // 2
+        ###########################################################################
+        # HEALTH
+        # self.display_text("Health", (TILE_SIZE + left_margin, TILE_SIZE + top_margin))
+        icon = pygame.transform.scale_by(self.scene.items_sheet["big_heart"][0], icon_scale)
+        self.display_surface.blit(icon, (TILE_SIZE + left_margin, icon_offset + top_margin))
         hb = player.health_bar_ui
-        hb.set_bar(player.model.health / player.model.max_health, (TILE_SIZE + 160, TILE_SIZE + top_margin - 8))
+        hb.set_bar(player.model.health / player.model.max_health,
+                   (4 * TILE_SIZE + left_margin, TILE_SIZE + top_margin - 8))
         self.display_surface.blit(hb.image, hb.rect)
 
+        ###########################################################################
+        # WEIGHT
+        icon = pygame.transform.scale_by(self.scene.items_sheet["pan_balance"][0], icon_scale)
+        self.display_surface.blit(icon, (TILE_SIZE + left_margin, icon_offset + top_margin + row_height))
+        self.display_text(
+            f"{player.total_items_weight:4.2f}/{player.model.max_carry_weight:4.2f}",
+            color=(0, 197, 199),
+            border=True,
+            pos=(4 * TILE_SIZE + left_margin, TILE_SIZE + top_margin + row_height))
+
+        # if player.selected_item_idx >= 0:
+        #     item_model = player.items[player.selected_item_idx].model
+        #     item = f"{item_model.name} ({item_model.count})"
+        # else:
+        #     item = "N/A"
+        # self.display_text(
+        #     f"Item    {item}", (TILE_SIZE + left_margin, TILE_SIZE + + top_margin + row_height * 2))
+
+        ###########################################################################
+        # HOUR
+        icon = pygame.transform.scale_by(self.scene.items_sheet["hourglass"][0], icon_scale)
+        self.display_surface.blit(icon, (TILE_SIZE + left_margin, icon_offset + top_margin + row_height * 2))
         # self.show_bar(player.energy, player.stats['energy'], self.energy_bar_rect, ENERGY_COLOR)
         self.display_text(
-            f"H:{self.scene.hour:2d}:{self.scene.minute:02d}", (TILE_SIZE + 360, TILE_SIZE + top_margin))
+            f"{self.scene.hour:d}:{self.scene.minute:02d}",
+            color=(0, 197, 199),
+            border=True,
+            pos=(4 * TILE_SIZE + left_margin, TILE_SIZE + top_margin + row_height * 2))
 
+        ###########################################################################
+        # MONEY
+        icon = pygame.transform.scale_by(self.scene.items_sheet["coin"][0], icon_scale)
+        self.display_surface.blit(icon, (TILE_SIZE + left_margin, icon_offset + top_margin + row_height * 3))
         self.display_text(
-            f"Weight  {player.total_items_weight:4.2f}/{player.model.max_carry_weight:4.2f}",
-            (TILE_SIZE + left_margin, TILE_SIZE + top_margin + row_height))
-
-        if player.selected_item_idx >= 0:
-            item_model = player.items[player.selected_item_idx].model
-            item = f"{item_model.name} ({item_model.count})"
-        else:
-            item = "N/A"
-        self.display_text(
-            f"Item    {item}", (TILE_SIZE + left_margin, TILE_SIZE + + top_margin + row_height * 2))
-
-        self.display_text(
-            f"Money   {player.model.money}", (TILE_SIZE + left_margin, TILE_SIZE + + top_margin + row_height * 3))
+            f"{player.model.money}",
+            color=(0, 197, 199),
+            border=True,
+            pos=(4 * TILE_SIZE + left_margin, TILE_SIZE + top_margin + row_height * 3))
 
     #############################################################################################################
     def show_dialog_panel(self) -> None:

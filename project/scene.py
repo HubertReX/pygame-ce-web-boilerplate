@@ -118,7 +118,7 @@ class Scene(State):
         self.emotes: dict[str, list[pygame.Surface]] = self.import_sheet(
             str(EMOTE_SHEET_FILE), EMOTE_SHEET_DEFINITION, width=14, height=13)
         # self.import_emote_sheet(str(EMOTE_SHEET_FILE))
-        self.chests_sheet: dict[str, list[pygame.Surface]] = self.import_sheet(
+        self.items_sheet: dict[str, list[pygame.Surface]] = self.import_sheet(
             str(ITEMS_SHEET_FILE), ITEMS_SHEET_DEFINITION, width=16, height=16)
 
         # moved here to avoid circular imports
@@ -308,7 +308,7 @@ class Scene(State):
 
                     # chest = ChestSprite(self.chest_sprites, rect.center,
                     chest = ChestSprite(self.chest_sprites, (obj.x, obj.y),
-                                        self.game.conf.chests[obj.name], self.chests_sheet,)
+                                        self.game.conf.chests[obj.name], self.items_sheet,)
                     self.chests.append(chest)
                     # print("[light_green]Chest[/]", chest.name, rect)
         self.waypoints = {}

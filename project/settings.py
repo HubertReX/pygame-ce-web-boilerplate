@@ -580,8 +580,13 @@ EMOTE_SHEET_DEFINITION = {
 }
 
 ITEMS_SHEET_DEFINITION = {
+    "heart":                [(7, 2)],
+    "coin":                 [(4, 4)],
+    "hourglass":            [(8, 4)],
     "big_chest":            [(2, 4), (3, 4)],
     "small_chest":          [(2, 5), (3, 5)],
+    "pan_balance":          [(3, 7)],
+    "big_heart":            [(6, 7)],
 }
 
 WEAPON_DIRECTION_OFFSET: dict[str, vec] = {
