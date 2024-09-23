@@ -48,6 +48,7 @@ from settings import (
     MAZE_DIR,
     MONSTER_WAKE_DISTANCE,
     NIGHT_FILTER,
+    NOTIFICATION_DURATION,
     # PANEL_BG_COLOR,
     PARTICLES,
     SHADERS_NAMES,
@@ -149,9 +150,9 @@ class Scene(State):
         # are we outdoors? shell there be night and day cycle?
         self.outdoor: bool = False
         # self.circle_gradient: pygame.Surface = (CIRCLE_GRADIENT).convert_alpha()
+        self.ui = UI(self, tiny_font=self.game.fonts[FONT_SIZE_SMALL], medium_font=self.game.fonts[FONT_SIZE_MEDIUM])
         self.load_items_def()
         self.load_map()
-        self.ui = UI(self, tiny_font=self.game.fonts[FONT_SIZE_SMALL], medium_font=self.game.fonts[FONT_SIZE_MEDIUM])
         # self.set_camera_on_player()
 
     #############################################################################################################
@@ -168,7 +169,6 @@ class Scene(State):
 
     #############################################################################################################
     def remove_old_notifications(self) -> None:
-        NOTIFICATION_DURATION: float = 5.0
         self.notifications = [n for n in self.notifications
                               if n.create_time  + NOTIFICATION_DURATION  > self.game.time_elapsed]
 
@@ -202,7 +202,8 @@ class Scene(State):
             else:
                 if name:
                     print(f"[red]ERROR![/] '{name}' item has no definition in '[b][u]config.json[/u][/b]'")
-                    self.add_notification(f"[error]ERROR[/error] :red_exclamation: '[item]{name}[/item]' item has no definition in '[b][u]config.json[/u][/b]'",
+                    self.add_notification(f"[error]ERROR[/error] :red_exclamation: '[item]{name}[/item]'"
+                                          f"item has no definition in '[b][u]config.json[/u][/b]'",
                                           NotificationTypeEnum.debug)
 
     #############################################################################################################
@@ -309,7 +310,7 @@ class Scene(State):
                     chest = ChestSprite(self.chest_sprites, (obj.x, obj.y),
                                         self.game.conf.chests[obj.name], self.chests_sheet,)
                     self.chests.append(chest)
-                    print("[light_green]Chest[/]", chest.name, rect)
+                    # print("[light_green]Chest[/]", chest.name, rect)
         self.waypoints = {}
         # layer of invisible objects consisting of points that layout a list waypoints to follow by NPCs
         if "waypoints" in self.layers:
@@ -522,9 +523,11 @@ class Scene(State):
                     anim.append(img_part)
                 else:
                     print(
-                        f"[red]ERROR![/] {self.current_scene}: coordinate {x}x{y} not inside sprite sheet for '{key}' animation")
+                        f"[red]ERROR![/] {self.current_scene}: coordinate {x}x{y} "
+                        f"not inside sprite sheet for '{key}' animation")
                     self.add_notification(
-                        f"[error]ERROR[/error]:red_exclamation: {self.current_scene}: coordinate {x}x{y} not inside sprite sheet for '{key}' animation",
+                        f"[error]ERROR[/error]:red_exclamation: {self.current_scene}: coordinate {
+                            x}x{y} not inside sprite sheet for '{key}' animation",
                         NotificationTypeEnum.debug)
                     continue
             if anim:
@@ -935,11 +938,12 @@ class Scene(State):
             if len(self.player.items) > 0 and not self.player.is_attacking and not self.player.is_stunned:
                 if item := self.player.drop_item():
                     self.group.add(item, layer=self.sprites_layer - 1)
-                    print(f"Dropped {item.name}[{item.model.type.value}]")  # TODO: add notification
+
+                    print(f"Dropped '[item]{item.name}[/item]' [[magenta]{item.model.type}[/magenta]]")
                     self.add_notification(
                         f"Dropped '[item]{item.name}[/item]'", NotificationTypeEnum.info)
                 else:
-                    print("No item to drop!")
+                    print("[red]ERROR![/red] No item to drop!")
             INPUTS["drop"] = False
 
         if INPUTS["pick_up"]:

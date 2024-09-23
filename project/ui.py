@@ -97,11 +97,11 @@ class UI:
         self.name_panel_bg = NinePatch(file="nine_patch_13.png", scale=4).get_scaled_to(26 * TILE_SIZE, 1 * TILE_SIZE)
         self.available_action_bg = NinePatch(file="panel_brown.png", scale=4, border=3).get_scaled_to(200, 36)
         # self.notification_bg = NinePatch(file="panel_brown.png", scale=4, border=3)
-        self.notification_bg = NinePatch(file="nine_patch_01c.png", scale=4)
+        self.notification_bg = NinePatch(file="nine_patch_04c.png", scale=4, border=3)
 
         weapon_s = 24 + TILE_SIZE * 8
         self.weapon_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(weapon_s, weapon_s)
-        self.health_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(500, 170)
+        self.stats_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(500, 170)
 
         help_w = int(24 * FONT_SIZE_MEDIUM * 2.2)
         self.help_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(400 - 2, help_w)
@@ -174,7 +174,7 @@ class UI:
         # print(processed_text)
 
         pixel_art_style = Style().get_default("")
-        pixel_art_style["size"] = 16
+        pixel_art_style["size"] = 14
         pixel_art_style["font"] = "font_pixel.ttf"
         # s["font"] = "Homespun.ttf"
         pixel_art_style["separate_italic"] = None
@@ -527,7 +527,7 @@ class UI:
         # self.display_text(label,
         #                   (TILE_SIZE + 46, y + 16), border=True)
         self.display_surface.blit(rich_text.canvas,
-                                  (TILE_SIZE - 28, y - 14))
+                                  (TILE_SIZE - 28, y - 26))
 
     #############################################################################################################
     def show_available_actions(self) -> None:
@@ -676,7 +676,7 @@ class UI:
 
     #############################################################################################################
     def show_stats_panel(self, player: Player) -> None:
-        self.display_surface.blit(self.health_bg, (TILE_SIZE, TILE_SIZE))
+        self.display_surface.blit(self.stats_bg, (TILE_SIZE, TILE_SIZE))
 
         left_margin = 30
         top_margin = 40

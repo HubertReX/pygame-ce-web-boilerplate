@@ -121,7 +121,8 @@ PUSHED_TIME: int = 1000
 INITIAL_HOUR: int = 9
 # game time speed (N game hours / 1 real time second)
 GAME_TIME_SPEED: float = 0.25
-
+# how many seconds a notification will be displayed
+NOTIFICATION_DURATION: float = 10.0
 
 TRANSPARENT_COLOR = (0, 0, 0, 0)
 FONT_COLOR = "white"

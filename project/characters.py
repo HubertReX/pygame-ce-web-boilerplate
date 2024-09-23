@@ -842,7 +842,8 @@ class NPC(pygame.sprite.Sprite):
                     result = True
                 else:
                     print(
-                        f"\n[red]ERROR:[/] {self.name} Max carry weight '[num]{self.model.max_carry_weight:4.2f}[/num]' exceeded!\n")
+                        f"\n[red]ERROR:[/] {self.name} Max carry weight "
+                        f"'[num]{self.model.max_carry_weight:4.2f}[/num]' exceeded!\n")
                     self.scene.add_notification(
                         f"Max carry weight '[num]{self.model.max_carry_weight:4.2f}[/num]' exceeded :red_exclamation:",
                         scene.NotificationTypeEnum.failure)
@@ -895,7 +896,7 @@ class NPC(pygame.sprite.Sprite):
 
 
 # @dataclass(slots=True, unsafe_hash=True)
-# @dataclass(slots=True, frefrozen=True)
+# @dataclass(slots=True, frozen=True)
 class Player(NPC):
     def __init__(
             self,
