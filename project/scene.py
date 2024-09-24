@@ -822,9 +822,9 @@ class Scene(State):
         # self.waypoints = {}
         # self.map_view.reload()
         self.reset_sprite_groups()
-        self.player.shadow = self.player.create_shadow(self.shadow_sprites)
-        self.player.emote = EmoteSprite(self.label_sprites, vector_to_tuple(self.player.pos), self.icons)
-        self.player.health_bar = self.player.create_health_bar(self.label_sprites, vector_to_tuple(self.player.pos))
+        self.player.shadow = self.player.create_shadow()
+        self.player.emote = self.player.create_emote()
+        self.player.health_bar = self.player.create_health_bar()
         self.load_map()
         self.transition.exiting = False
         # new_scene = Scene(
@@ -1083,9 +1083,6 @@ class Scene(State):
         # shadow = self.player.shadow
         self.reset_sprite_groups()
         # self.map_view.reload()
-        # self.player.shadow = self.player.create_shadow(self.shadow_sprites)
-        # self.player.emote = EmoteSprite(self.label_sprites, vector_to_tuple(self.player.pos), self.emotes)
-        # self.player.health_bar = self.player.create_health_bar(self.label_sprites, vector_to_tuple(self.player.pos))
         self.player.reset()
         self.load_map()
 

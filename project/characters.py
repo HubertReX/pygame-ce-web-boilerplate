@@ -85,8 +85,13 @@ class NPC(pygame.sprite.Sprite):
 
         self.load_dialogs()
 
-        self.shadow = self.create_shadow(shadow_group)
-        self.health_bar = self.create_health_bar(label_group, pos)
+        self.shadow_group = shadow_group
+        self.label_group = label_group
+        self.pos: vec = vec(pos[0], pos[1])
+        self.prev_pos: vec = self.pos.copy()
+
+        self.shadow = self.create_shadow()
+        self.health_bar = self.create_health_bar()
         # self.weapon_group = groups[-1]
         # hide health bar at start (negative value makes it transparent)
         self.hide_health_bar()
@@ -111,8 +116,7 @@ class NPC(pygame.sprite.Sprite):
         self.frame_index: float = 0.0
         self.image = self.animations["idle_down"][int(self.frame_index)]
         self.mask = self.masks["idle_down"][int(self.frame_index)]
-        self.pos: vec = vec(pos[0], pos[1])
-        self.prev_pos: vec = self.pos.copy()
+
         self.tileset_coord: Point = self.get_tileset_coord()
         self.rect: pygame.FRect = self.image.get_frect(midbottom = self.pos)
         # hit box size is half the TILE_SIZE, bottom, centered
@@ -205,12 +209,12 @@ class NPC(pygame.sprite.Sprite):
 
     #############################################################################################################
 
-    def create_health_bar(self, label_group: pygame.sprite.Group, pos: tuple[int, int]) -> HealthBar:
-        return HealthBar(self.model, label_group, pos)
+    def create_health_bar(self) -> HealthBar:
+        return HealthBar(self.model, self.label_group, vector_to_tuple(self.pos))
 
     #############################################################################################################
-    def create_shadow(self, shadow_group: pygame.sprite.Group) -> Shadow:
-        return Shadow(shadow_group, (0, 0), (TILE_SIZE - 2, 6))
+    def create_shadow(self) -> Shadow:
+        return Shadow(self.shadow_group, (0, 0), (TILE_SIZE - 2, 6))
 
     #############################################################################################################
     def __repr__(self) -> str:
@@ -751,9 +755,9 @@ class NPC(pygame.sprite.Sprite):
 
     #############################################################################################################
     def reset(self) -> None:
-        self.shadow = self.create_shadow(self.scene.shadow_sprites)
-        self.emote = EmoteSprite(self.scene.label_sprites, vector_to_tuple(self.pos), self.scene.icons)
-        self.health_bar = self.create_health_bar(self.scene.label_sprites, vector_to_tuple(self.pos))
+        self.shadow = self.create_shadow()
+        self.emote = self.create_emote()
+        self.health_bar = self.create_health_bar()
         self.is_attacking = False
         self.is_flying = False
         self.is_jumping = False
@@ -762,6 +766,9 @@ class NPC(pygame.sprite.Sprite):
         self.items = []
         self.model.health = self.model.max_health
 
+    #############################################################################################################
+    def create_emote(self) -> EmoteSprite:
+        return EmoteSprite(self.scene.label_sprites, vector_to_tuple(self.pos), self.scene.icons)
     #############################################################################################################
 
     def move_back(self) -> None:
