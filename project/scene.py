@@ -33,12 +33,15 @@ from settings import (
     DAY_FILTER,
     EMOTE_SHEET_DEFINITION,
     EMOTE_SHEET_FILE,
+    FONT_COLOR,
     FONT_SIZE_MEDIUM,
     FONT_SIZE_SMALL,
     FONT_SIZE_TINY,
     FRIENDLY_WAKE_DISTANCE,
     GAME_TIME_SPEED,
     HEIGHT,
+    HUD_SHEET_DEFINITION,
+    HUD_SHEET_FILE,
     INITIAL_HOUR,
     INPUTS,
     ITEMS_DIR,
@@ -100,7 +103,7 @@ class Scene(State):
         self.maze_rows = maze_rows
         self.waypoints: dict[str, tuple[Point, ...]] = {}
         self.items: list[ItemSprite] = []
-        self.items_defs: dict[str, pygame.Surface] = {}
+        # self.items_defs: dict[str, pygame.Surface] = {}
         self.chests: list[ChestSprite] = []
         self.walls: list[pygame.Rect] = []
 
@@ -115,8 +118,12 @@ class Scene(State):
         # self.transition = Transition(self)
         self.transition = TransitionCircle(self)
 
-        self.emotes: dict[str, list[pygame.Surface]] = self.import_sheet(
+        self.icons: dict[str, list[pygame.Surface]] = self.import_sheet(
             str(EMOTE_SHEET_FILE), EMOTE_SHEET_DEFINITION, width=14, height=13)
+        self.icons.update(self.import_sheet(
+            str(HUD_SHEET_FILE), HUD_SHEET_DEFINITION, width=16, height=16, scale=2)
+        )
+        self.generate_icons()
         # self.import_emote_sheet(str(EMOTE_SHEET_FILE))
         self.items_sheet: dict[str, list[pygame.Surface]] = self.import_sheet(
             str(ITEMS_SHEET_FILE), ITEMS_SHEET_DEFINITION, width=16, height=16)
@@ -131,7 +138,7 @@ class Scene(State):
             self.label_sprites,
             (WIDTH // 2, HEIGHT // 2),
             "Player",
-            self.emotes,
+            self.icons,
         )
         # pyscroll renderer (camera)
         self.map_view: pyscroll.BufferedRenderer
@@ -151,11 +158,53 @@ class Scene(State):
         self.outdoor: bool = False
         # self.circle_gradient: pygame.Surface = (CIRCLE_GRADIENT).convert_alpha()
         self.ui = UI(self, tiny_font=self.game.fonts[FONT_SIZE_SMALL], medium_font=self.game.fonts[FONT_SIZE_MEDIUM])
-        self.load_items_def()
+        # self.load_items_def()
         self.load_map()
         # self.set_camera_on_player()
 
     #############################################################################################################
+    def generate_icons(self) -> None:
+        icons = self.icons
+        small_font = self.game.fonts[FONT_SIZE_SMALL]
+        tiny_font = self.game.fonts[FONT_SIZE_TINY]
+
+        # generate keys with letter buttons (A-Z)
+        center = icons["key"][0].get_rect().center
+        for letter in range(ord("A"), ord("Z") + 1):
+            text_surf = small_font.render(chr(letter), False, FONT_COLOR)
+            text_rect = text_surf.get_rect(center = center).move(0, -1)
+            bg = icons["key"][0].copy()
+            bg.blit(text_surf, text_rect)
+            icons[f"key_{chr(letter)}"] = [bg]
+
+        # 0 to 9
+
+        for digit in range(0, 9):
+            text_surf = tiny_font.render(str(digit), False, FONT_COLOR)
+            text_rect = text_surf.get_rect(center = center).move(0, -2)
+            bg = icons["key"][0].copy()
+            bg.blit(text_surf, text_rect)
+            icons[f"key_{str(digit)}"] = [bg]
+
+        # F1 to F12
+        # tiny_font = self.game.fonts[FONT_SIZE_TINY]
+        for letter in range(1, 13):
+            text_surf = tiny_font.render(f"F{str(letter)}", False, FONT_COLOR)
+            text_rect = text_surf.get_rect(center = center).move(0, -2)
+            bg = icons["key"][0].copy()
+            bg.blit(text_surf, text_rect)
+            icons[f"key_F{str(letter)}"] = [bg]
+
+        # other keys
+        for sign in "<>`[]+-":
+            text_surf = small_font.render(sign, False, FONT_COLOR)
+            text_rect = text_surf.get_rect(center = center).move(0, -1)
+            bg = icons["key"][0].copy()
+            bg.blit(text_surf, text_rect)
+            icons[f"key_{sign}"] = [bg]
+
+    #############################################################################################################
+
     def add_notification(self, text: str, type: NotificationTypeEnum = NotificationTypeEnum.info) -> None:
         icon = NOTIFICATION_TYPE_ICONS[type]
         label = f":{icon}: {text}"
@@ -179,32 +228,32 @@ class Scene(State):
             group,
             (x, y),
             name,  # tile.item_name,
-            image=self.items_defs[name],
+            image=self.items_sheet[name],
             model=self.game.conf.items[name]
         )
 
     #############################################################################################################
 
-    def load_items_def(self) -> None:
-        items_map = load_pygame(str(ITEMS_DIR / "Items.tmx"))
-        items_layer = cast(TiledTileLayer, items_map.get_layer_by_name("Items"))
+    # def load_items_def(self) -> None:
+    #     items_map = load_pygame(str(ITEMS_DIR / "Items.tmx"))
+    #     items_layer = cast(TiledTileLayer, items_map.get_layer_by_name("Items"))
 
-        self.items_defs = {}
-        for x, y, tile in items_layer.tiles():
-            gid = items_layer.data[y][x]
-            # skip item defs that don't have item_name property set
-            if gid not in items_map.tile_properties:
-                continue
+    #     self.items_defs = {}
+    #     for x, y, tile in items_layer.tiles():
+    #         gid = items_layer.data[y][x]
+    #         # skip item defs that don't have item_name property set
+    #         if gid not in items_map.tile_properties:
+    #             continue
 
-            name = items_map.tile_properties[gid]["item_name"]
-            if name in self.game.conf.items:
-                self.items_defs[name] = tile
-            else:
-                if name:
-                    print(f"[red]ERROR![/] '{name}' item has no definition in '[b][u]config.json[/u][/b]'")
-                    self.add_notification(f"[error]ERROR[/error] :red_exclamation: '[item]{name}[/item]'"
-                                          f"item has no definition in '[b][u]config.json[/u][/b]'",
-                                          NotificationTypeEnum.debug)
+    #         name = items_map.tile_properties[gid]["item_name"]
+    #         if name in self.game.conf.items:
+    #             self.items_defs[name] = tile
+    #         else:
+    #             if name:
+    #                 print(f"[red]ERROR![/] '{name}' item has no definition in '[b][u]config.json[/u][/b]'")
+    #                 self.add_notification(f"[error]ERROR[/error] :red_exclamation: '[item]{name}[/item]'"
+    #                                       f"item has no definition in '[b][u]config.json[/u][/b]'",
+    #                                       NotificationTypeEnum.debug)
 
     #############################################################################################################
 
@@ -342,7 +391,7 @@ class Scene(State):
                     self.label_sprites,
                     (obj.x, obj.y),
                     obj.name,
-                    self.emotes,
+                    self.icons,
                     waypoint,
                 )
                 self.NPC.append(npc)
@@ -365,7 +414,7 @@ class Scene(State):
                     self.label_sprites,
                     pos,
                     monster_name,
-                    self.emotes,
+                    self.icons,
                     (),
                 )
                 self.NPC.append(npc)
@@ -383,7 +432,7 @@ class Scene(State):
                     self.label_sprites,
                     pos_r,
                     monster_name,
-                    self.emotes,
+                    self.icons,
                     (),
                 )
                 self.NPC.append(npc)
@@ -502,33 +551,38 @@ class Scene(State):
 
     #############################################################################################################
 
-    def import_sheet(self,
-                     sheet_path: str,
-                     sheet_definition: dict[str, list[tuple[int, int]]],
-                     width: int, height: int) -> dict[str, list[pygame.Surface]]:
+    @staticmethod
+    def import_sheet(
+        sheet_path: str,
+        sheet_definition: dict[str, list[tuple[int, int]]],
+        width: int, height: int,
+        scale: int = 1,
+    ) -> dict[str, list[pygame.Surface]]:
         """
         Load sprite sheet and cut it into animation names and frames using EMOTE_SHEET_DEFINITION dict.
         """
         result: dict[str, list[pygame.Surface]] = {}
         img = pygame.image.load(sheet_path).convert_alpha()
+        if scale != 1:
+            img = pygame.transform.scale_by(img, scale)
         img_rect = img.get_rect()
 
         for key, definition in sheet_definition.items():
             anim = []
             for coord in definition:
                 x, y = coord
-                rec = pygame.Rect(x * width, y * height, width, height)
+                rec = pygame.Rect(x * width * scale, y * height * scale, width * scale, height * scale)
                 if rec.colliderect(img_rect):
                     img_part = img.subsurface(rec)
                     anim.append(img_part)
                 else:
                     print(
-                        f"[red]ERROR![/] {self.current_scene}: coordinate {x}x{y} "
+                        f"[red]ERROR![/] coordinate {x}x{y} "
                         f"not inside sprite sheet for '{key}' animation")
-                    self.add_notification(
-                        f"[error]ERROR[/error]:red_exclamation: {self.current_scene}: coordinate {
-                            x}x{y} not inside sprite sheet for '{key}' animation",
-                        NotificationTypeEnum.debug)
+                    # self.add_notification(
+                    #     f"[error]ERROR[/error]:red_exclamation: {self.current_scene}: coordinate {
+                    #         x}x{y} not inside sprite sheet for '{key}' animation",
+                    #     NotificationTypeEnum.debug)
                     continue
             if anim:
                 result[key] = anim
@@ -769,7 +823,7 @@ class Scene(State):
         # self.map_view.reload()
         self.reset_sprite_groups()
         self.player.shadow = self.player.create_shadow(self.shadow_sprites)
-        self.player.emote = EmoteSprite(self.label_sprites, vector_to_tuple(self.player.pos), self.emotes)
+        self.player.emote = EmoteSprite(self.label_sprites, vector_to_tuple(self.player.pos), self.icons)
         self.player.health_bar = self.player.create_health_bar(self.label_sprites, vector_to_tuple(self.player.pos))
         self.load_map()
         self.transition.exiting = False
@@ -1092,6 +1146,7 @@ class Scene(State):
             # self.debug([fps, stats, f"Items[{weight}]: {inventory}", f"Weapon: {weapon}"])
 
         self.ui.display_ui(self.game.time_elapsed)
+
     #############################################################################################################
 
     # def apply_time_of_day_filter(self, screen: pygame.Surface) -> None:

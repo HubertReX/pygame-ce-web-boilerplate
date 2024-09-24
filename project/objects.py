@@ -341,10 +341,10 @@ class ItemSprite(Object):
         # z: str = "blocks",
         name: str,
         model: Item,
-        image: pygame.Surface = pygame.Surface((TILE_SIZE, TILE_SIZE)),
+        image: list[pygame.Surface] = [pygame.Surface((TILE_SIZE, TILE_SIZE))],
     ) -> None:
 
-        super().__init__(group, pos, image)
+        super().__init__(group, pos, image[0])
         # decrease the size of rectangle for collisions aka. hitbox
         # self.hitbox: pygame.FRect = self.rect.copy().inflate(0, -self.rect.height / 2)
         # self.gid = gid
@@ -352,11 +352,11 @@ class ItemSprite(Object):
         self.model = model
         if model.type == ItemTypeEnum.weapon:
             self.image_directions: dict[str, pygame.Surface] = {
-                "down": image,
-                "up": pygame.transform.flip(image, False, True),
+                "down": image[0],
+                "up": pygame.transform.flip(image[0], False, True),
             }
-            self.image_directions["left"] = pygame.transform.rotate(image, -90)
-            self.image_directions["right"] = pygame.transform.rotate(image, 90)
+            self.image_directions["left"] = pygame.transform.rotate(image[0], -90)
+            self.image_directions["right"] = pygame.transform.rotate(image[0], 90)
 
             # self.weapon_mask = pygame.mask.from_surface(self.image)
             self.masks: dict[str, pygame.mask.Mask] = {}

@@ -748,6 +748,7 @@ class Game:
                 # slow down
                 # dt *= 0.25
                 self.fps = self.clock.get_fps()
+                # print(f"FPS: {self.fps:4.2f}")
                 # self.fps_data_3s.append(self.fps)
                 # self.fps_data_10s.append(self.fps)
                 # self.avg_fps_3s = sum(self.fps_data_3s) / len(self.fps_data_3s)

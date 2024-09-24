@@ -24,8 +24,6 @@ from settings import (
     AVATAR_SCALE,
     CHAR_NAME_COLOR,
     DIALOGS_DIR,
-    EMOJIS_DICT,
-    EMOJIS_PATH,
     FONT_COLOR,
     FONT_SIZE_HUGE,
     FONT_SIZE_LARGE,
@@ -33,8 +31,6 @@ from settings import (
     FONT_SIZE_MEDIUM,
     FONTS_PATH,
     HEIGHT,
-    HUD_DIR,
-    HUD_ICONS,
     INVENTORY_ITEM_SCALE,
     INVENTORY_ITEM_WIDTH,
     IS_WEB,
@@ -141,6 +137,7 @@ class UI:
             modal_panel_tooltip,
             self.modal_panel_bg,
             self.modal_panel_offset,
+            self.scene.icons,
             border_size=(border, border),
             tooltip_offset=self.game.cursor_img.get_size(),
         )
@@ -156,11 +153,12 @@ class UI:
             dialog_panel_tooltip,
             self.dialog_panel_bg,
             self.dialog_panel_offset,
+            self.scene.icons,
             border_size=(border, border),
             tooltip_offset=self.game.cursor_img.get_size(),
         )
 
-        self.icons_dict: dict[str, pygame.Surface] = self.load_icons()
+        self.icons_dict: dict[str, list[pygame.Surface]] = self.scene.icons
 
     #############################################################################################################
     @lru_cache(maxsize = 128)
@@ -226,56 +224,7 @@ class UI:
         self.dialog_panel.formatted_text.scroll_top()
 
     #############################################################################################################
-    def load_icons(self) -> dict[str, pygame.Surface]:
-        icons: dict[str, pygame.Surface] = {}
-        for emoji in EMOJIS_DICT.keys():
-            path = EMOJIS_PATH / EMOJIS_DICT[emoji]
-            image = pygame.image.load(path).convert_alpha()
-            icons[emoji] = pygame.transform.scale2x(image)
 
-        for emoji in HUD_ICONS.keys():
-            path = HUD_DIR / HUD_ICONS[emoji]
-            image = pygame.image.load(path).convert_alpha()
-            icons[emoji] = pygame.transform.scale(image, (32, 32))
-
-        # generate keys with letter buttons (A-Z)
-        center = icons["key"].get_rect().center
-        for letter in range(ord("A"), ord("Z") + 1):
-            text_surf = self.tiny_font.render(chr(letter), False, FONT_COLOR)
-            text_rect = text_surf.get_rect(center = center).move(0, -1)
-            bg = icons["key"].copy()
-            bg.blit(text_surf, text_rect)
-            icons[f"key_{chr(letter)}"] = bg
-
-        # 0 to 9
-        tiny_font = self.game.fonts[FONT_SIZE_TINY]
-        for digit in range(0, 9):
-            text_surf = tiny_font.render(str(digit), False, FONT_COLOR)
-            text_rect = text_surf.get_rect(center = center).move(0, -2)
-            bg = icons["key"].copy()
-            bg.blit(text_surf, text_rect)
-            icons[f"key_{str(digit)}"] = bg
-
-        # F1 to F12
-        tiny_font = self.game.fonts[FONT_SIZE_TINY]
-        for letter in range(1, 13):
-            text_surf = tiny_font.render(f"F{str(letter)}", False, FONT_COLOR)
-            text_rect = text_surf.get_rect(center = center).move(0, -2)
-            bg = icons["key"].copy()
-            bg.blit(text_surf, text_rect)
-            icons[f"key_F{str(letter)}"] = bg
-
-        # other keys
-        for sign in "<>`[]+-":
-            text_surf = self.tiny_font.render(sign, False, FONT_COLOR)
-            text_rect = text_surf.get_rect(center = center).move(0, -1)
-            bg = icons["key"].copy()
-            bg.blit(text_surf, text_rect)
-            icons[f"key_{sign}"] = bg
-
-        return icons
-
-    #############################################################################################################
     def display_text(
         self,
         text: str,
@@ -362,14 +311,14 @@ class UI:
             # key shortcut
             if i <= len(player.items) - 1:
                 self.display_surface.blit(
-                    self.icons_dict[f"key_{i + 1}"],
+                    self.icons_dict[f"key_{i + 1}"][0],
                     (tl[0] + 2 + i * INVENTORY_ITEM_WIDTH + INVENTORY_ITEM_WIDTH // 4,
                      tl[1] - 22))
 
         # left/right hotbar selection key shortcut
         h = 24
-        self.display_surface.blit(self.icons_dict["key_<"], ((tl[0] - 24), tl[1] + h))
-        self.display_surface.blit(self.icons_dict["key_>"], (
+        self.display_surface.blit(self.icons_dict["key_<"][0], ((tl[0] - 24), tl[1] + h))
+        self.display_surface.blit(self.icons_dict["key_>"][0], (
                                   (tl[0] + MAX_HOTBAR_ITEMS * INVENTORY_ITEM_WIDTH - 16), tl[1] + h))
 
     #############################################################################################################
@@ -423,7 +372,7 @@ class UI:
             # if weapon is ready show key shortcut
             if cooldown == 100:
                 pos = bg_rect.move(4, 18).topright
-                surface.blit(self.icons_dict["key_Space"], pos)
+                surface.blit(self.icons_dict["key_Space"][0], pos)
 
     # def show_magic_panel(self, magic_index, has_switched) -> None:
     #     bg_rect = self.selection_box(80, 635, has_switched)
@@ -458,7 +407,7 @@ class UI:
                     shadow = True
                 )
                 self.display_surface.blit(
-                    self.icons_dict[action['show'][0]], (WIDTH - 400, 32 + int(i * FONT_SIZE_MEDIUM * 2.2)))
+                    self.icons_dict[action['show'][0]][0], (WIDTH - 400, 32 + int(i * FONT_SIZE_MEDIUM * 2.2)))
         # else:
         #     self.display_surface.blit(self.icons_dict["key_H"], (WIDTH // 2 -
         #                               36, int(FONT_SIZE_MEDIUM * TEXT_ROW_SPACING) - 10))
@@ -476,7 +425,7 @@ class UI:
         row_height: int = 48
         row_spacing = row * row_height
         label = label or ACTIONS[action]["msg"]
-        icon: pygame.Surface = self.icons_dict[ACTIONS[action]["show"][0]]
+        icon: pygame.Surface = self.icons_dict[ACTIONS[action]["show"][0]][0]
         label_w, _ = self.font.size(label)
         self.display_surface.blit(self.available_action_bg,
                                   (WIDTH - TILE_SIZE - 200,
@@ -509,7 +458,7 @@ class UI:
         # # print(label_text)
         # label_w, label_h = self.font.size(label_text)
         # icon: pygame.Surface = self.icons_dict[ACTIONS[action]["show"][0]]
-        anim = self.scene.emotes[NOTIFICATION_TYPE_ICONS[notification.type]]
+        anim = self.scene.icons[NOTIFICATION_TYPE_ICONS[notification.type]]
         animation_speed = 5
         frame_index = (animation_speed * time_elapsed)
 
@@ -724,7 +673,7 @@ class UI:
 
         ###########################################################################
         # MONEY
-        icon = pygame.transform.scale_by(self.scene.items_sheet["coin"][0], icon_scale)
+        icon = pygame.transform.scale_by(self.scene.items_sheet["golden_coin"][0], icon_scale)
         self.display_surface.blit(icon, (TILE_SIZE + left_margin, icon_offset + top_margin + row_height * 3))
         self.display_text(
             f"{player.model.money}",
@@ -764,7 +713,7 @@ class UI:
         # draw key shortcuts
         pos = (self.dialog_panel_offset[0] + dialog_panel_size[0] - 15,
                self.dialog_panel_offset[1] + 40)
-        self.display_surface.blit(self.icons_dict["key_Space"], pos)
+        self.display_surface.blit(self.icons_dict["key_Space"][0], pos)
 
         # pos = (self.dialog_panel_offset[0] + dialog_panel_size[0] // 2,
         #        self.dialog_panel_offset[1] + dialog_panel_size[1] - 15)

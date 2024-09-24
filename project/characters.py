@@ -752,7 +752,7 @@ class NPC(pygame.sprite.Sprite):
     #############################################################################################################
     def reset(self) -> None:
         self.shadow = self.create_shadow(self.scene.shadow_sprites)
-        self.emote = EmoteSprite(self.scene.label_sprites, vector_to_tuple(self.pos), self.scene.emotes)
+        self.emote = EmoteSprite(self.scene.label_sprites, vector_to_tuple(self.pos), self.scene.icons)
         self.health_bar = self.create_health_bar(self.scene.label_sprites, vector_to_tuple(self.pos))
         self.is_attacking = False
         self.is_flying = False

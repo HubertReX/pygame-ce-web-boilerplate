@@ -48,7 +48,7 @@ class SFText():
     def __init__(
         self,
         text: str,
-        images: dict[str, pygame.Surface] = {},
+        images: dict[str, list[pygame.Surface]] = {},
         canvas: pygame.Surface = pygame.Surface((TILE_SIZE, TILE_SIZE)),
         font_path: str = ".",
         style: dict[str, Any] = {},
@@ -261,7 +261,8 @@ class SFText():
                     print("all_fit iterations: {}".format(all_fit_iter), guessed_length * 5)
                 if all_fit_iter >= guessed_length * 5:
                     print(
-                        f"[red]ERROR![/] SFTEXT wrap_text FAILED: can't fit text '{text}' - breaking to prevent infinite loop")
+                        f"[red]ERROR![/] SFTEXT wrap_text FAILED: can't fit text '{text}' - "
+                        "breaking to prevent infinite loop")
 
                     # exit()
                     break
@@ -283,7 +284,8 @@ class SFText():
                         # fit failed - break to prevent infinite loop
                         if fit_iter >= guessed_length * 5:
                             print(
-                                f"[red]ERROR![/] SFTEXT wrap_text FAILED: can't fit text '{text}' - breaking to prevent infinite loop")
+                                f"[red]ERROR![/] SFTEXT wrap_text FAILED: can't fit text '{text}' - "
+                                "breaking to prevent infinite loop")
                             # exit()
                             break
                         # DEBUG #
@@ -391,7 +393,7 @@ class SFText():
                 self.links[p["link"]]["absolute_rect"] = rect
 
             if p["image"] and p["image"] in self.images:
-                image = self.images[p["image"]]
+                image = self.images[p["image"]][0]
                 image_rect = image.get_rect(center=rect.center)
                 # font_height = p["font_obj"].get_height()
                 scale = p["h"] / image_rect.height

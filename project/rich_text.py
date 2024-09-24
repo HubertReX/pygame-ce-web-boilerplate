@@ -1,12 +1,21 @@
+from sftext.style import Style
+from sftext.sftext import SFText
 from pathlib import Path
 import re
 from rich.markup import escape
 from rich import print
 import pygame
 import thorpy as tp
-from settings import EMOJIS_DICT, EMOJIS_PATH, FONTS_PATH, HEIGHT, HUD_DIR, HUD_ICONS, STYLE_TAGS_DICT, WIDTH, vec
-from sftext.sftext import SFText
-from sftext.style import Style
+
+from settings import (
+    EMOTE_SHEET_DEFINITION,
+    EMOTE_SHEET_FILE,
+    FONTS_PATH,
+    HEIGHT,
+    STYLE_TAGS_DICT,
+    WIDTH,
+    vec
+)
 # from utils.sftext import sftext
 # from rich import print
 
@@ -26,6 +35,7 @@ class RichPanel():
             tooltip_rich_text: str,
             background_canvas: pygame.Surface,
             screen_offset: tuple[int, int],
+            icons: dict[str, list[pygame.Surface]],
             default_font_size: int = 20,
             default_font_color: tuple[int, int, int] = (0, 197, 199),
             shadow_color: tuple[int, int, int] = (130, 32, 32),
@@ -87,16 +97,7 @@ class RichPanel():
             debug (bool, optional): Whether to enable debug mode sftext. Defaults to `False`.
         """
 
-        self.EMOJIS_IMAGE_DICT: dict[str, pygame.Surface] = {}
-        for emoji in EMOJIS_DICT.keys():
-            path = EMOJIS_PATH / EMOJIS_DICT[emoji]
-            image = pygame.image.load(path).convert_alpha()
-            self.EMOJIS_IMAGE_DICT[emoji] = pygame.transform.scale2x(image)
-
-        for emoji in HUD_ICONS.keys():
-            path = HUD_DIR / HUD_ICONS[emoji]
-            image = pygame.image.load(path).convert_alpha()
-            self.EMOJIS_IMAGE_DICT[emoji] = pygame.transform.scale(image, (32, 32))
+        self.icons = icons
 
         self.rich_text = rich_text
         self.processed_text = self._parse_text(self.rich_text)
@@ -128,7 +129,7 @@ class RichPanel():
         self.debug = debug
         self.formatted_text = SFText(
             text=self.processed_text,
-            images=self.EMOJIS_IMAGE_DICT,
+            images=self.icons,
             canvas=self.text_canvas,
             # font_path=os.path.join(".", "sftext", "resources"),
             font_path=str(FONTS_PATH),
@@ -163,7 +164,7 @@ class RichPanel():
         self.formatted_rich_tooltip_text = self._parse_text(self.tooltip_rich_text)
         self.tooltip_text = SFText(
             text=self.formatted_rich_tooltip_text,
-            images=self.EMOJIS_IMAGE_DICT,
+            images=self.icons,
             canvas=self.tooltip_canvas,
             # font_path=os.path.join(".", "sftext", "resources"),
             font_path=str(FONTS_PATH),
@@ -324,7 +325,8 @@ class RichPanel():
                 #     print(f"res close: {res}")
                 if res not in active_tags_list:
                     print(
-                        f"[red]ERROR[/] parsing '{escape(rich_text)}' string failed - closing tag has no corresponding open tag '{escape(res)}'")
+                        f"[red]ERROR[/] parsing '{escape(rich_text)}' string failed - "
+                        f"closing tag has no corresponding open tag '{escape(res)}'")
                 else:
                     active_tags_list.remove(res)
 
@@ -354,7 +356,7 @@ class RichPanel():
         Returns:
             str: sf text formatted text
         """
-        for emoji in EMOJIS_DICT.keys():
+        for emoji in EMOTE_SHEET_DEFINITION:
             text = text.replace(f":{emoji}:", f"{{style}}{{image {emoji}}}§{{style}}{active_tags}")
         return text
 
@@ -448,7 +450,9 @@ def main() -> None:
     screen_offset = (50, 50)
 
     tooltip_rich_text = """[act][shadow][bold]This is a tooltip[/bold][/shadow][/act]\n\n[underline]%s[/[underline]]"""
-    rich_panel = RichPanel(test_rich_text, tooltip_rich_text, bck, screen_offset)
+    from scene import Scene
+    icons = Scene.import_sheet(str(EMOTE_SHEET_FILE), EMOTE_SHEET_DEFINITION, width=14, height=13)
+    rich_panel = RichPanel(test_rich_text, tooltip_rich_text, bck, screen_offset, icons)
 
     # print()
     # print(reformatted_text)
