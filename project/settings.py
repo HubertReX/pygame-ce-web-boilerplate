@@ -155,9 +155,9 @@ DAY_FILTER: tuple[int, int, int, int] = (152, 152, 0, 20)
 MAX_LIGHTS_COUNT: int = 16
 
 STYLE_TAGS_DICT: dict[str, str] = {
-    "h1": "{align center}{size 42}{cast_shadow True}",
-    "h2": "{align left}{size 36}{cast_shadow True}",
-    "h3": "{align left}{size 28}{cast_shadow True}",
+    "h1":        "{align center}{size 42}{cast_shadow True}",
+    "h2":        "{align left}{size 36}{cast_shadow True}",
+    "h3":        "{align left}{size 28}{cast_shadow True}",
     "shadow":    "{cast_shadow True}",
     "dark":      "{shadow_color (30,30,30)}",
     "light":     "{shadow_color (230,230,230)}",
@@ -403,6 +403,7 @@ MAZE_DIR          = ASSETS_DIR / "MazeTileset"
 CHARACTERS_DIR    = RESOURCES_DIR / "characters"
 PARTICLES_DIR     = RESOURCES_DIR / "particles"
 HUD_DIR           = RESOURCES_DIR / "HUD"
+HUD_SHEET_FILE    = HUD_DIR / "HUD.png"
 EMOJIS_PATH       = RESOURCES_DIR / "Emote"
 EMOTE_SHEET_FILE  = EMOJIS_PATH / "emote_all_anim.png"
 PROGRAM_ICON      = ASSETS_DIR / "icon.png"
@@ -466,65 +467,19 @@ SPRITE_SHEET_DEFINITION = {
     "talk_right":   [(3, 0)],
 }
 
-# emojis can be used in the rich text
-# :angry: -> {style}{image angry}§{style}
-# TODO: duplicated with EMOTE_SHEET_DEFINITION
-EMOJIS_DICT: dict[str, str] = {
-    "empty":           "emote00.png",
-    "shocked":         "emote01.png",
-    "blessed":         "emote02.png",
-    "love":            "emote03.png",
-    "angry":           "emote04.png",
-    "indifferent":     "emote05.png",
-    "happy":           "emote06.png",
-    "wondering":       "emote07.png",
-    "blink":           "emote08.png",
-    "doubt":           "emote09.png",
-    "frounce":         "emote10.png",
-    "smile":           "emote11.png",
-    "dreaming":        "emote12.png",
-    "sad":             "emote13.png",
-    "neutral":         "emote14.png",
-    "dead":            "emote15.png",
-    "miserable":       "emote16.png",
-    "offended":        "emote17.png",
-    "peaceful":        "emote18.png",
-    "evil":            "emote19.png",
-    "dots":            "emote20.png",
-    "exclamation":     "emote21.png",
-    "red_exclamation": "emote22.png",
-    "question":        "emote23.png",
-    "human":           "emote24.png",
-    "red_question":    "emote25.png",
-    "broken_heart":    "emote26.png",
-    "heart":           "emote27.png",
-    "sleeping":        "emote28.png",
-    "star":            "emote29.png",
-    "cross":           "emote30.png",
-    "fight":           "emote31_fight.png",
-    "walk":            "emote32_walk.png",
-    "ok":              "emote33_ok.png",
-    "yes":             "emote34_yes.png",
-    "no":              "emote35_no.png",
-    "esc":             "emote36_esc.png",
-    "A":               "emote65_A.png",
-    "B":               "emote66_B.png",
-    "X":               "emote88_X.png",
-    "Y":               "emote89_Y.png",
-}
 
-HUD_ICONS: dict[str, str] = {
-    "key":       "key_bold.png",
-    "key_Esc":   "key_Esc.png",
-    "key_Tab":   "key_Tab.png",
-    "key_Ctl":   "key_Ctl.png",
-    "key_Alt":   "key_Alt.png",
-    "key_Enter": "key_Enter.png",
-    "key_Shift": "key_Shift.png",
-    "key_Space": "key_Space.png",
-    "mouse":     "mouse.png",
-    "mouse_LMB": "mouse_LMB.png",
-    "mouse_RMB": "mouse_RMB.png",
+HUD_SHEET_DEFINITION: dict[str, list[tuple[int, int]]] = {
+    "key":       [(0, 0)],
+    "key_Esc":   [(1, 0)],
+    "key_Tab":   [(2, 0)],
+    "key_Ctl":   [(3, 0)],
+    "key_Alt":   [(0, 1)],
+    "key_Enter": [(1, 1)],
+    "key_Shift": [(2, 1)],
+    "key_Space": [(3, 1)],
+    "mouse":     [(0, 3)],
+    "mouse_LMB": [(1, 3)],
+    "mouse_RMB": [(2, 3)],
 }
 
 EMOTE_SHEET_DEFINITION = {
@@ -580,13 +535,60 @@ EMOTE_SHEET_DEFINITION = {
 }
 
 ITEMS_SHEET_DEFINITION = {
+    "beef":                 [(1, 1)],
+    "calamari":             [(2, 1)],
+    "fish":                 [(3, 1)],
+    "fortune_cookie":       [(4, 1)],
+    "honey":                [(5, 1)],
+    "noodle":               [(6, 1)],
+    "octopus":              [(7, 1)],
+    "onigiri":              [(8, 1)],
+    "shrimp":               [(1, 2)],
+    "sushi":                [(2, 2)],
+    "sushi2":               [(3, 2)],
+    "leaf":                 [(4, 2)],
+    "shashlik":             [(5, 2)],
+    "empty_pot":            [(6, 2)],
     "heart":                [(7, 2)],
-    "coin":                 [(4, 4)],
-    "hourglass":            [(8, 4)],
+    "life_pot":             [(8, 2)],
+    "medic_pack":           [(1, 3)],
+    "water_pot":            [(2, 3)],
+    "milk_pot":             [(3, 3)],
+    "scroll_empty":         [(4, 3)],
+    "scroll_fire":          [(5, 3)],
+    "scroll_ice":           [(6, 3)],
+    "scroll_plant":         [(7, 3)],
+    "scroll_rock":          [(8, 3)],
+    "scroll_thunder":       [(1, 4)],
     "big_chest":            [(2, 4), (3, 4)],
+    "golden_coin":          [(4, 4)],
+    "golden_coin_anim":     [(4, 4),  (5, 4), (6, 4), (7, 4)],
+    "hourglass":            [(8, 4)],
+    "hourglass_2":          [(1, 5)],
     "small_chest":          [(2, 5), (3, 5)],
+    "silver_coin":          [(4, 5)],
+    "silver_cup":           [(5, 5)],
+    "silver_key":           [(6, 5)],
+    "golden_key":           [(7, 5)],
+    "golden_cup":           [(8, 5)],
+    "axe":                  [(1, 6)],
+    "pitchfork":            [(2, 6)],
+    "sai":                  [(3, 6)],
+    "sword":                [(4, 6)],
+    "lance":                [(5, 6)],
+    "hammer":               [(6, 6)],
+    "katana":               [(7, 6)],
+    "rapier":               [(8, 6)],
+    "stick":                [(1, 7)],
+    "club":                 [(2, 7)],
     "pan_balance":          [(3, 7)],
+    "pan_balance2":         [(4, 7)],
+    "pan_balance3":         [(5, 7)],
     "big_heart":            [(6, 7)],
+    "sword_short":          [(7, 7)],
+    "sword_long":           [(8, 7)],
+    "bow":                  [(3, 9)],
+    "arrow":                [(4, 9)],
 }
 
 WEAPON_DIRECTION_OFFSET: dict[str, vec] = {
