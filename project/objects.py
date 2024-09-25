@@ -102,7 +102,7 @@ class InventorySlot(pygame.sprite.Sprite):
 
 class HealthBarUI(pygame.sprite.Sprite):
     def __init__(self, model: Character, groups: pygame.sprite.Group, pos: tuple[int, int], scale: int) -> None:
-        super().__init__(groups)
+        super().__init__()
         # self.image: pygame.Surface = pygame.Surface((70 * scale * TILE_SIZE, 16 * scale * TILE_SIZE)).convert_alpha()
         self.model = model
 
@@ -160,6 +160,7 @@ class HealthBarUI(pygame.sprite.Sprite):
 class HealthBar(pygame.sprite.Sprite):
     def __init__(self,
                  model: Character,
+                 render_text: Callable,
                  groups: pygame.sprite.Group,
                  pos: tuple[int, int],
                  #  translate_pos: Callable
@@ -168,6 +169,7 @@ class HealthBar(pygame.sprite.Sprite):
         self.image: pygame.Surface = pygame.Surface((100, 20)).convert_alpha()
         self.image.fill(TRANSPARENT_COLOR)
         self.model = model
+        self.render_text = render_text
         self.translate_pos: Callable = lambda pos:  pos
         self.image_full: pygame.Surface = load_image(HUD_DIR / "LifeBarMiniProgress.png").convert_alpha()
         self.image_empty: pygame.Surface = load_image(HUD_DIR / "LifeBarMiniUnder.png").convert_alpha()
@@ -186,7 +188,7 @@ class HealthBar(pygame.sprite.Sprite):
             self.color = "pink"
 
     #############################################################################################################
-    def set_bar(self, percentage: float, game: "game.Game") -> None:
+    def set_bar(self, percentage: float) -> None:
         self.image.fill(TRANSPARENT_COLOR)
 
         # leave image fully transparent (hide labels)
@@ -194,7 +196,7 @@ class HealthBar(pygame.sprite.Sprite):
             return
         y: int = 8
         # show health bar only for enemies
-        if self.model.attitude == AttitudeEnum.enemy.value:
+        if self.model.attitude == AttitudeEnum.enemy.value or self.model.name == "Player":
             self.image.blit(self.image_full, self.rect_full.topleft)
 
             percentage = min(1.0, percentage)
@@ -208,7 +210,7 @@ class HealthBar(pygame.sprite.Sprite):
             y += 5
 
         # render name of the character
-        game.render_text(
+        self.render_text(
             self.model.name,
             # self.translate_pos((int(self.rect.width // 2), 10)),
             (int(self.rect.width // 2), y),
@@ -220,6 +222,14 @@ class HealthBar(pygame.sprite.Sprite):
             centred=True,
             surface=self.image
         )
+
+#################################################################################################################
+    def show(self) -> None:
+        self.set_bar(self.model.health / self.model.max_health)
+
+#################################################################################################################
+    def hide(self) -> None:
+        self.set_bar(-1)
 
 #################################################################################################################
 

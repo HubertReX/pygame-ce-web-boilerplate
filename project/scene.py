@@ -1,6 +1,6 @@
 import contextlib
 import random
-from typing import cast
+from typing import Any, cast
 from rich import print
 import game
 import menus
@@ -85,7 +85,7 @@ class Scene(State):
     def __init__(
             self,
             game: game.Game,
-            current_scene: str,
+            map_name: str,
             entry_point: str,
             is_maze: bool = False,
             maze_cols: int = 0,
@@ -93,9 +93,37 @@ class Scene(State):
     ) -> None:
 
         super().__init__(game)
+        self.properties: list[str] = [
+            "is_maze",
+            "maze_cols",
+            "maze_rows",
+            "waypoints",
+            "items",
+            "exits",
+            "chests",
+            "walls",
+            "label_sprites",
+            "shadow_sprites",
+            "chest_sprites",
+            "exit_sprites",
+            "item_sprites",
+            "animations",
+            "NPCs",
+            "loaded_NPCs",
+            "outdoor",
+            "layers",
+            "path_finding_grid",
+            "entry_points",
+            "map_view",
+            "sprites_layer",
+            "group",
+            "particles",
+        ]
+
         self.notifications: list[Notification] = []
         self.game.time_elapsed = 0.0
-        self.current_scene = current_scene
+        self.current_map = map_name
+        self.loaded_maps: dict[str, Any] = {}
         self.entry_point = entry_point
         self.new_scene: Collider | None = None
         self.is_maze = is_maze
@@ -104,12 +132,12 @@ class Scene(State):
         self.waypoints: dict[str, tuple[Point, ...]] = {}
         self.items: list[ItemSprite] = []
         # self.items_defs: dict[str, pygame.Surface] = {}
+        self.exits: list[Collider] = []
         self.chests: list[ChestSprite] = []
         self.walls: list[pygame.Rect] = []
 
         self.label_sprites: pygame.sprite.Group = pygame.sprite.Group()
         self.shadow_sprites: pygame.sprite.Group = pygame.sprite.Group()
-        self.draw_sprites: pygame.sprite.Group = pygame.sprite.Group()
         self.chest_sprites: pygame.sprite.Group = pygame.sprite.Group()
         self.exit_sprites: pygame.sprite.Group = pygame.sprite.Group()
         self.item_sprites: pygame.sprite.Group = pygame.sprite.Group()
@@ -133,13 +161,17 @@ class Scene(State):
         self.player: Player = Player(
             self.game,
             self,
-            self.draw_sprites,
             self.shadow_sprites,
             self.label_sprites,
             (WIDTH // 2, HEIGHT // 2),
             "Player",
             self.icons,
         )
+        # moved here to avoid circular imports
+        from characters import NPC
+
+        self.NPCs: list[NPC] = []
+        self.loaded_NPCs: dict[str, NPC] = {}
         # pyscroll renderer (camera)
         self.map_view: pyscroll.BufferedRenderer
         # view target for camera
@@ -156,6 +188,12 @@ class Scene(State):
         self.minute_f: float = 0.0
         # are we outdoors? shell there be night and day cycle?
         self.outdoor: bool = False
+        self.layers: list[str] = []
+        self.path_finding_grid: list[list[int]] = []
+        self.entry_points: dict[str, vec] = {}
+        self.sprites_layer: int = 0
+        self.group: PyscrollGroup
+        self.particles: list[ParticleSystem] = []
         # self.circle_gradient: pygame.Surface = (CIRCLE_GRADIENT).convert_alpha()
         self.ui = UI(self, tiny_font=self.game.fonts[FONT_SIZE_SMALL], medium_font=self.game.fonts[FONT_SIZE_MEDIUM])
         # self.load_items_def()
@@ -163,6 +201,7 @@ class Scene(State):
         # self.set_camera_on_player()
 
     #############################################################################################################
+
     def generate_icons(self) -> None:
         icons = self.icons
         small_font = self.game.fonts[FONT_SIZE_SMALL]
@@ -259,32 +298,8 @@ class Scene(State):
 
     def load_map(self) -> None:
         # MARK: load_map
-        if self.is_maze:
-            # check from which scene we came here
-            if len(self.game.states) > 0:
-                self.prev_state = self.game.states[-1]
 
-            # if we returned from last scene on the stack, it's actually time to exit
-            # if not self.prev_state:
-            #     pass
-            # self.game.is_running = False
-            # self.exit_state()
-            # quit()
-            # else:
-            # generate new maze
-            self.maze = hunt_and_kill_maze.HuntAndKillMaze(self.maze_cols, self.maze_rows)
-            self.maze.generate()
-            tileset_map: TiledMap = load_pygame(str(MAZE_DIR / "MazeTileset_clean.tmx"))
-            # combine tileset clean template with maze grid into final map
-            build_tileset_map_from_maze(
-                tileset_map,
-                self.maze,
-                to_map = self.return_scene,
-                entry_point = self.return_entry_point
-            )
-        else:
-            # load data from pytmx
-            tileset_map = load_pygame(str(MAPS_DIR / f"{self.current_scene}.tmx"))
+        tileset_map = self.load_tileset_map()
 
         # setup level geometry with simple pygame rectangles, loaded from pytmx
         self.layers = []
@@ -293,78 +308,16 @@ class Scene(State):
 
         self.outdoor = tileset_map.properties.get("outdoor", False)
 
-        self.walls = []
-        if "walls" in self.layers:
-            walls = cast(TiledTileLayer, tileset_map.get_layer_by_name("walls"))
-            walls_width = walls.width
-            walls_height = walls.height
-            # path finding uses only grid build of tiles and not world coordinates in pixels
-            # 0   => floor (later zeros will be replaced with negative numbers representing actual cost)
-            # 100 => wall (not walkable)
-            self.path_finding_grid = [[0 for _ in range(walls_width)] for _ in range(walls_height)]
+        self.load_walls(cast(TiledTileLayer, tileset_map.get_layer_by_name("walls")))
 
-            for x, y, surf in cast(TiledTileLayer, walls).tiles():
-                rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, surf.get_width(), surf.get_height())
-                self.walls.append(rect)
-                # blocked from walking (wall)
-                self.path_finding_grid[y][x] = 100
+        self.load_items(cast(TiledTileLayer, tileset_map.get_layer_by_name("items")), tileset_map)
 
-        self.items = []
-        self.item_sprites.empty()
-        if "items" in self.layers:
-            items_layer = cast(TiledTileLayer, tileset_map.get_layer_by_name("items"))
+        self.load_exits(cast(TiledTileLayer, tileset_map.get_layer_by_name("exits")))
 
-            for x, y, tile in items_layer.tiles():
-                gid = items_layer.data[y][x]
-                name = tileset_map.tile_properties[gid]["item_name"]
-
-                item = self.create_item(name, x * TILE_SIZE, y * TILE_SIZE)
-                self.items.append(item)
-            items_layer.visible = False
-
-        # print("[yellow]Exits[/]")
-        self.chests = []
-        if "exits" in self.layers:
-            for obj in cast(TiledObjectGroup, tileset_map.get_layer_by_name("exits")):
-                if getattr(obj, "obj_type", "") == "exit":
-                    Collider(
-                        self.exit_sprites,
-                        (obj.x, obj.y),
-                        (obj.width, obj.height),
-                        obj.name,
-                        obj.to_map,
-                        obj.entry_point,
-                        obj.is_maze,
-                        getattr(obj, "maze_cols", 0),
-                        getattr(obj, "maze_rows", 0),
-                        getattr(obj, "return_entry_point", ""),
-                    )
-                    # print(
-                    #     obj.name,
-                    #     obj.to_map,
-                    #     obj.entry_point,
-                    #     obj.is_maze,
-                    #     getattr(obj, "maze_cols", 0),
-                    #     getattr(obj, "maze_rows", 0),
-                    #     getattr(obj, "return_entry_point", ""),
-                    # )
-                elif getattr(obj, "obj_type", "") == "chest":
-                    rect = pygame.Rect(obj.x, obj.y, obj.width, obj.height)
-                    self.walls.append(rect)
-
-                    # blocked from walking (wall)
-                    self.path_finding_grid[int(obj.y // TILE_SIZE)][int(obj.x // TILE_SIZE)] = 100
-
-                    # chest = ChestSprite(self.chest_sprites, rect.center,
-                    chest = ChestSprite(self.chest_sprites, (obj.x, obj.y),
-                                        self.game.conf.chests[obj.name], self.items_sheet,)
-                    self.chests.append(chest)
-                    # print("[light_green]Chest[/]", chest.name, rect)
         self.waypoints = {}
         # layer of invisible objects consisting of points that layout a list waypoints to follow by NPCs
         if "waypoints" in self.layers:
             for obj in cast(TiledObjectGroup, tileset_map.get_layer_by_name("waypoints")):
-                # self.waypoints[obj.name] = (obj.points if hasattr(obj, "points") else obj.as_points)
                 self.waypoints[obj.name] = tuple(to_point(point) for point in obj.points)
 
         self.entry_points = {}
@@ -373,95 +326,9 @@ class Scene(State):
             for obj in cast(TiledObjectGroup, tileset_map.get_layer_by_name("entry_points")):
                 self.entry_points[obj.name] = vec(obj.x, obj.y)
 
-        # moved here to avoid circular imports
-        from characters import NPC
-
-        # self.notify_npc_event_id  = pygame.event.custom_type()
-        self.NPC: list[NPC] = []
-        # layer of invisible objects being single points determining where NPCs will spawn
-        if "spawn_points" in self.layers:
-            for obj in cast(TiledObjectGroup, tileset_map.get_layer_by_name("spawn_points")):
-                # list of waypoints attached by NPCs name
-                waypoint = self.waypoints.get(obj.name, ())
-                npc = NPC(
-                    self.game,
-                    self,
-                    self.draw_sprites,
-                    self.shadow_sprites,
-                    self.label_sprites,
-                    (obj.x, obj.y),
-                    obj.name,
-                    self.icons,
-                    waypoint,
-                )
-                self.NPC.append(npc)
-
-        if self.is_maze:
-            # spawning 4 random NPCs in upper right, lower right, lower left corners and in the middle of the map
-            spawn_positions: list[tuple[int, int]] = [
-                ((5 + ((self.maze_cols  - 1) * 6)) * TILE_SIZE + 2, ((7 + (self.maze_rows  - 1) * 6)) * TILE_SIZE + 2),
-                ((5)                               * TILE_SIZE + 2, ((7 + (self.maze_rows  - 1) * 6)) * TILE_SIZE + 2),
-                ((5 + ((self.maze_cols  - 1) * 6)) * TILE_SIZE + 2, ((7))                             * TILE_SIZE + 2),
-                ((5 + ((self.maze_cols // 2) * 6)) * TILE_SIZE + 2, ((7 + (self.maze_rows // 2) * 6)) * TILE_SIZE + 2),
-            ]
-            for pos in spawn_positions:
-                monster_name = random.choice(["Snake_01", "Spider_01", "Spirit_01", "Slime_01",])
-                npc = NPC(
-                    self.game,
-                    self,
-                    self.draw_sprites,
-                    self.shadow_sprites,
-                    self.label_sprites,
-                    pos,
-                    monster_name,
-                    self.icons,
-                    (),
-                )
-                self.NPC.append(npc)
-
-            for _ in range(4):
-                x_r: int = random.randint(0, 5)
-                y_r: int = random.randint(0, 5)
-                pos_r: tuple[int, int] = ((5 + (x_r * 6)) * TILE_SIZE + 2, (7 + y_r * 6) * TILE_SIZE + 2)
-                monster_name = random.choice(["Snake_01", "Spider_01", "Spirit_01", "Slime_01",])
-                npc = NPC(
-                    self.game,
-                    self,
-                    self.draw_sprites,
-                    self.shadow_sprites,
-                    self.label_sprites,
-                    pos_r,
-                    monster_name,
-                    self.icons,
-                    (),
-                )
-                self.NPC.append(npc)
-
-        for npc in self.NPC:
-            # init items
-            for item_name in npc.model.items:
-                item = self.create_item(item_name, 0, 0, show=False)
-                npc.pick_up(item)
-
-        # init items
-        if not self.transition.exiting:
-            for item_name in self.player.model.items:
-                item = self.create_item(item_name, 0, 0, show=False)
-                self.player.pick_up(item)
-
-            # uncomment to test path finding (A*) performance
-            # self.player.waypoints = [
-            #     ((5) * TILE_SIZE, (6) * TILE_SIZE),
-            #     ((5) * TILE_SIZE, (12) * TILE_SIZE),
-            #     ((7) * TILE_SIZE, (12) * TILE_SIZE),
-            #     ((7) * TILE_SIZE, (8) * TILE_SIZE),
-            #     ((30) * TILE_SIZE, (8) * TILE_SIZE),
-            #     ((30) * TILE_SIZE, (12) * TILE_SIZE),
-            #     ((23) * TILE_SIZE, (12) * TILE_SIZE),
-            #     ((23) * TILE_SIZE, (18) * TILE_SIZE),
-            # ]
-            # self.player.waypoints_cnt = len(self.player.waypoints)
-            # self.player.target = vec(100,100)
+        # load NPCs only once
+        if self.current_map not in self.loaded_maps:
+            self.load_NPCs(cast(TiledObjectGroup, tileset_map.get_layer_by_name("spawn_points")))
 
         clear_maze_cache()
 
@@ -473,46 +340,91 @@ class Scene(State):
             clamp_camera = True,
         )
 
-        # npc label with name needs to be rendered on HUD surface
-        # using screen coordinates, not map coordinates
-        # for npc in self.NPC:
-        #     npc.health_bar.translate_pos = self.map_view.translate_point
-
-        # self.player.health_bar.translate_pos = self.map_view.translate_point
-
         # TODO fix zoom
         # self.map_view.zoom = self.camera.zoom
 
-        if self.entry_point in self.entry_points:
-            # set first start position for the Player
-            ep = self.entry_points[self.entry_point]
-            self.player.pos = vec(ep.x, ep.y)
-            self.player.adjust_rect()
-        else:
-            print("\n[red]ERROR![/] no entry point found!\n")
-            self.add_notification("[error]ERROR[/error]:red_exclamation: no entry point found",
-                                  NotificationTypeEnum.debug)
-            # fallback - put the player in the center of the map
-            self.player.pos = tuple_to_vector(self.map_view.map_rect.center)
+        self.set_entry_point()
 
         # Pyscroll supports layered rendering.
         # Our map has several 'under' layers and 'over' layers in relations to Sprites.
         # Sprites (NPCs) are always drawn over the tiles of the layer they are on.
         self.sprites_layer = self.layers.index("sprites")
-        # main SpritesGroup holding whole tiled map with all layers and NPCs
-        self.group: PyscrollGroup = PyscrollGroup(map_layer = self.map_view, default_layer = self.sprites_layer)
 
-        self.group.add(self.shadow_sprites, layer = self.sprites_layer - 2)
-        self.group.add(self.item_sprites,   layer = self.sprites_layer - 1)
-        self.group.add(self.label_sprites,  layer = self.sprites_layer + 1)
-        self.group.add(self.chest_sprites,  layer = self.sprites_layer - 1)
+        self.group = PyscrollGroup(map_layer=self.map_view, default_layer=self.sprites_layer)
+
+        # main SpritesGroup holding whole tiled map with all layers and NPCs
+        self.populate_sprite_groups()
+
+        self.load_step_cost(tileset_map)
+
+        self.set_camera_on_player()
+        # self.group.center(self.camera.target)
+        self.group.center(self.player.pos)
+
+        self.load_particles(tileset_map)
+
+        # mark map as loaded
+        if self.current_map not in self.loaded_maps:
+            self.store_map()
+
+    #############################################################################################################
+
+    def populate_sprite_groups(self) -> None:
+        for item in self.items:
+            if item not in self.item_sprites:
+                self.item_sprites.add(item)
+
+        for exit in self.exits:
+            if exit not in self.exit_sprites:
+                self.exit_sprites.add(exit)
+
+        for chest in self.chests:
+            if chest not in self.chest_sprites:
+                self.chest_sprites.add(chest)
+
+        # add all NPCs from current map to the group
+        self.NPCs = []
+        for npc in self.loaded_NPCs.values():
+            if npc.current_map == self.current_map and not npc.is_dead:
+                self.NPCs.append(npc)
+                self.shadow_sprites.add(npc.shadow)
+                self.label_sprites.add(npc.health_bar)
+                self.label_sprites.add(npc.emote)
+
+        self.group.add(self.shadow_sprites, layer=self.sprites_layer - 2)
+        self.group.add(self.item_sprites,   layer=self.sprites_layer - 1)
+        self.group.add(self.label_sprites,  layer=self.sprites_layer + 1)
+        self.group.add(self.chest_sprites,  layer=self.sprites_layer - 1)
         # add Player to the group
         self.group.add(self.player, layer=self.sprites_layer)
-        # add all NPCs to the group
-        self.group.add(self.NPC, layer=self.sprites_layer)
 
+        self.group.add(self.NPCs, layer=self.sprites_layer)
+
+    #############################################################################################################
+
+    def load_particles(self, tileset_map: TiledMap) -> None:
+        map_particles = tileset_map.properties.get("particles", "").replace(" ", "").strip().lower().split(",")
+        # string with coma separated names of particle systems active in this map
+        self.particles = []
+        # init particle systems relevant for this scene
+        for particle in map_particles:
+            if particle in PARTICLES:
+                particle_class = PARTICLES[particle]
+                self.particles.append(particle_class(self.game.canvas, self.group, self.camera))
+                # TODO: enable particles
+                continue
+                self.game.register_custom_event(self.particles[-1].custom_event_id, self.particles[-1].add)
+
+    #############################################################################################################
+
+    def start_particles(self) -> None:
+        for particle in self.particles:
+            self.game.register_custom_event(particle.custom_event_id, particle.add)
+
+    #############################################################################################################
+
+    def load_step_cost(self, tileset_map: TiledMap) -> None:
         for x, y, surf in tileset_map.layers[0].tiles():
-
             # get step cost for all walkable tiles
             # 100 => road, pavement - low cost
             # 150 => grass, dirt - moderate cost
@@ -533,21 +445,218 @@ class Scene(State):
                     step_cost = tile_1_gid["step_cost"]
                 self.path_finding_grid[y][x] = -step_cost
 
+    #############################################################################################################
+
+    def load_exits(self, exits_layer: TiledTileLayer) -> None:
+        self.exits = []
+        self.chests = []
+        if "exits" in self.layers:
+            for obj in exits_layer:
+                if getattr(obj, "obj_type", "") == "exit":
+                    exit = Collider(
+                        self.exit_sprites,
+                        (obj.x, obj.y),
+                        (obj.width, obj.height),
+                        obj.name,
+                        obj.to_map,
+                        obj.entry_point,
+                        obj.is_maze,
+                        getattr(obj, "maze_cols", 0),
+                        getattr(obj, "maze_rows", 0),
+                        getattr(obj, "return_entry_point", ""),
+                    )
+                    self.exits.append(exit)
+                elif getattr(obj, "obj_type", "") == "chest":
+                    rect = pygame.Rect(obj.x, obj.y, obj.width, obj.height)
+                    self.walls.append(rect)
+
+                    # blocked from walking (wall)
+                    self.path_finding_grid[int(obj.y // TILE_SIZE)][int(obj.x // TILE_SIZE)] = 100
+
+                    # chest = ChestSprite(self.chest_sprites, rect.center,
+                    chest = ChestSprite(self.chest_sprites, (obj.x, obj.y),
+                                        self.game.conf.chests[obj.name], self.items_sheet,)
+                    self.chests.append(chest)
+
+    #############################################################################################################
+
+    def load_items(self, items_layer: TiledTileLayer, tileset_map: TiledMap) -> None:
+        self.items = []
+        self.item_sprites.empty()
+        if "items" in self.layers:
+
+            for x, y, tile in items_layer.tiles():
+                gid = items_layer.data[y][x]
+                name = tileset_map.tile_properties[gid]["item_name"]
+
+                item = self.create_item(name, x * TILE_SIZE, y * TILE_SIZE)
+                self.items.append(item)
+            items_layer.visible = False
+
+    #############################################################################################################
+
+    def load_walls(self, walls_layer: TiledTileLayer) -> None:
+        self.walls = []
+        if "walls" in self.layers:
+            walls_width = walls_layer.width
+            walls_height = walls_layer.height
+            # path finding uses only grid build of tiles and not world coordinates in pixels
+            # 0   => floor (later zeros will be replaced with negative numbers representing actual cost)
+            # 100 => wall (not walkable)
+            self.path_finding_grid = [[0 for _ in range(walls_width)] for _ in range(walls_height)]
+
+            for x, y, surf in cast(TiledTileLayer, walls_layer).tiles():
+                rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, surf.get_width(), surf.get_height())
+                self.walls.append(rect)
+                # blocked from walking (wall)
+                self.path_finding_grid[y][x] = 100
+
+    #############################################################################################################
+
+    def load_tileset_map(self) -> TiledMap:
+        if self.is_maze:
+            # check from which scene we came here
+            if len(self.game.states) > 0:
+                self.prev_state = self.game.states[-1]
+
+            if self.current_map not in self.loaded_maps:
+                # generate new maze
+                self.maze = hunt_and_kill_maze.HuntAndKillMaze(self.maze_cols, self.maze_rows)
+                self.maze.generate()
+
+            tileset_map: TiledMap = load_pygame(str(MAZE_DIR / "MazeTileset_clean.tmx"))
+            # combine tileset clean template with maze grid into final map
+            build_tileset_map_from_maze(
+                tileset_map,
+                self.maze,
+                to_map = self.return_map,
+                entry_point = self.return_entry_point
+            )
+        else:
+            # load data from pytmx
+            tileset_map = load_pygame(str(MAPS_DIR / f"{self.current_map}.tmx"))
+
+        return tileset_map
+
+    #############################################################################################################
+
+    def set_entry_point(self) -> None:
+        default = tuple_to_vector(self.map_view.map_rect.center)
+        result = self.player.set_entry_point(self.entry_point, default)
+        if not result:
+            print("\n[red]ERROR![/] no entry point found!\n")
+            self.add_notification("[error]ERROR[/error]:red_exclamation: no entry point found",
+                                  NotificationTypeEnum.debug)
+
+    #############################################################################################################
+
+    def store_map(self) -> None:
+        map: dict[str, Any] = {}
+        for property in self.properties:
+            # if hasattr(self, property):
+            map[property] = getattr(self, property)
+        self.loaded_maps[self.current_map] = map
+
+    #############################################################################################################
+
+    def restore_map(self) -> None:
+        map = self.loaded_maps[self.current_map]
+        for property in map:
+            setattr(self, property, map[property])
+
+        # check from which scene we came here
+        if len(self.game.states) > 0:
+            self.prev_state = self.game.states[-1]
+
+        clear_maze_cache()
+
         self.set_camera_on_player()
         # self.group.center(self.camera.target)
         self.group.center(self.player.pos)
 
-        # string with coma separated names of particle systems active in this map
-        map_particles = tileset_map.properties.get("particles", "").replace(" ", "").strip().lower().split(",")
-        self.particles: list[ParticleSystem] = []
-        # init particle systems relevant for this scene
-        for particle in map_particles:
-            if particle in PARTICLES:
-                particle_class = PARTICLES[particle]
-                # TODO: enable particles
-                continue
-                self.particles.append(particle_class(self.game.canvas, self.group, self.camera))
-                self.game.register_custom_event(self.particles[-1].custom_event_id, self.particles[-1].add)
+    #############################################################################################################
+
+    def load_NPCs(self, spawn_points: TiledObjectGroup) -> None:
+        # moved here to avoid circular imports
+        from characters import NPC
+
+        # layer of invisible objects being single points determining where NPCs will spawn
+        if "spawn_points" in self.layers:
+            for obj in spawn_points:
+                if obj.name not in self.loaded_NPCs:
+                    # list of waypoints attached by NPCs name
+                    waypoint = self.waypoints.get(obj.name, ())
+                    npc = NPC(
+                        self.game,
+                        self,
+                        self.shadow_sprites,
+                        self.label_sprites,
+                        (obj.x, obj.y),
+                        obj.name,
+                        self.icons,
+                        waypoint,
+                    )
+                    self.loaded_NPCs[obj.name] = npc
+
+        if self.is_maze and self.current_map not in self.loaded_maps:
+            # spawning 4 random NPCs in upper right, lower right, lower left corners and in the middle of the map
+            spawn_positions: list[tuple[int, int]] = [
+                ((5 + ((self.maze_cols  - 1) * 6)) * TILE_SIZE + 2,
+                    ((7 + (self.maze_rows  - 1) * 6)) * TILE_SIZE + 2),
+
+                ((5)                               * TILE_SIZE + 2,
+                    ((7 + (self.maze_rows  - 1) * 6)) * TILE_SIZE + 2),
+
+                ((5 + ((self.maze_cols  - 1) * 6)) * TILE_SIZE + 2,
+                    ((7))                             * TILE_SIZE + 2),
+
+                ((5 + ((self.maze_cols // 2) * 6)) * TILE_SIZE + 2,
+                    ((7 + (self.maze_rows // 2) * 6)) * TILE_SIZE + 2),
+            ]
+            id: int = 0
+            for pos in spawn_positions:
+                model_name = random.choice(["Snake_01", "Spider_01", "Spirit_01", "Slime_01",])
+                id += 1
+                name = f"{model_name}_{id:03}"
+                npc = NPC(
+                    self.game,
+                    self,
+                    self.shadow_sprites,
+                    self.label_sprites,
+                    pos,
+                    name,
+                    self.icons,
+                    (),
+                    model_name=model_name,
+                )
+                self.loaded_NPCs[name] = npc
+
+            for _ in range(4):
+                repeat: bool = True
+                while repeat:
+                    x_r: int = random.randint(1, 5)
+                    y_r: int = random.randint(1, 5)
+                    pos_r: tuple[int, int] = ((5 + (x_r * 6)) * TILE_SIZE + 2, (7 + y_r * 6) * TILE_SIZE + 2)
+                    if pos_r not in spawn_points:
+                        spawn_points.append(pos_r)
+                        repeat = False
+
+                model_name = random.choice(["Snake_01", "Spider_01", "Spirit_01", "Slime_01",])
+                id += 1
+                name = f"{model_name}_{id:03}"
+
+                npc = NPC(
+                    self.game,
+                    self,
+                    self.shadow_sprites,
+                    self.label_sprites,
+                    pos_r,
+                    name,
+                    self.icons,
+                    (),
+                    model_name=model_name,
+                )
+                self.loaded_NPCs[name] = npc
 
     #############################################################################################################
 
@@ -580,7 +689,7 @@ class Scene(State):
                         f"[red]ERROR![/] coordinate {x}x{y} "
                         f"not inside sprite sheet for '{key}' animation")
                     # self.add_notification(
-                    #     f"[error]ERROR[/error]:red_exclamation: {self.current_scene}: coordinate {
+                    #     f"[error]ERROR[/error]:red_exclamation: {self.current_map}: coordinate {
                     #         x}x{y} not inside sprite sheet for '{key}' animation",
                     #     NotificationTypeEnum.debug)
                     continue
@@ -593,7 +702,7 @@ class Scene(State):
 
     def __repr__(self) -> str:
         # MARK: __repr__
-        return f"{self.__class__.__name__}: {self.current_scene}"
+        return f"{self.__class__.__name__}: {self.current_map}"
 
     #############################################################################################################
     def start_intro(self) -> None:
@@ -787,56 +896,57 @@ class Scene(State):
         self.camera.target = self.camera.target.copy()
 
     #############################################################################################################
-    def go_to_scene(self) -> None:
-        if not self.new_scene:
-            return
+    # def go_to_scene(self) -> None:
+    #     if not self.new_scene:
+    #         return
 
-        self.transition.exiting = False
-        new_scene = Scene(
-            self.game,
-            self.new_scene.to_map,
-            self.new_scene.entry_point,
-            self.new_scene.is_maze,
-            self.new_scene.maze_cols,
-            self.new_scene.maze_rows
-        )
-        self.exit_state(quit=False)
-        new_scene.enter_state()
+    #     self.transition.exiting = False
+    #     new_scene = Scene(
+    #         self.game,
+    #         self.new_scene.to_map,
+    #         self.new_scene.entry_point,
+    #         self.new_scene.is_maze,
+    #         self.new_scene.maze_cols,
+    #         self.new_scene.maze_rows
+    #     )
+    #     self.exit_state(quit=False)
+    #     new_scene.enter_state()
 
     #############################################################################################################
     def go_to_map(self) -> None:
         if not self.new_scene:
             return
 
-        self.return_scene = self.current_scene
+        self.return_map = self.current_map
         self.return_entry_point = self.new_scene.return_entry_point
 
-        self.current_scene = self.new_scene.to_map
+        self.current_map = self.new_scene.to_map
         # print(f"{self.entry_point=} {self.new_scene.entry_point}")
         self.entry_point = self.new_scene.entry_point
         self.is_maze = self.new_scene.is_maze
         self.maze_cols = self.new_scene.maze_cols
         self.maze_rows = self.new_scene.maze_rows
-        self.shadow_sprites.empty()
-        self.label_sprites.empty()
-        # self.waypoints = {}
-        # self.map_view.reload()
-        self.reset_sprite_groups()
-        self.player.shadow = self.player.create_shadow()
-        self.player.emote = self.player.create_emote()
-        self.player.health_bar = self.player.create_health_bar()
-        self.load_map()
+
+        if self.current_map not in self.loaded_maps:
+            self.reset_sprite_groups()
+            self.player.shadow = self.player.create_shadow()
+            self.player.emote = self.player.create_emote()
+            self.player.health_bar = self.player.create_health_bar()
+            self.load_map()
+
+        else:
+            self.reset_sprite_groups()
+
+            self.restore_map()
+            self.set_entry_point()
+
+            self.player.shadow = self.player.create_shadow()
+            self.player.emote = self.player.create_emote()
+            self.player.health_bar = self.player.create_health_bar()
+
+            self.populate_sprite_groups()
+
         self.transition.exiting = False
-        # new_scene = Scene(
-        #     self.game,
-        #     self.new_scene.to_map,
-        #     self.new_scene.entry_point,
-        #     self.new_scene.is_maze,
-        #     self.new_scene.maze_cols,
-        #     self.new_scene.maze_rows
-        # )
-        # self.exit_state(quit=False)
-        # new_scene.enter_state()
 
     #############################################################################################################
     def update(self, dt: float, events: list[pygame.event.EventType]) -> None:
@@ -874,9 +984,9 @@ class Scene(State):
         # check if the Player is colliding with an NPC
         if not self.player.is_flying:
             # collision with body of NPC
-            collided_index = self.player.feet.collidelist(self.NPC)  # type: ignore[type-var]
+            collided_index = self.player.feet.collidelist(self.NPCs)  # type: ignore[type-var]
             if collided_index > -1 and not self.player.is_stunned:
-                oponent = self.NPC[collided_index]
+                oponent = self.NPCs[collided_index]
                 # if self.player.mask.overlap(
                 #     oponent.mask,
                 #     (oponent.rect.x - self.player.rect.x, oponent.rect.y - self.player.rect.y)
@@ -885,14 +995,14 @@ class Scene(State):
                 # engage fight with enemy or push back friendly NPC
                 self.player.encounter(oponent)
                 # slide along wall or do a step_back
-                self.player.slide(self.NPC)
+                self.player.slide(self.NPCs)
 
             # collision of weapon with other NPC
             if self.player.is_attacking and self.player.selected_weapon:
-                collided_index = self.player.selected_weapon.rect.collidelist(self.NPC)  # type: ignore[type-var]
+                collided_index = self.player.selected_weapon.rect.collidelist(self.NPCs)  # type: ignore[type-var]
                 # collided with weapon rect
                 if collided_index > -1:
-                    oponent = self.NPC[collided_index]
+                    oponent = self.NPCs[collided_index]
                     # weapon rect is big, check if it collides with the mask of weapon
                     if self.player.selected_weapon.mask.overlap(
                         oponent.mask,
@@ -900,7 +1010,7 @@ class Scene(State):
                          oponent.rect.y - self.player.selected_weapon.rect.y)  # type: ignore[union-attr]
                     ):
                         # deal damage with weapon to enemy or nothing if friendly NPC
-                        self.player.hit(self.NPC[collided_index])
+                        self.player.hit(self.NPCs[collided_index])
 
         colliders = self.walls
         # if self.player.is_flying:
@@ -918,7 +1028,7 @@ class Scene(State):
                 break
 
         self.player.npc_met = None
-        for npc in self.NPC:
+        for npc in self.NPCs:
             npc.npc_met = None
             if npc.feet.collidelist(colliders) > -1:
                 # npc.move_back(dt)
@@ -928,14 +1038,14 @@ class Scene(State):
             # enable talk to npc when player is near
             if npc.model.attitude == AttitudeEnum.friendly:
                 if distance_from_player < FRIENDLY_WAKE_DISTANCE**2:
-                    npc.show_health_bar()
+                    npc.health_bar.show()
 
                     if npc.has_dialog and npc.dialogs:
                         self.player.npc_met = npc
                         npc.npc_met = self.player
                         break
                 else:
-                    npc.hide_health_bar()
+                    npc.health_bar.hide()
 
         # exit from current state and go back to previous
         if INPUTS["quit"]:
@@ -991,9 +1101,11 @@ class Scene(State):
             # drop item from inventory to ground
             if len(self.player.items) > 0 and not self.player.is_attacking and not self.player.is_stunned:
                 if item := self.player.drop_item():
+                    self.items.append(item)
+                    self.item_sprites.add(item)
                     self.group.add(item, layer=self.sprites_layer - 1)
 
-                    print(f"Dropped '[item]{item.name}[/item]' [[magenta]{item.model.type}[/magenta]]")
+                    # print(f"Dropped '[item]{item.name}[/item]' [[magenta]{item.model.type}[/magenta]]")
                     self.add_notification(
                         f"Dropped '[item]{item.name}[/item]'", NotificationTypeEnum.info)
                 else:
@@ -1011,7 +1123,10 @@ class Scene(State):
                         with contextlib.suppress(KeyError):
                             # if self.group.has(item):
                             self.group.remove(item)
-                            self.item_sprites.remove(item)
+                            if item in self.items:
+                                self.items.remove(item)
+                            if item in self.item_sprites:
+                                self.item_sprites.remove(item)
                     # else:
                     #     print(f"You can't pick up '{item.model.name}' - it's too heavy.")
             INPUTS["pick_up"] = False
@@ -1088,7 +1203,6 @@ class Scene(State):
 
     def reset_sprite_groups(self) -> None:
         self.label_sprites.empty()
-        self.draw_sprites.empty()
         self.exit_sprites.empty()
         self.item_sprites.empty()
         self.chest_sprites.empty()
@@ -1214,7 +1328,7 @@ class Scene(State):
                     ratio = (hour - 17.00) / (20.00 - 17.00)
             # if it's not full day add light sources
             if ratio > 0.0:
-                for npc in self.NPC + [self.player]:
+                for npc in self.NPCs + [self.player]:
                     pos = self.map_view.translate_point(npc.pos + vec(0, -8))
                     # pos_list = scene.map_view.translate_point(npc.pos + vec(0, -8))
                     light = vec3(pos[0], HEIGHT - pos[1], 64.0)
@@ -1294,7 +1408,7 @@ class Scene(State):
         self.debug(msgs)
 
         # display npc (and players) debug messages
-        for npc in self.NPC + [self.player]:
+        for npc in self.NPCs + [self.player]:
             # prepare text displayed under NPC
             texts = [
                 npc.name,

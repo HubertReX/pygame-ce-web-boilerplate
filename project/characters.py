@@ -1,4 +1,3 @@
-import copy
 # from dataclasses import dataclass
 import math
 import os
@@ -32,6 +31,7 @@ from settings import (
     WEAPON_DIRECTION_OFFSET_FROM,
     Point,
     lerp_vectors,
+    tuple_to_vector,
     vector_to_tuple,
 )
 
@@ -66,20 +66,23 @@ class NPC(pygame.sprite.Sprite):
             self,
             game: game.Game,
             scene: scene.Scene,
-            groups: pygame.sprite.Group,
             shadow_group: pygame.sprite.Group,
             label_group: pygame.sprite.Group,
             pos: tuple[int, int],
             name: str,
             emotes: dict[str, list[pygame.Surface]],
             waypoints: tuple[Point, ...] = (),
+            model_name: str = "",
     ):
 
         self.name = name
-        super(NPC, self).__init__(groups)
+        if not model_name:
+            model_name = self.name
+        super(NPC, self).__init__()
         self.game = game
         self.scene = scene
-        self.model: Character = game.conf.characters[name]
+        self.model: Character = game.conf.characters[model_name]
+        self.current_map = self.scene.current_map
         self.dialogs: str | None = None
         self.has_dialog: bool = False
 
@@ -92,9 +95,8 @@ class NPC(pygame.sprite.Sprite):
 
         self.shadow = self.create_shadow()
         self.health_bar = self.create_health_bar()
-        # self.weapon_group = groups[-1]
         # hide health bar at start (negative value makes it transparent)
-        self.hide_health_bar()
+        self.health_bar.hide()
         self.items: list[ItemSprite] = []
         self.selected_weapon: ItemSprite | None = None
         self.selected_item_idx: int = -1
@@ -173,6 +175,7 @@ class NPC(pygame.sprite.Sprite):
 
         self.jumping_offset: int = 0
         # flags set by key strokes - not real NPC states
+        self.is_dead = False
         self.is_flying = False
         self.is_jumping = False
         self.is_stunned = False
@@ -186,10 +189,18 @@ class NPC(pygame.sprite.Sprite):
         self.state: npc_state.NPC_State = npc_state.Idle()
         self.state.enter_time = self.scene.game.time_elapsed
 
+        self.load_items()
+
     #############################################################################################################
 
     def __hash__(self) -> int:
         return hash(self.name)
+
+    #############################################################################################################
+    def load_items(self) -> None:
+        for item_name in self.model.items:
+            item = self.scene.create_item(item_name, 0, 0, show=False)
+            self.pick_up(item)
 
     #############################################################################################################
 
@@ -210,7 +221,7 @@ class NPC(pygame.sprite.Sprite):
     #############################################################################################################
 
     def create_health_bar(self) -> HealthBar:
-        return HealthBar(self.model, self.label_group, vector_to_tuple(self.pos))
+        return HealthBar(self.model, self.game.render_text, self.label_group, vector_to_tuple(self.pos))
 
     #############################################################################################################
     def create_shadow(self) -> Shadow:
@@ -513,9 +524,31 @@ class NPC(pygame.sprite.Sprite):
             self.state = new_state
 
     #############################################################################################################
+    def set_entry_point(self, entry_point: str, default: vec) -> bool:
+        if entry_point in self.scene.entry_points:
+            result: bool = True
+            # set first start position for the Player
+            ep = self.scene.entry_points[entry_point]
+            self.pos = vec(ep.x, ep.y)
+            self.adjust_rect()
+        else:
+            result = False
+            print(f"\n[red]ERROR![/] [char]{self.model.name}[/] no entry point found!\n")
+            self.pos = default
+
+        return result
+
+    #############################################################################################################
     def check_scene_exit(self) -> None:
         for exit in self.scene.exit_sprites:
             if self.feet.colliderect(exit.rect):
+                self.current_map = exit.to_map
+                # self.set_entry_point(exit.entry_point, vec(0, 0))
+                # self.scene.NPCs.remove(self)
+                # self.scene.group.remove(self)
+                # self.shadow.kill()
+                # self.health_bar.kill()
+                # self.emote.kill()
                 self.die(drop_items=False)
                 # TODO NPC goes to another map
 
@@ -525,29 +558,38 @@ class NPC(pygame.sprite.Sprite):
 
     #############################################################################################################
     def die(self, drop_items: bool = True) -> None:
-        self.scene.NPC = [npc for npc in self.scene.NPC if npc != self]
+        self.scene.NPCs = [npc for npc in self.scene.NPCs if npc != self]
         self.shadow.kill()
         self.health_bar.kill()
         self.emote.kill()
+
         # drop items and money on the ground
         if self.name != "Player" and drop_items:
+            self.is_dead = True
+
             for item in self.items:
                 self.selected_item_idx = len(self.items) - 1
                 if self.drop_item():
                     item.rect.center = self.pos + self.get_random_pos()  # type: ignore[assignment]
+                    self.scene.items.append(item)
                     self.scene.item_sprites.add(item)
                     self.scene.group.add(item, layer=self.scene.sprites_layer - 1)
+
             if self.model.money >  0:
                 pos: vec = self.pos + self.get_random_pos()  # type: ignore[assignment]
                 item = self.scene.create_item("golden_coin", int(pos[0]), int(pos[1]))
                 item.model.value = self.model.money
+                self.scene.items.append(item)
                 self.scene.item_sprites.add(item)
                 self.scene.group.add(item, layer=self.scene.sprites_layer - 1)
+
         if self.name == "Player" and self.model.health <= 0:
+            self.is_dead = True
             self.scene.exit_state()
             self.scene.player.reset()
             scene.Scene(self.game, "Village", "start").enter_state()
             splash_screen.SplashScreen(self.game, "GAME OVER").enter_state()
+
         self.kill()
 
     #############################################################################################################
@@ -602,11 +644,11 @@ class NPC(pygame.sprite.Sprite):
         if action == NPCEventActionEnum.pushed:
             # pushed state is invalidated
             # show health bar
-            self.hide_health_bar()
+            self.health_bar.hide()
         elif action ==  NPCEventActionEnum.stunned:
             # stunned state is invalidated
             # show health bar
-            self.hide_health_bar()
+            self.health_bar.hide()
             self.is_stunned = False
             if self.model.health == 0:
                 self.die()
@@ -624,15 +666,8 @@ class NPC(pygame.sprite.Sprite):
                 f"unknown action '[act]{action}[/act]' for npc '[char]{self.name}[/char]'", NotificationTypeEnum.debug)
 
     #############################################################################################################
-    def hide_health_bar(self) -> None:
-        self.health_bar.set_bar(-1.0, self.game)
-
-    #############################################################################################################
-    def show_health_bar(self) -> None:
-        self.health_bar.set_bar(self.model.health / self.model.max_health, self.game)
-
-    #############################################################################################################
     # MARK: encounter
+
     def encounter(self, oponent: "NPC") -> None:
         if oponent.model.attitude == AttitudeEnum.enemy:
             # deal damage
@@ -655,6 +690,7 @@ class NPC(pygame.sprite.Sprite):
 
             self.is_stunned = True
             self.set_event_timer(self, NPCEventActionEnum.stunned, STUNNED_TIME, 1)
+            self.health_bar.show()
 
             oponent.is_stunned = True
             oponent.set_event_timer(oponent, NPCEventActionEnum.stunned, STUNNED_TIME, 1)
@@ -662,7 +698,7 @@ class NPC(pygame.sprite.Sprite):
 
             # show health bar (for STUNNED_TIME ms)
             # self.health_bar.set_bar(self.model.health / self.model.max_health, self.game)
-            oponent.show_health_bar()
+            oponent.health_bar.show()
 
             # push the npc
             player_move = self.pos - oponent.pos
@@ -690,7 +726,7 @@ class NPC(pygame.sprite.Sprite):
 
             # show health bar (for PUSHED_TIME ms)
             # self.health_bar.set_bar(self.model.health / self.model.max_health, self.game)
-            oponent.show_health_bar()
+            oponent.health_bar.show()
             # if oponent.has_dialog and oponent.dialogs:
             #     self.npc_met = oponent
             #     self.scene.ui.dialog_panel.set_text(oponent.dialogs)
@@ -714,7 +750,7 @@ class NPC(pygame.sprite.Sprite):
 
             # show health bar (for STUNNED_TIME ms)
             # self.health_bar.set_bar(self.model.health / self.model.max_health, self.game)
-            oponent.show_health_bar()
+            oponent.health_bar.show()
 
             # push the npc
             player_move = self.pos - oponent.pos
@@ -759,11 +795,14 @@ class NPC(pygame.sprite.Sprite):
         self.emote = self.create_emote()
         self.health_bar = self.create_health_bar()
         self.is_attacking = False
+        self.is_dead = False
         self.is_flying = False
         self.is_jumping = False
         self.is_stunned = False
         self.is_talking = False
         self.items = []
+        self.selected_item_idx = -1
+        self.load_items()
         self.model.health = self.model.max_health
 
     #############################################################################################################
@@ -809,7 +848,7 @@ class NPC(pygame.sprite.Sprite):
             factor = AnimationTransition.in_out_elastic(1.0 - abs(factor - 0.5) * 2.0)
             offset = lerp_vectors(weapon_offset_from, weapon_offset_to, factor)
             self.selected_weapon.rect.center = vec(self.pos[0], self.pos[1]) + offset   # type: ignore[assignment]
-            self.selected_weapon.image = self.selected_weapon.image_directions[direction]
+            self.selected_weapon.image = self.selected_weapon.image_directions[direction].copy()
             self.selected_weapon.mask = self.selected_weapon.masks[direction]
 
     #############################################################################################################
@@ -909,7 +948,6 @@ class Player(NPC):
             self,
             game: game.Game,
             scene: scene.Scene,
-            groups: pygame.sprite.Group,
             shadow_group: pygame.sprite.Group,
             label_group: pygame.sprite.Group,
             pos: tuple[int, int],
@@ -917,13 +955,13 @@ class Player(NPC):
             emotes: dict[str, list[pygame.Surface]]
     ):
         self.name = name
-        super(Player, self).__init__(game, scene, groups, shadow_group, label_group, pos, name, emotes)
+        super(Player, self).__init__(game, scene, shadow_group, label_group, pos, name, emotes)
         # give player some super powers
         self.speed_run  = int(self.speed_run * 1.7)
         self.speed_walk = int(self.speed_walk * 1.4)
         self.speed = self.speed_run
         self.health_bar_ui = self.create_health_bar_ui(label_group, pos, 4)
-        label_group.remove(self.health_bar)
+        # label_group.remove(self.health_bar)
     #############################################################################################################
 
     def __hash__(self) -> int:

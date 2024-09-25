@@ -16,6 +16,9 @@ def get_new_state(current_npc_state: NPC_State, character: NPC) -> NPC_State | N
     if character.is_stunned:
         character.set_emote("shocked_anim")
         return (Stunned() if str(current_npc_state) != "Stunned" else None)
+    elif character.is_dead:
+        character.set_emote("dead")
+        return (Dead() if str(current_npc_state) != "Dead" else None)
     elif character.is_attacking:
         character.set_emote("fight_anim")
         return (Attacking() if str(current_npc_state) != "Attacking" else None)
@@ -156,5 +159,11 @@ class Attacking(NPC_State):
 
 
 class Talk(NPC_State):
+    def __init__(self) -> None:
+        super().__init__()
+#################################################################################################################
+
+
+class Dead(NPC_State):
     def __init__(self) -> None:
         super().__init__()
