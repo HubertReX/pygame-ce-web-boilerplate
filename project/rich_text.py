@@ -263,14 +263,14 @@ class RichPanel():
         link = self.formatted_text.on_mouse_move(mouse_pos)
         self._process_tooltip(link)
 
-    def on_update(self) -> None:
+    def on_update(self, time_elapsed: float) -> None:
         """
         To be called in the main game loop.
 
         The panel will be rendered again only if text has changed or the content has been scrolled.
         """
 
-        self.formatted_text.on_update()
+        self.formatted_text.on_update(time_elapsed)
 
     @staticmethod
     def _parse_text(rich_text: str) -> str:
@@ -496,7 +496,7 @@ def main() -> None:
 
     is_running = True
     while is_running:
-        clock.tick(60)
+        dt = clock.tick(60)
         events = pygame.event.get()
         for e in events:
             if e.type == pygame.QUIT:
@@ -519,7 +519,7 @@ def main() -> None:
 
         # screen.blit(bck, (0, 0))  # blit background pic
 
-        rich_panel.on_update()
+        rich_panel.on_update(dt)
         screen.blit(rich_panel.get_panel(), screen_offset)
         tp_updater.update(events=events)
         # tp_loop.update(before_gui)

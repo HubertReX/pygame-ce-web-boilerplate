@@ -566,7 +566,7 @@ class Scene(State):
         result = self.player.set_entry_point(self.entry_point, default)
         if not result:
             print("\n[red]ERROR![/] no entry point found!\n")
-            self.add_notification("[error]ERROR[/error]:red_exclamation: no entry point found",
+            self.add_notification("[error]ERROR[/error]:red_exclamation_anim: no entry point found",
                                   NotificationTypeEnum.debug)
 
     #############################################################################################################
@@ -981,7 +981,7 @@ class Scene(State):
         global INPUTS
 
         self.remove_old_notifications()
-        self.ui.update(events)
+        self.ui.update(self.game.time_elapsed, events)
 
         self.group.update(dt)
         self.animations.update(dt)

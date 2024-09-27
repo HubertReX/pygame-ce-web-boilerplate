@@ -35,7 +35,7 @@ from rich import print
 from typing import Any
 import pygame
 
-from settings import TILE_SIZE
+from settings import ANIMATION_SPEED_UI, TILE_SIZE
 
 # from pygame.locals import *
 
@@ -109,7 +109,7 @@ class SFText():
         if resize:
             self.resize_to_fit_text()
             self.set_scroll_limits()
-        self.on_update()
+        self.on_update(0.0)
 
     def resize_to_fit_text(self) -> None:
         # print(self.bg.get_size())
@@ -330,8 +330,8 @@ class SFText():
 
             return wrapped
 
-    def on_update(self) -> None:
-        if not self.needs_update:
+    def on_update(self, time_elapsed: float) -> None:
+        if not self.needs_update and time_elapsed == 0.0:
             return
 
         self.clear()
@@ -393,7 +393,12 @@ class SFText():
                 self.links[p["link"]]["absolute_rect"] = rect
 
             if p["image"] and p["image"] in self.images:
-                image = self.images[p["image"]][0]
+                frame_index = (ANIMATION_SPEED_UI * time_elapsed)
+                frame_index = frame_index % len(self.images[p["image"]])
+                # if "exclamation" in p["image"]:
+                #     print(f"image: {p["image"]} fames:{len(self.images[p["image"]])}  {frame_index=}")
+
+                image = self.images[p["image"]][int(frame_index)]
                 image_rect = image.get_rect(center=rect.center)
                 # font_height = p["font_obj"].get_height()
                 scale = p["h"] / image_rect.height

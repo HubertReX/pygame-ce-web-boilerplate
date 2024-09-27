@@ -54,18 +54,14 @@ if IS_WEB:
 else:
     from config_model.config_pydantic import ItemTypeEnum  # type: ignore[assignment]
 
-# TODO: add support for animations
+
 NOTIFICATION_TYPE_ICONS: dict[str, str] = {
     NotificationTypeEnum.debug.value:   "human",
-    # NotificationTypeEnum.info.value:    "dots_anim",
-    NotificationTypeEnum.info.value:    "dots",
+    NotificationTypeEnum.info.value:    "dots_anim",
     NotificationTypeEnum.warning.value: "exclamation",
-    # NotificationTypeEnum.error.value:   "red_exclamation_anim",
-    NotificationTypeEnum.error.value:   "red_exclamation",
-    # NotificationTypeEnum.success.value: "blessed_anim",
-    NotificationTypeEnum.success.value: "blessed",
-    # NotificationTypeEnum.failure.value: "shocked_anim",
-    NotificationTypeEnum.failure.value: "shocked",
+    NotificationTypeEnum.error.value:   "red_exclamation_anim",
+    NotificationTypeEnum.success.value: "blessed_anim",
+    NotificationTypeEnum.failure.value: "shocked_anim",
 }
 
 
@@ -210,7 +206,7 @@ class UI:
         formatted_text.show_scrollbar = False
         formatted_text.MARGIN_HORIZONTAL = 0
         formatted_text.MARGIN_VERTICAL = 0
-        formatted_text.on_update()
+        formatted_text.on_update(0.0)
 
         return formatted_text
     #############################################################################################################
@@ -467,6 +463,7 @@ class UI:
         # icon = anim[int(frame_index)]
         # scale = 2
         rich_text = self.create_rich_text(notification.message, (notification.width + 90, notification.height + 60))
+        rich_text.on_update(self.game.time_elapsed)
 
         self.display_surface.blit(
             self.notification_bg.get_scaled_fit(notification.width + 36, notification.height + 4),
@@ -522,7 +519,7 @@ class UI:
 
     #############################################################################################################
 
-    def update(self, events: list[pygame.event.EventType]) -> None:
+    def update(self, time_elapsed: float, events: list[pygame.event.EventType]) -> None:
         global INPUTS
         # if INPUTS["select"] or INPUTS["pick_up"]:
         if INPUTS["talk"]:
@@ -561,10 +558,10 @@ class UI:
                     self.dialog_panel.on_mouse_button(event)
 
         self.modal_panel.on_mouse_move()
-        self.modal_panel.on_update()
+        self.modal_panel.on_update(time_elapsed)
 
         self.dialog_panel.on_mouse_move()
-        self.dialog_panel.on_update()
+        self.dialog_panel.on_update(time_elapsed)
 
     #############################################################################################################
     def display_ui(self, elapsed_time: float) -> None:

@@ -108,6 +108,7 @@ CHEST_OPEN_DISTANCE = 22
 RECALCULATE_PATH_DISTANCE = 16
 # frames per second
 ANIMATION_SPEED = 10
+ANIMATION_SPEED_UI: int = 5
 # when character speed is grater than this value, it's state changes to Run
 RUN_SPEED: float = 39.0
 # after how many seconds of Idle state player changes state to Bored
@@ -599,12 +600,13 @@ EMOTE_SHEET_DEFINITION = {
     "blessed":              [(6, 0)],
     "blessed_anim":         [(3, 0), (4, 0), (5, 0)],
     "love":                 [(0, 1)],
-    "love_anim":            [(0, 1), (7, 0)],
+    "love_anim":            [(0, 1), (0, 1), (0, 1), (7, 0)],
     "angry":                [(1, 1)],
     "indifferent":          [(2, 1)],
     "happy":                [(3, 1)],
     "wondering":            [(4, 1)],
     "blink":                [(5, 1)],
+    "blink_anim":           [(5, 1), (5, 1), (0, 2), (0, 2)],
     "doubt":                [(6, 1)],
     "frounce":              [(7, 1)],
     "smile":                [(0, 2)],
@@ -626,7 +628,7 @@ EMOTE_SHEET_DEFINITION = {
     "red_question":         [(3, 4)],
     "red_question_anim":    [(3, 4), (4, 4), (3, 4), (5, 4)],
     "broken_heart":         [(6, 4)],
-    "broken_heart_anim":    [(7, 4), (0, 5), (1, 5)],
+    "broken_heart_anim":    [(7, 4), (0, 5), (1, 5), (1, 5), (1, 5)],
     "heart":                [(2, 5)],
     "heart_anim":           [(2, 5), (3, 5)],
     "zzz":                  [(4, 5)],

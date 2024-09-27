@@ -1052,13 +1052,14 @@ class NPC(pygame.sprite.Sprite):
                         f"\n[red]ERROR:[/] {self.name} Max carry weight "
                         f"'[num]{self.model.max_carry_weight:4.2f}[/num]' exceeded!\n")
                     self.scene.add_notification(
-                        f"Max carry weight '[num]{self.model.max_carry_weight:4.2f}[/num]' exceeded :red_exclamation:",
+                        f"Max carry weight '[num]{
+                            self.model.max_carry_weight:4.2f}[/num]' exceeded :red_exclamation_anim:",
                         scene.NotificationTypeEnum.failure)
 
             else:
                 print(f"\n[red]ERROR:[/] {self.name} All '[num]{MAX_HOTBAR_ITEMS}[/num]' items slots are taken!\n")
                 self.scene.add_notification(
-                    f"All '[num]{MAX_HOTBAR_ITEMS}[/num]' items slots are taken :red_exclamation:",
+                    f"All '[num]{MAX_HOTBAR_ITEMS}[/num]' items slots are taken :red_exclamation_anim:",
                     scene.NotificationTypeEnum.failure)
         # print(f"Picked up {item.name}({item.model.type.value})")
 
@@ -1154,7 +1155,7 @@ class Player(NPC):
             if self.chest_in_range and self.chest_in_range.model.is_closed and not self.is_talking:
                 chest = self.chest_in_range
                 chest.open()
-                self.scene.add_notification("Chest opened :red_exclamation:", NotificationTypeEnum.success)
+                self.scene.add_notification("Chest opened :red_exclamation_anim:", NotificationTypeEnum.success)
                 for item_name in chest.model.items:
                     # print(f"[light_green] '{item_name}' item from chest")
                     pos: vec = self.pos + self.get_random_pos()  # type: ignore[assignment]
@@ -1196,7 +1197,7 @@ class Player(NPC):
                 walk_cost = self.scene.path_finding_grid[cell_y][cell_x]
                 if walk_cost > 0:
                     print("[yellow]INFO[/] destination unreachable")
-                    self.scene.add_notification("destination unreachable :red_exclamation:",
+                    self.scene.add_notification("destination unreachable :red_exclamation_anim:",
                                                 NotificationTypeEnum.failure)
                     skip = True
 
