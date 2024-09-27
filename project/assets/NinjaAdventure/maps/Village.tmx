@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="70" height="70" tilewidth="16" tileheight="16" infinite="0" nextlayerid="12" nextobjectid="32">
+<map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="70" height="70" tilewidth="16" tileheight="16" infinite="0" nextlayerid="13" nextobjectid="75">
  <properties>
   <property name="outdoor" type="bool" value="true"/>
   <property name="particles" value="leafs,rain"/>
@@ -457,7 +457,7 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 </data>
  </layer>
- <objectgroup id="7" name="exits">
+ <objectgroup id="7" name="interactions">
   <object id="15" name="VillageHouse" x="672" y="720" width="16" height="16">
    <properties>
     <property name="entry_point" value="Door"/>
@@ -490,6 +490,7 @@
     <property name="obj_type" value="chest"/>
    </properties>
   </object>
+  <object id="39" gid="2749" x="880" y="736" width="16" height="16"/>
  </objectgroup>
  <objectgroup id="5" name="entry_points">
   <object id="1" name="start" x="920" y="704">
@@ -524,43 +525,195 @@
   <object id="26" name="intro" x="568" y="120">
    <polyline points="0,0 0,160 160,224 208,272 208,320 144,368 144,400 176,448 160,496 176,544 120,600"/>
   </object>
+  <object id="33" name="Cat01" x="954" y="680">
+   <polygon points="0,0 62,0 62,64 0,64"/>
+  </object>
  </objectgroup>
  <objectgroup id="9" name="spawn_points">
   <object id="23" name="Rob" x="1032" y="912">
    <properties>
-    <property name="sprite_name" value="Villager4"/>
+    <property name="model_name" value="Rob"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="29" name="Snake" x="1032" y="832">
+   <properties>
+    <property name="model_name" value="Snake_01"/>
    </properties>
    <point/>
   </object>
   <object id="22" name="Bart" x="760" y="744">
    <properties>
-    <property name="sprite_name" value="Villager3"/>
-   </properties>
-   <point/>
-  </object>
-  <object id="29" name="Snake_01" x="1032" y="832">
-   <properties>
-    <property name="sprite_name" value="Villager3"/>
+    <property name="model_name" value="Bart"/>
    </properties>
    <point/>
   </object>
   <object id="24" name="Fred" x="648" y="832">
    <properties>
-    <property name="sprite_name" value="Villager2"/>
+    <property name="model_name" value="Fred"/>
    </properties>
    <point/>
   </object>
   <object id="25" name="Johny" x="696" y="752">
    <properties>
-    <property name="sprite_name" value="Villager1"/>
+    <property name="model_name" value="Johny"/>
    </properties>
    <point/>
   </object>
   <object id="21" name="Marry" x="800" y="800">
    <properties>
-    <property name="sprite_name" value="Woman"/>
+    <property name="model_name" value="Marry"/>
    </properties>
    <point/>
+  </object>
+  <object id="34" name="Frog05" x="1056" y="816">
+   <properties>
+    <property name="model_name" value="Frog"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="37" name="Frog02" x="1056" y="784">
+   <properties>
+    <property name="model_name" value="Frog"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="38" name="Frog01" x="1065" y="912">
+   <properties>
+    <property name="model_name" value="Frog"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="35" name="Cat01" x="950" y="680">
+   <properties>
+    <property name="model_name" value="Cat"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="42" name="Cat02" x="934" y="758">
+   <properties>
+    <property name="model_name" value="Cat"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="43" name="Dog2" x="696" y="810">
+   <properties>
+    <property name="model_name" value="Dog_purple"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="44" name="Dog1" x="678" y="776">
+   <properties>
+    <property name="model_name" value="Dog_orange"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="45" name="ChickenBlack" x="822" y="840">
+   <properties>
+    <property name="model_name" value="ChickenBlack"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="46" name="ChickenBrown" x="884" y="826">
+   <properties>
+    <property name="model_name" value="ChickenBrown"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="47" name="ChickenWhite" x="920" y="842">
+   <properties>
+    <property name="model_name" value="ChickenWhite"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="48" name="ChickenCute" x="870" y="852">
+   <properties>
+    <property name="model_name" value="ChickenCute"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="49" name="Racoon" x="736" y="592">
+   <properties>
+    <property name="model_name" value="Racoon"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="50" name="Pig" x="960" y="912">
+   <properties>
+    <property name="model_name" value="Pig"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="51" name="Boar" x="768" y="432">
+   <properties>
+    <property name="model_name" value="Boar"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="52" name="Horse" x="944" y="864">
+   <properties>
+    <property name="model_name" value="Horse"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="54" name="Cow" x="828" y="864">
+   <properties>
+    <property name="model_name" value="Cow"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="55" name="FishRed1" x="736" y="992">
+   <properties>
+    <property name="model_name" value="FishRed"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="57" name="FishRed2" x="976" y="976">
+   <properties>
+    <property name="model_name" value="FishRed"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="70" name="FishRed3" x="1088" y="960">
+   <properties>
+    <property name="model_name" value="FishRed"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="71" name="FishRed4" x="1072" y="848">
+   <properties>
+    <property name="model_name" value="FishRed"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="72" name="FishRed5" x="1088" y="752">
+   <properties>
+    <property name="model_name" value="FishRed"/>
+   </properties>
+   <point/>
+  </object>
+ </objectgroup>
+ <objectgroup id="12" name="zones">
+  <object id="65" name="water" x="1056" y="720">
+   <polygon points="0,0 48,0 48,288 0,288"/>
+  </object>
+  <object id="74" name="water" x="352" y="960">
+   <polygon points="0,0 0,48 704,48 704,0"/>
+  </object>
+  <object id="66" name="shore" x="1024" y="720">
+   <polygon points="0,0 64,0 64,240 0,240"/>
+  </object>
+  <object id="67" name="shore" x="1024" y="928">
+   <polygon points="0,0 0,32 -384,32 -384,0"/>
+  </object>
+  <object id="69" name="plains" x="752" y="752">
+   <polygon points="0,0 288,0 288,192 0,192"/>
+  </object>
+  <object id="68" name="backyard" x="624" y="688">
+   <polygon points="0,0 128,0 128,144 0,144"/>
+  </object>
+  <object id="73" name="wilderness" x="800" y="640">
+   <polygon points="0,0 0,-640 -480,-640 -480,0"/>
   </object>
  </objectgroup>
 </map>

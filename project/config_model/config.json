@@ -223,19 +223,152 @@
             "max_health": 120,
             "money": 25
         },
-        "Cat1": {
-            "name": "Cat1",
+        "FishRed": {
+            "name": "FishRed",
+            "sprite": "FishRed",
+            "race": "animal",
+            "allowed_zones": [
+                "water"
+            ],
+            "attitude": "friendly",
+            "money": 0,
+            "speed_walk": 10
+        },
+        "Cat": {
+            "name": "Cat",
             "sprite": "Cat",
             "race": "animal",
             "attitude": "friendly",
-            "money": 0
+            "money": 0,
+            "speed_walk": 15
         },
-        "Frog1": {
+        "Dog_orange": {
+            "name": "Dog",
+            "sprite": "Dog1",
+            "race": "animal",
+            "attitude": "friendly",
+            "allowed_zones": [
+                "backyard"
+            ],
+            "money": 0,
+            "speed_walk": 15
+        },
+        "Dog_purple": {
+            "name": "Dog",
+            "sprite": "Dog2",
+            "race": "animal",
+            "attitude": "friendly",
+            "allowed_zones": [
+                "backyard"
+            ],
+            "money": 0,
+            "speed_walk": 15
+        },
+        "ChickenBlack": {
+            "name": "Chicken",
+            "sprite": "ChickenBlack",
+            "race": "animal",
+            "attitude": "friendly",
+            "allowed_zones": [
+                "plains"
+            ],
+            "money": 0,
+            "speed_walk": 15
+        },
+        "ChickenBrown": {
+            "name": "Chicken",
+            "sprite": "ChickenBrown",
+            "race": "animal",
+            "attitude": "friendly",
+            "allowed_zones": [
+                "plains"
+            ],
+            "money": 0,
+            "speed_walk": 15
+        },
+        "ChickenCute": {
+            "name": "Chicken",
+            "sprite": "ChickenCute",
+            "race": "animal",
+            "attitude": "friendly",
+            "allowed_zones": [
+                "plains"
+            ],
+            "money": 0,
+            "speed_walk": 15
+        },
+        "ChickenWhite": {
+            "name": "Chicken",
+            "sprite": "ChickenWhite",
+            "race": "animal",
+            "attitude": "friendly",
+            "allowed_zones": [
+                "plains"
+            ],
+            "money": 0,
+            "speed_walk": 15
+        },
+        "Pig": {
+            "name": "Pig",
+            "sprite": "Pig",
+            "race": "animal",
+            "attitude": "friendly",
+            "allowed_zones": [
+                "plains"
+            ],
+            "money": 0,
+            "speed_walk": 20
+        },
+        "Cow": {
+            "name": "Cow",
+            "sprite": "Cow",
+            "race": "animal",
+            "attitude": "friendly",
+            "allowed_zones": [
+                "plains"
+            ],
+            "money": 0,
+            "speed_walk": 30
+        },
+        "Horse": {
+            "name": "Horse",
+            "sprite": "Horse",
+            "race": "animal",
+            "attitude": "friendly",
+            "allowed_zones": [
+                "plains"
+            ],
+            "money": 0,
+            "speed_walk": 30
+        },
+        "Frog": {
             "name": "Frog",
             "sprite": "Frog",
             "race": "animal",
             "attitude": "afraid",
-            "money": 0
+            "allowed_zones": [
+                "shore"
+            ],
+            "money": 0,
+            "speed_walk": 10
+        },
+        "Racoon": {
+            "name": "Racoon",
+            "sprite": "Racoon",
+            "race": "animal",
+            "attitude": "afraid",
+            "allowed_zones": [],
+            "money": 0,
+            "speed_walk": 10
+        },
+        "Boar": {
+            "name": "Boar",
+            "sprite": "Boar",
+            "race": "animal",
+            "attitude": "afraid",
+            "allowed_zones": [],
+            "money": 0,
+            "speed_walk": 20
         },
         "Snake_01": {
             "name": "Snake",

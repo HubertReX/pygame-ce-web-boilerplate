@@ -21,7 +21,7 @@ from particles import ParticleSystem
 from pyscroll.group import PyscrollGroup
 from pytmx import TiledMap, TiledObjectGroup, TiledTileLayer
 from pytmx.util_pygame import load_pygame
-from config_model.config import AttitudeEnum
+from config_model.config import AttitudeEnum, RaceEnum
 from rich_text import RichPanel
 from sftext.style import Style
 from settings import (
@@ -99,6 +99,7 @@ class Scene(State):
             "maze_rows",
             "waypoints",
             "items",
+            "zones",
             "exits",
             "chests",
             "walls",
@@ -133,6 +134,7 @@ class Scene(State):
         self.items: list[ItemSprite] = []
         # self.items_defs: dict[str, pygame.Surface] = {}
         self.exits: list[Collider] = []
+        self.zones: dict[str, list[pygame.Rect]] = {}
         self.chests: list[ChestSprite] = []
         self.walls: list[pygame.Rect] = []
 
@@ -164,8 +166,9 @@ class Scene(State):
             self.shadow_sprites,
             self.label_sprites,
             (WIDTH // 2, HEIGHT // 2),
-            "Player",
-            self.icons,
+            name="Malachi",
+            model_name="Player",
+            emotes=self.icons,
         )
         # moved here to avoid circular imports
         from characters import NPC
@@ -198,6 +201,7 @@ class Scene(State):
         self.ui = UI(self, tiny_font=self.game.fonts[FONT_SIZE_SMALL], medium_font=self.game.fonts[FONT_SIZE_MEDIUM])
         # self.load_items_def()
         self.load_map()
+        self.start_particles()
         # self.set_camera_on_player()
 
     #############################################################################################################
@@ -312,7 +316,10 @@ class Scene(State):
 
         self.load_items(cast(TiledTileLayer, tileset_map.get_layer_by_name("items")), tileset_map)
 
-        self.load_exits(cast(TiledTileLayer, tileset_map.get_layer_by_name("exits")))
+        self.load_interactions(cast(TiledTileLayer, tileset_map.get_layer_by_name("interactions")))
+
+        if "zones" in self.layers:
+            self.load_zones(cast(TiledTileLayer, tileset_map.get_layer_by_name("zones")))
 
         self.waypoints = {}
         # layer of invisible objects consisting of points that layout a list waypoints to follow by NPCs
@@ -390,6 +397,7 @@ class Scene(State):
                 self.shadow_sprites.add(npc.shadow)
                 self.label_sprites.add(npc.health_bar)
                 self.label_sprites.add(npc.emote)
+                npc.register_custom_event()
 
         self.group.add(self.shadow_sprites, layer=self.sprites_layer - 2)
         self.group.add(self.item_sprites,   layer=self.sprites_layer - 1)
@@ -411,14 +419,12 @@ class Scene(State):
             if particle in PARTICLES:
                 particle_class = PARTICLES[particle]
                 self.particles.append(particle_class(self.game.canvas, self.group, self.camera))
-                # TODO: enable particles
-                continue
-                self.game.register_custom_event(self.particles[-1].custom_event_id, self.particles[-1].add)
 
     #############################################################################################################
 
     def start_particles(self) -> None:
         for particle in self.particles:
+            # self.game.unregister_custom_event()
             self.game.register_custom_event(particle.custom_event_id, particle.add)
 
     #############################################################################################################
@@ -447,10 +453,10 @@ class Scene(State):
 
     #############################################################################################################
 
-    def load_exits(self, exits_layer: TiledTileLayer) -> None:
+    def load_interactions(self, exits_layer: TiledTileLayer) -> None:
         self.exits = []
         self.chests = []
-        if "exits" in self.layers:
+        if "interactions" in self.layers:
             for obj in exits_layer:
                 if getattr(obj, "obj_type", "") == "exit":
                     exit = Collider(
@@ -477,6 +483,21 @@ class Scene(State):
                     chest = ChestSprite(self.chest_sprites, (obj.x, obj.y),
                                         self.game.conf.chests[obj.name], self.items_sheet,)
                     self.chests.append(chest)
+
+    #############################################################################################################
+
+    def load_zones(self, zones_layer: TiledTileLayer) -> None:
+        self.zones = {}
+        if "zones" in self.layers:
+            for obj in zones_layer:
+                if obj.name not in self.zones:
+                    self.zones[obj.name] = []
+                zone = pygame.Rect(obj.x, obj.y, obj.width, obj.height)
+                self.zones[obj.name].append(zone)
+
+        # print("[light_green]Zones")
+        # for zone_name in self.zones:
+        #     print(f"[magenta]{zone_name}[/]", self.zones[zone_name])
 
     #############################################################################################################
 
@@ -584,6 +605,10 @@ class Scene(State):
         if "spawn_points" in self.layers:
             for obj in spawn_points:
                 if obj.name not in self.loaded_NPCs:
+                    # model = self.game.conf.characters[obj.model_name]
+                    # if model.race == RaceEnum.animal and not obj.name.startswith("Chicken"):
+                    # if obj.name.startswith("Fish"):
+                    #     continue
                     # list of waypoints attached by NPCs name
                     waypoint = self.waypoints.get(obj.name, ())
                     npc = NPC(
@@ -595,6 +620,7 @@ class Scene(State):
                         obj.name,
                         self.icons,
                         waypoint,
+                        model_name=obj.model_name,
                     )
                     self.loaded_NPCs[obj.name] = npc
 
@@ -933,7 +959,6 @@ class Scene(State):
             self.player.emote = self.player.create_emote()
             self.player.health_bar = self.player.create_health_bar()
             self.load_map()
-
         else:
             self.reset_sprite_groups()
 
@@ -944,8 +969,10 @@ class Scene(State):
             self.player.emote = self.player.create_emote()
             self.player.health_bar = self.player.create_health_bar()
 
+            self.game.unregister_custom_events()
             self.populate_sprite_groups()
 
+        self.start_particles()
         self.transition.exiting = False
 
     #############################################################################################################
@@ -1200,6 +1227,7 @@ class Scene(State):
         # self.map_view.reload()
         self.player.reset()
         self.load_map()
+        self.start_particles()
 
     def reset_sprite_groups(self) -> None:
         self.label_sprites.empty()
@@ -1388,24 +1416,25 @@ class Scene(State):
     def show_debug(self) -> None:
         # MARK: show_debug
         # prepare shader info
-        shader_index = SHADERS_NAMES.index(self.game.shader.shader_name)
-        shader_index = max(shader_index, 0)
-        shader_name = SHADERS_NAMES[shader_index] if USE_SHADERS else "n/a"
+
+        # shader_index = SHADERS_NAMES.index(self.game.shader.shader_name)
+        # shader_index = max(shader_index, 0)
+        # shader_name = SHADERS_NAMES[shader_index] if USE_SHADERS else "n/a"
         # prepare debug messages displayed in upper left corner
-        msgs = [
-            f"FPS: {self.game.fps: 5.1f} Shader: {shader_name}",
-            # f"Eye: x:{self.camera.target.x:6.2f} y:{self.camera.target.y:6.2f}",
-            f"Time: {self.hour}:{self.minute:02}",
-            # f"vel: {self.player.vel.x: 6.1f} {self.player.vel.y: 6.1f}",
-            # f"x  : {self.player.pos.x: 3.0f}   y : {self.player.pos.y: 3.0f}",
-            # f"g x:  {self.player.tileset_coord.x: 3.0f} g y : {self.player.tileset_coord.y: 3.0f}",
-            # f"up_vel: {self.player.up_vel: 3.1f} up_acc{self.player.up_acc: 3.1f}",
-            # f"t x:  {self.player.target.x: 3.0f} t y : {self.player.target.y: 3.0f}",
-            # f"offset: {self.player.jumping_offset: 6.1f}",
-            # f"col: {self.player.rect.collidelist(self.walls):06.02f}",
-            # f"bored={self.player.state.enter_time: 5.1f} time_elapsed={self.game.time_elapsed: 5.1f}",
-        ]
-        self.debug(msgs)
+        # msgs = [
+        #     f"FPS: {self.game.fps: 5.1f} Shader: {shader_name}",
+        #     # f"Eye: x:{self.camera.target.x:6.2f} y:{self.camera.target.y:6.2f}",
+        #     f"Time: {self.hour}:{self.minute:02}",
+        #     # f"vel: {self.player.vel.x: 6.1f} {self.player.vel.y: 6.1f}",
+        #     # f"x  : {self.player.pos.x: 3.0f}   y : {self.player.pos.y: 3.0f}",
+        #     # f"g x:  {self.player.tileset_coord.x: 3.0f} g y : {self.player.tileset_coord.y: 3.0f}",
+        #     # f"up_vel: {self.player.up_vel: 3.1f} up_acc{self.player.up_acc: 3.1f}",
+        #     # f"t x:  {self.player.target.x: 3.0f} t y : {self.player.target.y: 3.0f}",
+        #     # f"offset: {self.player.jumping_offset: 6.1f}",
+        #     # f"col: {self.player.rect.collidelist(self.walls):06.02f}",
+        #     # f"bored={self.player.state.enter_time: 5.1f} time_elapsed={self.game.time_elapsed: 5.1f}",
+        # ]
+        # self.debug(msgs)
 
         # display npc (and players) debug messages
         for npc in self.NPCs + [self.player]:

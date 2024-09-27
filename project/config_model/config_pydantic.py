@@ -50,17 +50,19 @@ class Character(BaseModel):
         description="Must be valid asset folder name (assets/[ASSET_PACK]/characters/[sprite])",
         repr=False
     )
-    race:         Annotated[RaceEnum,     Field(description="Base character race (e.g. humanoid, animal)")]
-    attitude:     Annotated[AttitudeEnum, Field(description="Attitude towards the player", repr=False)]
-    health:       Annotated[int,          Field(30, ge=0, description="initial health value", repr=False)]
-    max_health:   Annotated[int,          Field(30, ge=0, description="maximal health value", repr=False)]
+    race:          Annotated[RaceEnum,     Field(description="Base character race (e.g. humanoid, animal)")]
+    attitude:      Annotated[AttitudeEnum, Field(description="Attitude towards the player", repr=False)]
+    allowed_zones: Annotated[list[str],    Field(
+        description="Zones where the character is allowed to move", repr=False, default_factory = list)]
+    health:        Annotated[int,          Field(30, ge=0, description="initial health value", repr=False)]
+    max_health:    Annotated[int,          Field(30, ge=0, description="maximal health value", repr=False)]
     # items:        Annotated[list["Item"], Field(description="list of character's items", default_factory = list)]
-    items:        Annotated[list[str],    Field(description="list of character's items", default_factory = list)]
-    max_carry_weight: Annotated[float,    Field(15.0, ge=0, description="maximal carrying weight in kg", repr=False)]
-    money:        Annotated[int,          Field(0,  ge=0, description="initial amount of possessed money", repr=False)]
-    damage:       Annotated[int,          Field(10, ge=0, description="amount of damage delt to others", repr=False)]
-    speed_walk:   Annotated[int,          Field(30, gr=0, description="walking speed", repr=False)]
-    speed_run:    Annotated[int,          Field(40, gr=0, description="walking speed", repr=False)]
+    items:         Annotated[list[str],    Field(description="list of character's items", default_factory = list)]
+    max_carry_weight: Annotated[float,     Field(15.0, ge=0, description="maximal carrying weight in kg", repr=False)]
+    money:         Annotated[int,          Field(0,  ge=0, description="initial amount of possessed money", repr=False)]
+    damage:        Annotated[int,          Field(10, ge=0, description="amount of damage delt to others", repr=False)]
+    speed_walk:    Annotated[int,          Field(30, gr=0, description="walking speed", repr=False)]
+    speed_run:     Annotated[int,          Field(40, gr=0, description="walking speed", repr=False)]
 
 
 ##################################################################################################################

@@ -395,24 +395,12 @@ class Game:
         return images
 
     #############################################################################################################
-    def get_animations(self, path: str) -> dict[str, list[pygame.Surface]]:
-        """
-        read sprite animations from given folder
-
-        :param path: folder containing folders with animations names that contain frames as separate files
-        :type path: str
-        :return: dictionary with animation name (subfolder) as keys and empty list as value
-        """
-        animations: dict[str, list[pygame.Surface]] = {}
-        for file in os.listdir(path):
-            if os.path.isdir(os.path.join(path, file)):
-                animations |= {file: []}
-        return animations
 
     def add_notification_dummy(self, text: str, type: NotificationTypeEnum = NotificationTypeEnum.info) -> None:
         pass
 
     #############################################################################################################
+
     def save_screenshot(self, add_notification: Callable, data: bytes | None = None) -> bool:
         """
         save current screen to SCREENSHOT_FOLDER as PNG with timestamp in name
@@ -443,6 +431,12 @@ class Game:
             return False
 
     #############################################################################################################
+
+    def unregister_custom_events(self) -> None:
+        self.custom_events = {}
+
+    #############################################################################################################
+
     def register_custom_event(self, custom_event_id: int, handle_function: Callable) -> None:
         """
         Registers a custom event with a specific ID and associates it with a handler function.
@@ -452,6 +446,10 @@ class Game:
             handle_function (callable): A function that will be called when the custom event is triggered.
 
         """
+
+        if custom_event_id in self.custom_events:
+            del self.custom_events[custom_event_id]
+            # self.custom_events.pop(custom_event_id, None)
 
         self.custom_events[custom_event_id] = handle_function
 

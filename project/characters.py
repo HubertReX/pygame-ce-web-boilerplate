@@ -9,7 +9,14 @@ from rich import print
 import pygame
 from maze_generator.maze_utils import a_star_cached
 from pygame.math import Vector2 as vec
+from config_model.config import RaceEnum
 from settings import (
+    MAX_NO_ATTEMPTS_TO_FIND_RANDOM_POS,
+    NPC_MAX_REST_TIME,
+    NPC_MIN_REST_TIME,
+    NPC_RANDOM_WALK_DISTANCE,
+    SHOULD_NPC_REST_PROBABILITY,
+    SPRITE_SHEET_DEFINITIONS,
     ANIMATION_SPEED,
     AVATAR_SCALE,
     CHARACTERS_DIR,
@@ -23,13 +30,14 @@ from settings import (
     PUSHED_TIME,
     RECALCULATE_PATH_DISTANCE,
     SCALE,
-    SPRITE_SHEET_DEFINITION,
+    SPRITE_SHEET_DEFINITION_4x7,
     STUNNED_COLOR,
     STUNNED_TIME,
     TILE_SIZE,
     WEAPON_DIRECTION_OFFSET,
     WEAPON_DIRECTION_OFFSET_FROM,
     Point,
+    import_sprite_sheet,
     lerp_vectors,
     tuple_to_vector,
     vector_to_tuple,
@@ -54,6 +62,7 @@ class NPCEventActionEnum(Enum):
     stunned: int  = auto()
     pushed: int   = auto()
     standard: int = auto()
+    resting: int   = auto()
     attacking: int = auto()
     switching_weapon: int = auto()
 
@@ -102,9 +111,22 @@ class NPC(pygame.sprite.Sprite):
         self.selected_item_idx: int = -1
         self.total_items_weight: float = 0.0
         self.animations: dict[str, list[pygame.surface.Surface]] = {}
+
+        tile_width = 16
+        tile_height = 16
+        self.sprite_sheet_type: str = ""
+
+        sprite_file_name = str(CHARACTERS_DIR / self.model.sprite / "SpriteSheet.png")
+        tile_width, sheet = self.set_sprite_sheet_type(sprite_file_name)
+
+        self.animations = import_sprite_sheet(
+            sprite_file_name,
+            tile_width,
+            tile_height,
+            sprite_sheet_definition=sheet,
+        )
         self.masks: dict[str, list[pygame.mask.Mask]] = {}
         self.animation_speed = ANIMATION_SPEED
-        self.import_sprite_sheet(str(CHARACTERS_DIR / self.model.sprite / "SpriteSheet.png"))
         self.avatar = pygame.image.load(str(CHARACTERS_DIR / self.model.sprite / "Faceset.png")).convert_alpha()
         # Player avatar will be shown on the right side of the screen
         # and need to be flipped to face left
@@ -152,13 +174,15 @@ class NPC(pygame.sprite.Sprite):
         self.switch_duration_cooldown: int = 400
         # double check cooldown since events fail
         self.switch_cooldown: float = 0.0
+        # rest duration
+        self.end_rest_time: float = -1.0
 
         # basic planar (N,E, S, W) physics
         # speed in pixels per second
         self.speed_walk: int = self.model.speed_walk
         self.speed_run: int = self.model.speed_run
         self.speed: int = random.choice([self.speed_walk, self.speed_run])
-        if self.model.attitude == AttitudeEnum.enemy:
+        if self.model.attitude == AttitudeEnum.enemy or self.model.race == RaceEnum.animal:
             self.speed = self.speed_walk
 
         # movement inertia
@@ -183,13 +207,32 @@ class NPC(pygame.sprite.Sprite):
 
         # general purpose custom event, action is defined by the payload passed to event
         self.custom_event_id: int  = pygame.event.custom_type()
-        self.game.register_custom_event(self.custom_event_id, self.process_custom_event)
+        self.register_custom_event()
 
         # actual NPC state, mainly to determine type of animation and speed
         self.state: npc_state.NPC_State = npc_state.Idle()
         self.state.enter_time = self.scene.game.time_elapsed
 
         self.load_items()
+
+    #############################################################################################################
+
+    def register_custom_event(self) -> None:
+        self.game.register_custom_event(self.custom_event_id, self.process_custom_event)
+
+    #############################################################################################################
+
+    def set_sprite_sheet_type(self, sprite_file_name: str) -> tuple[int, dict[str, list[tuple[int, int]]]]:
+        width = pygame.image.load(sprite_file_name).get_width()
+        if width in SPRITE_SHEET_DEFINITIONS:
+            sheet = SPRITE_SHEET_DEFINITIONS[width]["sheet"]
+            tile_width = SPRITE_SHEET_DEFINITIONS[width]["tile_width"]
+            self.sprite_sheet_type = SPRITE_SHEET_DEFINITIONS[width]["type"]
+        else:
+            print(f"[red]ERROR![/] Unknown sprite sheet definitions width {width} for NPC {self.name}")
+            sheet = SPRITE_SHEET_DEFINITION_4x7
+            self.sprite_sheet_type = "4x7"
+        return tile_width, sheet
 
     #############################################################################################################
 
@@ -221,11 +264,20 @@ class NPC(pygame.sprite.Sprite):
     #############################################################################################################
 
     def create_health_bar(self) -> HealthBar:
-        return HealthBar(self.model, self.game.render_text, self.label_group, vector_to_tuple(self.pos))
+        return HealthBar(self.name,
+                         self.model,
+                         self.game.render_text,
+                         self.label_group,
+                         vector_to_tuple(self.pos)
+                         )
 
     #############################################################################################################
     def create_shadow(self) -> Shadow:
-        return Shadow(self.shadow_group, (0, 0), (TILE_SIZE - 2, 6))
+        empty: bool = False
+        # TODO: add proper handling of shadows hiding when NPC is in water
+        if "Fish" in self.model.name:
+            empty = True
+        return Shadow(self.shadow_group, (0, 0), (TILE_SIZE - 2, 6), empty)
 
     #############################################################################################################
     def __repr__(self) -> str:
@@ -243,62 +295,25 @@ class NPC(pygame.sprite.Sprite):
         return Point(int(pos.x // TILE_SIZE), int((pos.y - 4) // TILE_SIZE))
 
     #############################################################################################################
-    def import_sprite_sheet(self, path: str) -> None:
-        """
-        Load sprite sheet and cut it into animation names and frames using SPRITE_SHEET_DEFINITION dict.
-        If provided sheet is missing some of the animations from dict, a frame from upper left corner (0, 0)
-        will be used.
-        If directional variants are missing (e.g.: only idle animation, but no idle left, idle right...)
-        the general animation will be copied.
-        """
-        img = pygame.image.load(path).convert_alpha()
-        img_rect = img.get_rect()
-        # use first tile (from upper left corner) as default 1 frame animation
-        rec_def = pygame.Rect(0, 0, TILE_SIZE, TILE_SIZE)
-        img_def = img.subsurface(rec_def)
-        animation_def = [img_def]
-        directions = ["up", "down", "left", "right"]
 
-        for key, definition in SPRITE_SHEET_DEFINITION.items():
-            animation = []
-            for coord in definition:
-                x, y = coord
-                rec = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
-                if rec.colliderect(img_rect):
-                    img_part = img.subsurface(rec)
-                    animation.append(img_part)
-                else:
-                    continue
-                    # print(f"ERROR! {self.name}: coordinate {x}x{y} not inside sprite sheet for {key} animation")
-
-            self.animations[key] = animation or animation_def
-            # if there is only one animation for each direction
-            # that is when animation name doesn't include direction (e.g. 'idle')
-            # than add reference in all directions (e.g. 'idle_up', 'idle_down',...)
-            for direction in directions:
-                if direction not in key:
-                    self.animations[f"{key}_{direction}"] = self.animations[key]
-
-    #############################################################################################################
-
-    def import_image(self, path: str) -> None:
-        """
-        old implementation used with separate img per frame (e.g. monochrome_ninja)
-        """
-        self.animations = self.game.get_animations(path)
-        animations_keys = list(self.animations.keys())
-        for animation in animations_keys:
-            full_path = os.path.join(path, animation)
-            self.animations[animation] = self.game.get_images(full_path)
-            if animation in ["idle", "run"]:
-                self.animations[f"{animation}_right"] = []
-                self.animations[f"{animation}_left"] = []
-                for frame in self.animations[animation]:
-                    converted = frame
-                    # converted = frame.convert_alpha()
-                    # converted.set_colorkey(COLORS["yellow"])
-                    self.animations[f"{animation}_right"].append(converted)
-                    self.animations[f"{animation}_left"].append(pygame.transform.flip(converted, True, False))
+    # def import_image(self, path: str) -> None:
+    #     """
+    #     old implementation used with separate img per frame (e.g. monochrome_ninja)
+    #     """
+    #     # self.animations = self.game.get_animations(path)
+    #     animations_keys: list[str] = []  # list(self.animations.keys())
+    #     for animation in animations_keys:
+    #         full_path = os.path.join(path, animation)
+    #         self.animations[animation] = self.game.get_images(full_path)
+    #         if animation in ["idle", "run"]:
+    #             self.animations[f"{animation}_right"] = []
+    #             self.animations[f"{animation}_left"] = []
+    #             for frame in self.animations[animation]:
+    #                 converted = frame
+    #                 # converted = frame.convert_alpha()
+    #                 # converted.set_colorkey(COLORS["yellow"])
+    #                 self.animations[f"{animation}_right"].append(converted)
+    #                 self.animations[f"{animation}_left"].append(pygame.transform.flip(converted, True, False))
 
     #############################################################################################################
     # MARK: animate
@@ -334,26 +349,52 @@ class NPC(pygame.sprite.Sprite):
     def get_direction_360(self) -> str:
         if self.npc_met and self.is_talking:
             direction = self.npc_met.pos - self.pos
-            angle = direction.angle_to(vec(0, 1))
+            angle = vec(0, -1).angle_to(direction)
         else:
-            angle = self.vel.angle_to(vec(0, 1))
+            angle = vec(0, -1).angle_to(self.vel)
         angle = (angle + 360) % 360
 
-        if 45 <= angle < 135:
-            return "right"
-        elif 135 <= angle < 225:
-            return "up"
-        elif 225 <= angle < 315:
-            return "left"
-        else:
-            return "down"
+        dir: str
+        match self.sprite_sheet_type:
+            case "2x1":
+                dir = self.get_direction_RL(angle)
+            case "2x2":
+                dir = self.get_direction_RDL(angle)
+            case "3x3":
+                dir = self.get_direction_RDLU(angle)
+            case "4x7":
+                dir = self.get_direction_RDLU(angle)
+            case _:
+                dir = "down"
+
+        return dir
 
     #############################################################################################################
-    def get_direction_horizontal(self) -> str:
-        angle = self.vel.angle_to(vec(0, 1))
-        angle = (angle + 360) % 360
 
-        return "right" if angle < 180 else "left"
+    def get_direction_RL(self, angle: float) -> str:
+        return "right" if angle < 180.0 else "left"
+
+    #############################################################################################################
+
+    def get_direction_RDL(self, angle: float) -> str:
+        if 0.0 <= angle < 135.0:
+            return "right"
+        elif 135.0 <= angle < 225.0:
+            return "down"
+        else:
+            return "left"
+
+    #############################################################################################################
+
+    def get_direction_RDLU(self, angle: float) -> str:
+        if 45.0 <= angle < 135.0:
+            return "right"
+        elif 135.0 <= angle < 225.0:
+            return "down"
+        elif 225.0 <= angle < 315.0:
+            return "left"
+        else:
+            return "up"
 
     #############################################################################################################
     # MARK: movement
@@ -361,16 +402,133 @@ class NPC(pygame.sprite.Sprite):
         if self.is_stunned or self.is_talking:
             return
 
+        if self.model.race == RaceEnum.monster:
+            self.movement_monster()
+        # elif self.model.attitude == AttitudeEnum.afraid:
+        elif self.model.race == RaceEnum.animal:
+            self.movement_animal()
+
+        self.follow_waypoints()
+
+    #############################################################################################################
+    def movement_animal(self) -> None:
+        # distance_from_player = (self.pos - self.scene.player.pos).magnitude_squared()
+        distance_from_target = (self.pos - self.target).magnitude_squared()
+
+        if self.waypoints_cnt == 0 or distance_from_target < 4**2:
+            should_rest: bool = random.randint(0, 100) < SHOULD_NPC_REST_PROBABILITY
+            if self.end_rest_time < 0.0 and should_rest:
+                self.target = vec(0, 0)
+                self.waypoints = ()
+                self.waypoints_cnt = 0
+                self.speed = 0
+
+                delta = NPC_MAX_REST_TIME - NPC_MIN_REST_TIME
+                self.end_rest_time = self.game.time_elapsed + NPC_MIN_REST_TIME + random.random() * delta
+                # print(f"({self.game.time_elapsed:4.1f}) [yellow]{self.name}[/] "
+                #       f"will rest for {(self.end_rest_time - self.game.time_elapsed):4.1f} sec ")
+            else:
+                if self.game.time_elapsed > self.end_rest_time:
+                    # print(f"({self.game.time_elapsed:4.1f}) [yellow]{self.name}[/] will no longer rest")
+                    self.end_rest_time = -1.0
+                    self.speed = self.speed_walk
+                    # current_way_point_vec.distance_squared_to(npc_pos) <= 2.0
+
+                    target_vec = self.get_random_safe_pos(self.pos, NPC_RANDOM_WALK_DISTANCE)
+
+                    self.target = target_vec
+                    self.find_path()
+                    self.check_waypoints_in_exit()
+
+    #############################################################################################################
+
+    def get_random_safe_pos(self, start_pos: vec, range: int, check_exits: bool = True) -> vec:
+        repeat = True
+        repeat_cnt: int = 0
+        new_rect = self.rect.copy()
+
+        while repeat:
+            repeat_cnt += 1
+            target_vec = start_pos + self.get_random_pos(range, range)
+            new_rect.center = target_vec  # type: ignore[assignment]
+
+            if repeat_cnt > MAX_NO_ATTEMPTS_TO_FIND_RANDOM_POS:
+                print(
+                    f"[red]ERROR![/] in [magenta]get_random_safe_pos[/] can't find safe pos for [blue]{self.name}[/]!")
+                return target_vec
+
+            # check if new pos is not on exit
+            if check_exits:
+                if self.check_pos_is_exit(target_vec):
+                    continue
+
+            # check if new pos is inside one of allowed zones
+            if len(self.model.allowed_zones) > 0:
+                matched_any_zone: bool = False
+                for zone_name in self.model.allowed_zones:
+                    allowed_zones = self.scene.zones[zone_name]
+                    for zone in allowed_zones:
+                        if zone.contains(new_rect):
+                            matched_any_zone = True
+                            # print(f"[magenta]Zone: {zone_name}[/] matched for [blue]{self.name}[/]!")
+                            break
+                    if matched_any_zone:
+                        break
+                if not matched_any_zone:
+                    # zone_names = ", ".join(self.model.allowed_zones)
+                    # print(f"[red]ERROR![/] [blue]{self.name}[/] outside of zones ({zone_names})!")
+                    continue
+
+            # check if new position is in map bounds
+            target_grid = self.get_tileset_coord(target_vec)
+            grid = self.scene.path_finding_grid
+            if target_grid.y < 0 or target_grid.y >= len(grid) or \
+                    target_grid.x < 0 or target_grid.x >= len(grid[0]):
+                continue
+
+            # check if new position is not on a wall
+            value = grid[target_grid.y][target_grid.x]
+            if value < 0:
+                repeat = False
+
+        return target_vec
+
+    #############################################################################################################
+    def check_waypoints_in_exit(self) -> None:
+        # check if waypoints are inside one of the exits
+        new_waypoints: list[Point] = []
+        for waypoint in self.waypoints:
+            if self.check_pos_is_exit(waypoint.as_vector):
+                break
+            new_waypoints.append(waypoint)
+
+        # accept only waypoints that are before the on in exit
+        self.waypoints = tuple(new_waypoints)
+        self.waypoints_cnt = len(new_waypoints)
+        if self.current_waypoint_no > self.waypoints_cnt - 1:
+            self.current_waypoint_no = 0
+
+    #############################################################################################################
+
+    def check_pos_is_exit(self, target_vec: vec) -> bool:
+        for exit in self.scene.exit_sprites:
+            if exit.rect.collidepoint(target_vec):
+                return True
+
+        return False
+
+    #############################################################################################################
+
+    def movement_monster(self) -> None:
         distance_from_player = (self.pos - self.scene.player.pos).magnitude_squared()
         # activate monsters in maze when player is near
         # no designated waypoints, distance from player in range, is enemy
-        if self.waypoints_cnt == 0 and distance_from_player < MONSTER_WAKE_DISTANCE**2 and \
-                self.model.attitude == AttitudeEnum.enemy:
+        if self.waypoints_cnt == 0 and distance_from_player < MONSTER_WAKE_DISTANCE**2:
             self.target = self.scene.player.pos.copy()
             self.speed = self.speed_run
             self.emote.set_temporary_emote("red_exclamation_anim", 4.0)
             self.find_path()
-        # if character has a set target (and needs to follow it) or there are no waypoints to follow any more
+            # if character has a set target (and needs to follow it) or there are no waypoints to follow any more
         elif self.target != vec(0, 0):  # or self.waypoints_cnt == 0:
             # if (no more waypoints or the player has moved) and (character is a monster chasing player)
             # not self.target == self.scene.player.pos)
@@ -382,8 +540,6 @@ class NPC(pygame.sprite.Sprite):
                     and self.model.attitude == AttitudeEnum.enemy:
                 self.target = self.scene.player.pos.copy()
                 self.find_path()
-
-        self.follow_waypoints()
 
     #############################################################################################################
     def follow_waypoints(self) -> None:
@@ -432,9 +588,9 @@ class NPC(pygame.sprite.Sprite):
         if path := a_star_cached(start=start, goal=goal, grid=self.scene.path_finding_grid):
             self.generate_waypoints_from_path(path, start)
         else:
-            print(f"Path not found for npc '{self.name}'!")
-            self.scene.add_notification(
-                f"Path not found for npc '[char]{self.name}[/char]'", NotificationTypeEnum.debug)
+            print(f"[red]ERROR![/] Path not found for npc '{self.name}'!")
+            # self.scene.add_notification(
+            #     f"Path not found for npc '[char]{self.name}[/char]'", NotificationTypeEnum.debug)
             self.waypoints = ()
             self.waypoints_cnt = 0
             self.acc = vec(0, 0)
@@ -488,7 +644,12 @@ class NPC(pygame.sprite.Sprite):
         speed = (self.speed * (100 / step_cost))
 
         if self.vel.magnitude() >= speed:
-            self.vel = self.vel.normalize() * speed
+            if speed > 0:
+                self.vel = self.vel.normalize() * speed
+
+        if speed == 0:
+            self.acc = vec(0, 0)
+            self.vel = vec(0, 0)
 
         if self.is_flying:
             oscillation = 1 if self.scene.game.time_elapsed % 0.25 < 0.125 else 0
@@ -564,7 +725,7 @@ class NPC(pygame.sprite.Sprite):
         self.emote.kill()
 
         # drop items and money on the ground
-        if self.name != "Player" and drop_items:
+        if self.model.name != "Player" and drop_items:
             self.is_dead = True
 
             for item in self.items:
@@ -583,7 +744,7 @@ class NPC(pygame.sprite.Sprite):
                 self.scene.item_sprites.add(item)
                 self.scene.group.add(item, layer=self.scene.sprites_layer - 1)
 
-        if self.name == "Player" and self.model.health <= 0:
+        if self.model.name == "Player" and self.model.health <= 0:
             self.is_dead = True
             self.scene.exit_state()
             self.scene.player.reset()
@@ -952,10 +1113,14 @@ class Player(NPC):
             label_group: pygame.sprite.Group,
             pos: tuple[int, int],
             name: str,
-            emotes: dict[str, list[pygame.Surface]]
+            emotes: dict[str, list[pygame.Surface]],
+            model_name: str = "",
     ):
         self.name = name
-        super(Player, self).__init__(game, scene, shadow_group, label_group, pos, name, emotes)
+        if not model_name:
+            model_name = self.name
+
+        super(Player, self).__init__(game, scene, shadow_group, label_group, pos, name, emotes, model_name=model_name)
         # give player some super powers
         self.speed_run  = int(self.speed_run * 1.7)
         self.speed_walk = int(self.speed_walk * 1.4)

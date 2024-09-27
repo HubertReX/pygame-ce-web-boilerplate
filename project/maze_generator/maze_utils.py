@@ -110,8 +110,11 @@ def a_star_cached(
             _CACHE[key] = res
             for i, wp in enumerate(res):
                 new_key = (wp, goal)
-                # if new_key not in _CACHE:
-                _CACHE[new_key] = res[i:]
+                if new_key not in _CACHE:
+                    _CACHE[new_key] = res[i:]
+        else:
+            # print(f"[red]ERROR[/] a* miss {key} - no route to destination?")
+            return []
     #     fps += "\t[red]miss[/]"
     # else:
     #     fps += "\t[green]hit[/]"
@@ -136,6 +139,12 @@ def a_star(grid: list[list[int]], start: tuple[int, int], goal: tuple[int, int])
     def heuristic(point: tuple[int, int], goal: tuple[int, int]) -> int:
         # Manhattan distance heuristic
         return abs(point[0] - goal[0]) + abs(point[1] - goal[1])
+
+    def safe_get_grid(x: int, y: int) -> int:
+        if 0 <= x < len(grid) and 0 <= y < len(grid[0]):
+            return grid[x][y]
+        else:
+            return 1
 
     # https://panda-man.medium.com/a-pathfinding-algorithm-efficiently-navigating-the-maze-of-possibilities-8bb16f9cecbd
     # (score, (x, y))
@@ -173,8 +182,12 @@ def a_star(grid: list[list[int]], start: tuple[int, int], goal: tuple[int, int])
             # tentative_g = g_score[current] + 1
             # orthogonal move cost == 100 diagonal move cost == sqrt(2)
             # node with negative value indicates custom step cost (e.g. water = -200)
-            tentative_g = g_score[current] + \
-                abs(grid[x][y]) if not is_diagonal else g_score[current] + int(abs(-grid[x][y] * 1.41))
+            if not is_diagonal:
+                cost = abs(safe_get_grid(x, y))
+            else:
+                cost = g_score[current] + int(abs(safe_get_grid(x, y) * 1.41))
+            tentative_g = g_score[current] + cost
+
             # move permitted if new node is not blocked
             # move_permitted = grid[x][y] == 0
 

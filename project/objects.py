@@ -56,13 +56,19 @@ class Collider(pygame.sprite.Sprite):
 
 
 class Shadow(pygame.sprite.Sprite):
-    def __init__(self, groups: pygame.sprite.Group, pos: tuple[int, int], size: tuple[int, int]) -> None:
+    def __init__(self,
+                 groups: pygame.sprite.Group,
+                 pos: tuple[int, int],
+                 size: tuple[int, int],
+                 empty: bool = False
+                 ) -> None:
         super().__init__(groups)
         self.image: pygame.Surface = pygame.Surface((size)).convert_alpha()
         self.rect: pygame.FRect = self.image.get_frect(topleft = pos)
         self.image.fill(TRANSPARENT_COLOR)
         # self.image.set_colorkey("black")
-        pygame.draw.ellipse(self.image, BLACK_COLOR, self.rect)
+        if not empty:
+            pygame.draw.ellipse(self.image, BLACK_COLOR, self.rect)
 
 
 #################################################################################################################
@@ -159,6 +165,7 @@ class HealthBarUI(pygame.sprite.Sprite):
 
 class HealthBar(pygame.sprite.Sprite):
     def __init__(self,
+                 name: str,
                  model: Character,
                  render_text: Callable,
                  groups: pygame.sprite.Group,
@@ -168,6 +175,7 @@ class HealthBar(pygame.sprite.Sprite):
         super().__init__(groups)
         self.image: pygame.Surface = pygame.Surface((100, 20)).convert_alpha()
         self.image.fill(TRANSPARENT_COLOR)
+        self.name = name
         self.model = model
         self.render_text = render_text
         self.translate_pos: Callable = lambda pos:  pos
@@ -211,7 +219,7 @@ class HealthBar(pygame.sprite.Sprite):
 
         # render name of the character
         self.render_text(
-            self.model.name,
+            self.name,
             # self.translate_pos((int(self.rect.width // 2), 10)),
             (int(self.rect.width // 2), y),
             self.color,

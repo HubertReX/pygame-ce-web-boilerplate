@@ -60,16 +60,17 @@ class ItemTypeEnum(StrEnum):
 class Character():
     name: str
     sprite: str = field(repr=False)
-    race:         RaceEnum
-    attitude:     AttitudeEnum
-    health:       Annotated[int,          field(repr=False)]
-    max_health:   Annotated[int,          field(repr=False)]
-    items:        Annotated[list[str],    field(repr=False)]
-    max_carry_weight: Annotated[float,    field(repr=False)]
-    money:        Annotated[int,          field(repr=False)]
-    damage:       Annotated[int,          field(repr=False)]
-    speed_walk:   Annotated[int,          field(repr=False)]
-    speed_run:    Annotated[int,          field(repr=False)]
+    race:          RaceEnum
+    attitude:      AttitudeEnum
+    allowed_zones: Annotated[list[str],    field(repr=False)]
+    health:        Annotated[int,          field(repr=False)]
+    max_health:    Annotated[int,          field(repr=False)]
+    items:         Annotated[list[str],    field(repr=False)]
+    max_carry_weight: Annotated[float,     field(repr=False)]
+    money:         Annotated[int,          field(repr=False)]
+    damage:        Annotated[int,          field(repr=False)]
+    speed_walk:    Annotated[int,          field(repr=False)]
+    speed_run:     Annotated[int,          field(repr=False)]
 
     @classmethod
     def from_dict(cls: type["Character"], data: dict[str, Any]) -> "Character":
@@ -78,6 +79,7 @@ class Character():
             sprite = data.get("sprite", ""),
             race = RaceEnum(data.get("race", "")),
             attitude = AttitudeEnum(data.get("attitude", "")),
+            allowed_zones = data.get("allowed_zones", []),
             health = data.get("health", 30),
             max_health = data.get("max_health", 30),
             items = data.get("items", []),

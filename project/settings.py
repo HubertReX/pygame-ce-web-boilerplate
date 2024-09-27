@@ -123,6 +123,17 @@ INITIAL_HOUR: int = 9
 GAME_TIME_SPEED: float = 0.25
 # how many seconds a notification will be displayed
 NOTIFICATION_DURATION: float = 10.0
+# probability that NPC will rest [%]
+SHOULD_NPC_REST_PROBABILITY: int = 15
+# how long (min) will NPC rest [s]
+NPC_MIN_REST_TIME: float = 1.0
+# how long (max) will NPC rest [s]
+NPC_MAX_REST_TIME: float = 3.0
+# how many tiles on x and y axis from current position will NPC set as new target
+NPC_RANDOM_WALK_DISTANCE: int = 3
+# how many times will NPC try to find random safe position
+# if exceeded - NPC will move to unsafe position
+MAX_NO_ATTEMPTS_TO_FIND_RANDOM_POS: int = 100
 
 TRANSPARENT_COLOR = (0, 0, 0, 0)
 FONT_COLOR = "white"
@@ -433,7 +444,7 @@ PARTICLES = {
     "rain": particles.ParticleRain,
 }
 
-SPRITE_SHEET_DEFINITION = {
+SPRITE_SHEET_DEFINITION_4x7: dict[str, list[tuple[int, int]]] = {
     "idle_down":    [(0, 0)],
     "idle_up":      [(1, 0)],
     "idle_left":    [(2, 0)],
@@ -467,6 +478,104 @@ SPRITE_SHEET_DEFINITION = {
     "talk_right":   [(3, 0)],
 }
 
+SPRITE_SHEET_DEFINITION_2x1: dict[str, list[tuple[int, int]]] = {
+    "idle_down":    [(0, 0)],
+    "idle_up":      [(0, 0)],
+    # "idle_left":    [(0, 0)],
+    "idle_right":   [(0, 0)],
+
+    "run_down":     [(0, 0), (1, 0)],
+    "run_up":       [(0, 0), (1, 0)],
+    # "run_left":     [(2, 0), (2, 1), (2, 2), (2, 3)],
+    "run_right":    [(0, 0), (1, 0)],
+
+
+    "dead":         [(0, 0)],
+
+    "bored":        [(0, 0)],
+
+    "talk_down":    [(0, 0)],
+    "talk_up":      [(0, 0)],
+    # "talk_left":    [(2, 0)],
+    "talk_right":   [(0, 0)],
+}
+
+SPRITE_SHEET_DEFINITION_3x3: dict[str, list[tuple[int, int]]] = {
+    "idle_down":    [(1, 0)],
+    "idle_up":      [(2, 0)],
+    # "idle_left":    [(0, 0)],
+    "idle_right":   [(0, 0)],
+
+    "run_down":     [(1, 0), (1, 1), (1, 0), (1, 2)],
+    "run_up":       [(2, 0), (2, 1), (2, 0), (2, 2)],
+    # "run_left":     [(2, 0), (2, 1), (2, 0), (2, 2)],
+    "run_right":    [(0, 0), (0, 1), (0, 0), (0, 2)],
+
+
+    "dead":         [(0, 0)],
+
+    "bored":        [(0, 0)],
+
+    "talk_down":    [(0, 0)],
+    "talk_up":      [(0, 0)],
+    # "talk_left":    [(2, 0)],
+    "talk_right":   [(0, 0)],
+}
+
+SPRITE_SHEET_DEFINITION_2x2: dict[str, list[tuple[int, int]]] = {
+    "idle_down":    [(0, 0)],
+    "idle_up":      [(0, 0)],
+    # "idle_left":    [(0, 0)],
+    "idle_right":   [(0, 0)],
+
+    "run_down":     [(0, 0), (1, 0)],
+    "run_up":       [(0, 1), (1, 1)],
+    # "run_left":     [(2, 0), (2, 1), (2, 2), (2, 3)],
+    "run_right":    [(0, 1), (1, 1)],
+
+
+    "dead":         [(0, 0)],
+
+    "bored":        [(0, 0)],
+
+    "talk_down":    [(0, 0)],
+    "talk_up":      [(0, 0)],
+    # "talk_left":    [(2, 0)],
+    "talk_right":   [(0, 0)],
+}
+
+SPRITE_SHEET_DEFINITION_RAIN = {
+    "rain":          [(0, 0), (1, 0), (2, 0)]
+}
+
+SPRITE_SHEET_DEFINITIONS: dict[int, Any]  = {
+    32: {
+        "type": "2x1",
+        "sheet": SPRITE_SHEET_DEFINITION_2x1,
+        "tile_width": 16,
+    },
+    46: {
+        "type": "2x2",
+        "sheet": SPRITE_SHEET_DEFINITION_2x2,
+        "tile_width": 23,
+    },
+    48: {
+        "type": "3x3",
+        "sheet": SPRITE_SHEET_DEFINITION_3x3,
+        "tile_width": 16,
+    },
+    64: {
+        "type": "4x7",
+        "sheet": SPRITE_SHEET_DEFINITION_4x7,
+        "tile_width": 16,
+    },
+    80: {
+        "type": "4x7",
+        "sheet": SPRITE_SHEET_DEFINITION_4x7,
+        "tile_width": 16,
+    },
+}
+
 
 HUD_SHEET_DEFINITION: dict[str, list[tuple[int, int]]] = {
     "key":       [(0, 0)],
@@ -486,7 +595,7 @@ EMOTE_SHEET_DEFINITION = {
     "clear":                [(7, 7)],
     "empty":                [(0, 0)],
     "shocked":              [(2, 0)],
-    "shocked_anim":         [(0, 2), (1, 0), (2, 0), (2, 0), (2, 0)],
+    "shocked_anim":         [(2, 0), (2, 0), (2, 0), (0, 2), (1, 0), ],
     "blessed":              [(6, 0)],
     "blessed_anim":         [(3, 0), (4, 0), (5, 0)],
     "love":                 [(0, 1)],
@@ -605,8 +714,69 @@ WEAPON_DIRECTION_OFFSET_FROM: dict[str, vec] = {
     "right": vec(0,    1 - TILE_SIZE // 2)
 }
 
+DIRECTIONS = ["up", "down", "left", "right"]
+
+
 # make loading images a little easier
-
-
 def load_image(filename: PathLike) -> Any:
     return pygame.image.load(str(RESOURCES_DIR / filename))
+
+
+def import_sprite_sheet(
+    path: str,
+    tile_width: int = TILE_SIZE,
+    tile_height: int = TILE_SIZE,
+    sprite_sheet_definition: dict[str, list[tuple[int, int]]] = SPRITE_SHEET_DEFINITION_4x7,
+    add_missing_directions: bool = True
+) -> dict[str, list[pygame.surface.Surface]]:
+    """
+    Load sprite sheet and cut it into animation names and frames using `sprite_sheet_definition` dict.
+    If provided sheet is missing some of the animations from dict, a frame from upper left corner (0, 0)
+    will be used.
+    If directional variants are missing (e.g.: only idle animation, but no idle left, idle right...)
+    the general animation will be copied.
+    """
+
+    animations: dict[str, list[pygame.surface.Surface]] = {}
+    img = pygame.image.load(path).convert_alpha()
+    img_rect = img.get_rect()
+    # use first tile (from upper left corner) as default 1 frame animation
+    rec_def = pygame.Rect(0, 0, tile_width, tile_height)
+    img_def = img.subsurface(rec_def)
+    animation_def = [img_def]
+
+    for key, definition in sprite_sheet_definition.items():
+        animation = []
+        for coord in definition:
+            x, y = coord
+            rec = pygame.Rect(x * tile_width, y * tile_height, tile_width, tile_height)
+            if rec.colliderect(img_rect):
+                img_part = img.subsurface(rec)
+                animation.append(img_part)
+            else:
+                continue
+                # print(f"ERROR! {self.name}: coordinate {x}x{y} not inside sprite sheet for {key} animation")
+
+        animations[key] = animation or animation_def
+
+        if add_missing_directions and "_" not in key:
+            # if there is only one animation for each direction
+            # that is when animation name doesn't include direction (e.g. 'idle')
+            # than add reference in all directions (e.g. 'idle_up', 'idle_down',...)
+            for direction in DIRECTIONS:
+                new_key = f"{key}_{direction}"
+                animations[new_key] = animations[key]
+
+    new_animations: dict[str, list[pygame.surface.Surface]] = {}
+    for key in animations:
+        if "_" in key:
+            state = key.split("_")[0]
+            new_key = f"{state}_left"
+            if new_key not in animations and new_key not in new_animations:
+                new_animation = []
+                for frame in animations[f"{state}_right"]:
+                    new_animation.append(pygame.transform.flip(frame.copy(), True, False))
+                new_animations[new_key] = new_animation
+    animations.update(new_animations)
+
+    return animations

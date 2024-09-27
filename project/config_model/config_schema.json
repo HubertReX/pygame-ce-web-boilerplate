@@ -40,6 +40,14 @@
                     ],
                     "description": "Attitude towards the player"
                 },
+                "allowed_zones": {
+                    "description": "Zones where the character is allowed to move",
+                    "items": {
+                        "type": "string"
+                    },
+                    "title": "Allowed Zones",
+                    "type": "array"
+                },
                 "health": {
                     "default": 30,
                     "description": "initial health value",

@@ -11,33 +11,6 @@ from pygame.math import Vector2 as vec
 from pyscroll.group import PyscrollGroup
 from settings import HEIGHT, PARTICLES_DIR, WIDTH, ZOOM_LEVEL
 
-###################################################################################################################
-
-
-def import_sprite_sheet(
-    path: str,
-    tile_size: int,
-    sprite_sheet_definition: list[tuple[int, int]]
-) -> list[pygame.Surface]:
-    """
-        Load sprite sheet and cut it into animation names and frames using SPRITE_SHEET_DEFINITION dict.
-        If provided sheet is missing some of the animations from dict, a frame from upper left corner (0, 0)
-        will be used.
-        If directional variants are missing (e.g.: only idle animation, but no idle left, idle right...)
-        the general animation will be copied.
-    """
-    img: pygame.Surface = pygame.image.load(path).convert_alpha()
-    img_rect: pygame.Rect = img.get_rect()
-    animation: list[pygame.Surface] = []
-
-    for coord in sprite_sheet_definition:
-        x, y = coord
-        rec = pygame.Rect(x * tile_size, y * tile_size, tile_size, tile_size)
-        if rec.colliderect(img_rect):
-            img_part = img.subsurface(rec)
-            animation.append(img_part)
-
-    return animation
 
 #####################################################################################################################
 
@@ -294,9 +267,13 @@ class ParticleRain(ParticleSystem):
         # rain appears at the top of the screen (16 pixels high, full width)
         spawn_rect = pygame.Rect(0, -HEIGHT // 2, WIDTH + 256, HEIGHT)
         # leaf_img = pygame.image.load(PARTICLES_DIR / "Rain.png").convert_alpha()
-        sprite_sheet_definition = [(0, 0), (1, 0), (2, 0)]
-        animation = import_sprite_sheet(str(PARTICLES_DIR / "Rain.png"), 8, sprite_sheet_definition)
-        animation += import_sprite_sheet(str(PARTICLES_DIR / "RainOnFloor.png"), 8, sprite_sheet_definition)
+
+        from settings import import_sprite_sheet, SPRITE_SHEET_DEFINITION_RAIN
+        animation1 = import_sprite_sheet(str(PARTICLES_DIR / "Rain.png"), 8, 8,
+                                         SPRITE_SHEET_DEFINITION_RAIN, add_missing_directions=False)
+        animation2 = import_sprite_sheet(str(PARTICLES_DIR / "RainOnFloor.png"), 8, 8,
+                                         SPRITE_SHEET_DEFINITION_RAIN, add_missing_directions=False)
+        animation = animation1["rain"] + animation2["rain"]
         # emit: 1 particle/second
         self.particle = ParticleImageBased(
             screen=canvas,

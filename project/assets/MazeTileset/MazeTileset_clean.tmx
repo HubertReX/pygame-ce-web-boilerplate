@@ -282,7 +282,7 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 </data>
  </layer>
- <objectgroup id="6" name="exits">
+ <objectgroup id="6" name="interactions">
   <object id="3" name="Return" x="544" y="128" width="16" height="16">
    <properties>
     <property name="entry_point" value="Stairs"/>

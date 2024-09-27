@@ -107,7 +107,7 @@
 541,541,541,541,541,541,541,541,541,541,541,541
 </data>
  </layer>
- <objectgroup id="6" name="exits">
+ <objectgroup id="6" name="interactions">
   <object id="3" name="Village" x="48" y="123" width="16" height="13">
    <properties>
     <property name="entry_point" value="VillageHouseDoor"/>
