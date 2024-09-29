@@ -10,7 +10,7 @@
  <tileset firstgid="1" source="../NinjaAdventure/maps/tilesets/Maze.tsx"/>
  <tileset firstgid="133" source="../NinjaAdventure/maps/Element.tsx"/>
  <tileset firstgid="373" source="../NinjaAdventure/items/items.tsx"/>
- <layer id="3" name="background" width="38" height="30" visible="0">
+ <layer id="3" name="background" width="38" height="30">
   <data encoding="csv">
 1,1,13,1,1,1,1,1,13,1,1,1,1,1,13,1,1,1,1,1,13,1,1,1,1,1,13,1,1,1,1,1,13,1,1,1,1,1,
 13,1,1,25,1,13,13,1,1,25,1,13,13,1,1,25,1,13,13,1,1,25,1,13,13,1,1,25,1,13,13,1,1,25,1,13,13,1,

@@ -978,6 +978,8 @@ class NPC(pygame.sprite.Sprite):
         """
         # self.debug([f"{self.rect.topleft=}", f"{self.old_rect.topleft=}"])
         self.pos = self.prev_pos.copy()
+        if self.model.name == "Player":  # and self.scene.camera.target == self.prev_pos:
+            self.scene.camera.target = self.pos
 
         self.adjust_rect()
 

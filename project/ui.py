@@ -27,6 +27,7 @@ from settings import (
     FONT_COLOR,
     FONT_SIZE_HUGE,
     FONT_SIZE_LARGE,
+    FONT_SIZE_SMALL,
     FONT_SIZE_TINY,
     FONT_SIZE_MEDIUM,
     FONTS_PATH,
@@ -66,12 +67,12 @@ NOTIFICATION_TYPE_ICONS: dict[str, str] = {
 
 
 class UI:
-    def __init__(self, scene: Scene, tiny_font: pygame.font.Font, medium_font: pygame.font.Font) -> None:
+    def __init__(self, scene: Scene) -> None:
         self.scene = scene
         self.game: Game = self.scene.game
         self.display_surface = self.game.HUD
-        self.font = medium_font
-        self.tiny_font = tiny_font
+        self.font = self.game.fonts[FONT_SIZE_MEDIUM]
+        self.tiny_font = self.game.fonts[FONT_SIZE_SMALL]
         self.inventory_slot: InventorySlot = InventorySlot(
             None,
             (WIDTH // 2 - (INVENTORY_ITEM_WIDTH * MAX_HOTBAR_ITEMS // 2),

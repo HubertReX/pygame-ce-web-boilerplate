@@ -421,6 +421,35 @@ class ChestSprite(Object):
 #################################################################################################################
 
 
+class DestructibleSprite(Object):
+    def __init__(
+        self,
+        group: pygame.sprite.Group | None,
+        pos: tuple[int, int],
+        # name: str,
+        # model: Chest,
+        sprite: pygame.Surface,
+        wall: pygame.Rect,
+        prev_step_cost: int,
+        type: str,
+        # image_open: pygame.Surface = pygame.Surface((TILE_SIZE, TILE_SIZE)),
+        # image_closed: pygame.Surface = pygame.Surface((TILE_SIZE, TILE_SIZE)),
+    ) -> None:
+
+        # self.image = sprite
+        super().__init__(group, pos, sprite)
+        self.mask = pygame.mask.from_surface(sprite)
+        self.wall = wall
+        self.step_cost = prev_step_cost
+        self.type = type
+        # self.rect.center = pos
+        # self.model = model
+        # self.name = model.name
+        # self.is_closed = True
+
+#################################################################################################################
+
+
 class NotificationTypeEnum(StrEnum):
     debug = auto()
     info = auto()

@@ -70,7 +70,10 @@ def lerp_vectors(v1: vec, v2: vec, t: float) -> vec:
 WIDTH, HEIGHT = 1600, 1024
 TILE_SIZE = 16
 SCALE = 1
-ZOOM_LEVEL = 3.25
+# default camera zoom
+ZOOM_LEVEL = 4.4
+# camera zoom for intro cutscene (zooms out)
+ZOOM_WIDE  = 3.10
 
 IS_WEB = __import__("sys").platform == "emscripten"
 IS_LINUX = __import__("sys").platform == "linux"
@@ -106,6 +109,9 @@ CHEST_OPEN_DISTANCE = 22
 # path from monster will be recalculated
 # only if player moved by more then N pixels
 RECALCULATE_PATH_DISTANCE = 16
+# path finding step costs used in map grid (path_finding_grid)
+STEP_COST_WALL: int = 100
+STEP_COST_GROUND: int = -100
 # frames per second
 ANIMATION_SPEED = 10
 ANIMATION_SPEED_UI: int = 5
@@ -164,7 +170,7 @@ NIGHT_FILTER: tuple[int, int, int, int] = (0, 0, 30, 220)
 # sunny, warm yellow light during daytime
 DAY_FILTER: tuple[int, int, int, int] = (152, 152, 0, 20)
 # amount of light sources passed to shader
-MAX_LIGHTS_COUNT: int = 16
+MAX_LIGHTS_COUNT: int = 32
 
 STYLE_TAGS_DICT: dict[str, str] = {
     "h1":        "{align center}{size 42}{cast_shadow True}",
@@ -545,8 +551,25 @@ SPRITE_SHEET_DEFINITION_2x2: dict[str, list[tuple[int, int]]] = {
     "talk_right":   [(0, 0)],
 }
 
-SPRITE_SHEET_DEFINITION_RAIN = {
+SPRITE_SHEET_DEFINITION_RAIN: dict[str, list[tuple[int, int]]]  = {
     "rain":          [(0, 0), (1, 0), (2, 0)]
+}
+
+SPRITE_SHEET_DEFINITION_DESTRUCTIBLE_FOLIAGE: dict[str, list[tuple[int, int]]]  = {
+    "foliage":          [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0)],
+}
+SPRITE_SHEET_DEFINITION_DESTRUCTIBLE_ROCK: dict[str, list[tuple[int, int]]]  = {
+    "rock":             [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0),
+                         (8, 0), (9, 0), (10, 0), (11, 0), (12, 0)],
+}
+SPRITE_SHEET_DEFINITION_LEAF: dict[str, list[tuple[int, int]]]  = {
+    "foliage_left":          [(0, 0), (1, 0), (0, 0), (2, 0)],
+    "foliage_right":         [(3, 0), (4, 0), (3, 0), (5, 0)],
+}
+
+SPRITE_SHEET_DEFINITION_ROCK: dict[str, list[tuple[int, int]]]  = {
+    "rock_left":          [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0)],
+    "rock_right":         [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0)],
 }
 
 SPRITE_SHEET_DEFINITIONS: dict[int, Any]  = {

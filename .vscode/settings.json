@@ -1,5 +1,6 @@
 {
     "cSpell.words": [
+        "allb",
         "arialrounded",
         "ARPG",
         "aseprite",
@@ -21,6 +22,7 @@
         "colorkey",
         "cooldown",
         "dealloc",
+        "destructibles",
         "DOUBLEBUF",
         "dpad",
         "emscripten",
@@ -61,6 +63,7 @@
         "Photopea",
         "Piskel",
         "Pixilart",
+        "pngcrush",
         "pydantic",
         "pygame",
         "pygbag",

@@ -392,8 +392,8 @@ class Animation(AnimBase):
         if callable(attr):
             attr(value)
         else:
-            if self._round_values and type(value) is float:
-                value = round(value, 0)
+            if self._round_values:  # and type(value) is float
+                value = int(round(value, 0))  # type: ignore[arg-type]
             setattr(target, name, value)
 
     def _gather_initial_values(self) -> None:

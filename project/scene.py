@@ -11,13 +11,14 @@ from animation import animator
 from camera import Camera
 from maze_generator import hunt_and_kill_maze
 from maze_generator.maze_utils import (
+    EMPTY_CELL,
     TILE_SIZE,
     build_tileset_map_from_maze,
     clear_maze_cache,
     get_gid_from_tmx_id
 )
-from objects import ChestSprite, Collider, EmoteSprite, ItemSprite, Notification, NotificationTypeEnum
-from particles import ParticleSystem
+from objects import (ChestSprite, Collider, DestructibleSprite, ItemSprite, Notification, NotificationTypeEnum)
+from particles import ParticleDestructible, ParticleSystem
 from pyscroll.group import PyscrollGroup
 from pytmx import TiledMap, TiledObjectGroup, TiledTileLayer
 from pytmx.util_pygame import load_pygame
@@ -56,12 +57,15 @@ from settings import (
     PARTICLES,
     SHADERS_NAMES,
     SHOW_DEBUG_INFO,
+    STEP_COST_GROUND,
+    STEP_COST_WALL,
     TEXT_ROW_SPACING,
     USE_ALPHA_FILTER,
     USE_SHADERS,
     WAYPOINTS_LINE_COLOR,
     WIDTH,
     ZOOM_LEVEL,
+    ZOOM_WIDE,
     # ColorValue,
     Point,
     to_point,
@@ -105,7 +109,7 @@ class Scene(State):
             "walls",
             "label_sprites",
             "shadow_sprites",
-            "chest_sprites",
+            "obstacles_sprites",
             "exit_sprites",
             "item_sprites",
             "animations",
@@ -136,11 +140,12 @@ class Scene(State):
         self.exits: list[Collider] = []
         self.zones: dict[str, list[pygame.Rect]] = {}
         self.chests: list[ChestSprite] = []
+        self.destructibles: list[DestructibleSprite] = []
         self.walls: list[pygame.Rect] = []
 
         self.label_sprites: pygame.sprite.Group = pygame.sprite.Group()
         self.shadow_sprites: pygame.sprite.Group = pygame.sprite.Group()
-        self.chest_sprites: pygame.sprite.Group = pygame.sprite.Group()
+        self.obstacles_sprites: pygame.sprite.Group = pygame.sprite.Group()
         self.exit_sprites: pygame.sprite.Group = pygame.sprite.Group()
         self.item_sprites: pygame.sprite.Group = pygame.sprite.Group()
         self.animations: pygame.sprite.Group = pygame.sprite.Group()
@@ -150,6 +155,7 @@ class Scene(State):
 
         self.icons: dict[str, list[pygame.Surface]] = self.import_sheet(
             str(EMOTE_SHEET_FILE), EMOTE_SHEET_DEFINITION, width=14, height=13)
+
         self.icons.update(self.import_sheet(
             str(HUD_SHEET_FILE), HUD_SHEET_DEFINITION, width=16, height=16, scale=2)
         )
@@ -198,10 +204,11 @@ class Scene(State):
         self.group: PyscrollGroup
         self.particles: list[ParticleSystem] = []
         # self.circle_gradient: pygame.Surface = (CIRCLE_GRADIENT).convert_alpha()
-        self.ui = UI(self, tiny_font=self.game.fonts[FONT_SIZE_SMALL], medium_font=self.game.fonts[FONT_SIZE_MEDIUM])
+        self.ui = UI(self)
+        self.display_ui_flag: bool = True
         # self.load_items_def()
         self.load_map()
-        self.start_particles()
+        # self.start_particles()
         # self.set_camera_on_player()
 
     #############################################################################################################
@@ -314,7 +321,7 @@ class Scene(State):
 
         self.load_walls(cast(TiledTileLayer, tileset_map.get_layer_by_name("walls")))
 
-        self.load_items(cast(TiledTileLayer, tileset_map.get_layer_by_name("items")), tileset_map)
+        self.load_items(cast(TiledTileLayer, tileset_map.get_layer_by_name("items")))
 
         self.load_interactions(cast(TiledTileLayer, tileset_map.get_layer_by_name("interactions")))
 
@@ -364,9 +371,9 @@ class Scene(State):
 
         self.load_step_cost(tileset_map)
 
+        # self.group.center(self.player.pos)
         self.set_camera_on_player()
-        # self.group.center(self.camera.target)
-        self.group.center(self.player.pos)
+        self.group.center(self.camera.target)
 
         self.load_particles(tileset_map)
 
@@ -386,8 +393,12 @@ class Scene(State):
                 self.exit_sprites.add(exit)
 
         for chest in self.chests:
-            if chest not in self.chest_sprites:
-                self.chest_sprites.add(chest)
+            if chest not in self.obstacles_sprites:
+                self.obstacles_sprites.add(chest)
+
+        for destructible in self.destructibles:
+            if destructible not in self.obstacles_sprites:
+                self.obstacles_sprites.add(destructible)
 
         # add all NPCs from current map to the group
         self.NPCs = []
@@ -399,10 +410,12 @@ class Scene(State):
                 self.label_sprites.add(npc.emote)
                 npc.register_custom_event()
 
-        self.group.add(self.shadow_sprites, layer=self.sprites_layer - 2)
-        self.group.add(self.item_sprites,   layer=self.sprites_layer - 1)
-        self.group.add(self.label_sprites,  layer=self.sprites_layer + 1)
-        self.group.add(self.chest_sprites,  layer=self.sprites_layer - 1)
+        self.group.add(self.shadow_sprites,    layer=self.sprites_layer - 2)
+        self.group.add(self.item_sprites,      layer=self.sprites_layer - 1)
+        self.group.add(self.label_sprites,     layer=self.sprites_layer + 1)
+
+        self.group.add(self.obstacles_sprites, layer=self.sprites_layer - 1)
+
         # add Player to the group
         self.group.add(self.player, layer=self.sprites_layer)
 
@@ -432,22 +445,23 @@ class Scene(State):
     def load_step_cost(self, tileset_map: TiledMap) -> None:
         for x, y, surf in tileset_map.layers[0].tiles():
             # get step cost for all walkable tiles
-            # 100 => road, pavement - low cost
-            # 150 => grass, dirt - moderate cost
-            # 200 => long grass, corn field - high cost
-            # 300 => water - high cost
+            #  100 => wall (not walkable)
+            #    0 => initial value for ground (a free space to walk)
+            # -100 => road, pavement - low cost
+            # -150 => grass, dirt - moderate cost
+            # -200 => long grass, corn field - high cost
+            # -300 => water - very high cost
             # stored as negative number to distinguish from walls (positive numbers == 100)
             # this is used in A*
-            # path_finding_grid = 0 => floor
             if self.path_finding_grid[y][x] == 0:
                 # check the 'under' layers one by one - the top most cost prevails
                 tile_0_gid = tileset_map.get_tile_properties(x, y, 0)
                 tile_1_gid = tileset_map.get_tile_properties(x, y, 1)
                 # base step cost
-                step_cost = 100
-                if tile_0_gid and "step_cost" in tile_0_gid:  # .keys():
+                step_cost = -STEP_COST_GROUND
+                if tile_0_gid and "step_cost" in tile_0_gid:
                     step_cost = tile_0_gid["step_cost"]
-                if tile_1_gid and "step_cost" in tile_1_gid:  # .keys():
+                if tile_1_gid and "step_cost" in tile_1_gid:
                     step_cost = tile_1_gid["step_cost"]
                 self.path_finding_grid[y][x] = -step_cost
 
@@ -477,11 +491,14 @@ class Scene(State):
                     self.walls.append(rect)
 
                     # blocked from walking (wall)
-                    self.path_finding_grid[int(obj.y // TILE_SIZE)][int(obj.x // TILE_SIZE)] = 100
+                    self.path_finding_grid[int(obj.y // TILE_SIZE)][int(obj.x // TILE_SIZE)] = STEP_COST_WALL
 
-                    # chest = ChestSprite(self.chest_sprites, rect.center,
-                    chest = ChestSprite(self.chest_sprites, (obj.x, obj.y),
-                                        self.game.conf.chests[obj.name], self.items_sheet,)
+                    # chest = ChestSprite(self.obstacles_sprites, rect.center,
+                    chest = ChestSprite(self.obstacles_sprites,
+                                        (obj.x, obj.y),
+                                        self.game.conf.chests[obj.name],
+                                        self.items_sheet,
+                                        )
                     self.chests.append(chest)
 
     #############################################################################################################
@@ -501,14 +518,14 @@ class Scene(State):
 
     #############################################################################################################
 
-    def load_items(self, items_layer: TiledTileLayer, tileset_map: TiledMap) -> None:
+    def load_items(self, items_layer: TiledTileLayer) -> None:
         self.items = []
         self.item_sprites.empty()
         if "items" in self.layers:
 
             for x, y, tile in items_layer.tiles():
                 gid = items_layer.data[y][x]
-                name = tileset_map.tile_properties[gid]["item_name"]
+                name = items_layer.parent.tile_properties[gid]["item_name"]
 
                 item = self.create_item(name, x * TILE_SIZE, y * TILE_SIZE)
                 self.items.append(item)
@@ -518,19 +535,38 @@ class Scene(State):
 
     def load_walls(self, walls_layer: TiledTileLayer) -> None:
         self.walls = []
+        self.destructibles = []
         if "walls" in self.layers:
             walls_width = walls_layer.width
             walls_height = walls_layer.height
             # path finding uses only grid build of tiles and not world coordinates in pixels
-            # 0   => floor (later zeros will be replaced with negative numbers representing actual cost)
+            # 0   => ground (later zeros will be replaced with negative numbers representing actual cost)
             # 100 => wall (not walkable)
             self.path_finding_grid = [[0 for _ in range(walls_width)] for _ in range(walls_height)]
 
-            for x, y, surf in cast(TiledTileLayer, walls_layer).tiles():
-                rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, surf.get_width(), surf.get_height())
-                self.walls.append(rect)
+            for x, y, sprite in walls_layer.tiles():
+                # if gid:
+                wall = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+                self.walls.append(wall)
                 # blocked from walking (wall)
-                self.path_finding_grid[y][x] = 100
+                prev_step_cost = self.path_finding_grid[y][x]
+                self.path_finding_grid[y][x] = STEP_COST_WALL
+
+                gid = walls_layer.data[y][x]
+                obj = walls_layer.parent.tile_properties.get(gid, {})
+
+                if obj.get("destructible", 0):
+                    type = obj.get("destruct_type", "")
+                    destructible = DestructibleSprite(
+                        self.obstacles_sprites,
+                        (x * TILE_SIZE, y * TILE_SIZE),
+                        sprite,
+                        wall,
+                        prev_step_cost,
+                        type,
+                    )
+                    self.destructibles.append(destructible)
+                    walls_layer.data[y][x] = EMPTY_CELL
 
     #############################################################################################################
 
@@ -564,6 +600,8 @@ class Scene(State):
     def set_entry_point(self) -> None:
         default = tuple_to_vector(self.map_view.map_rect.center)
         result = self.player.set_entry_point(self.entry_point, default)
+        self.camera.target = self.player.pos
+
         if not result:
             print("\n[red]ERROR![/] no entry point found!\n")
             self.add_notification("[error]ERROR[/error]:red_exclamation_anim: no entry point found",
@@ -592,8 +630,8 @@ class Scene(State):
         clear_maze_cache()
 
         self.set_camera_on_player()
-        # self.group.center(self.camera.target)
-        self.group.center(self.player.pos)
+        self.group.center(self.camera.target)
+        # self.group.center(self.player.pos)
 
     #############################################################################################################
 
@@ -735,9 +773,6 @@ class Scene(State):
         # MARK: start_intro
 
         self.set_camera_free()
-        # ZOOM_ORG     = ZOOM_LEVEL
-        ZOOM_WIDE    = 3.10
-        ZOOM_CLOSEUP = 3.9
         # in_out_quad out_sine # in_out_elastic - anticipate and overshoot
         # in_out_back - anticipate # in_out_bounce - well, bouncy
         CAMERA_TRANSITION = "out_sine"
@@ -764,6 +799,18 @@ class Scene(State):
                     "type": "animation",
                     "target": self,
                     "args": {"hour": 3},
+                    "round_values": True,
+                    "duration": 0.1,
+                    "transition": "linear",
+                    "from": "step_01",
+                    "trigger": "on finish"
+                },
+                {
+                    "name": "step_01b",
+                    "description": "hide UI",
+                    "type": "animation",
+                    "target": self,
+                    "args": {"display_ui_flag": 0},
                     "round_values": True,
                     "duration": 0.1,
                     "transition": "linear",
@@ -842,7 +889,7 @@ class Scene(State):
                     "description": "camera zoom in on village house",
                     "type": "animation",
                     "target": self.camera,
-                    "args": {"zoom": ZOOM_CLOSEUP},
+                    "args": {"zoom": ZOOM_LEVEL},
                     "duration": 3.0,
                     "transition": "linear",
                     "from": "step_05b",
@@ -900,9 +947,21 @@ class Scene(State):
                     "type": "animation",
                     "target": self,
                     "args": {"cutscene_framing": 0.0},
-                    "duration": 3.0,
-                    "transition": "out_quad",
+                    "duration": 1.0,
+                    "transition": "out_cubic",
                     "from": "step_08",
+                    "trigger": "on finish"
+                },
+                {
+                    "name": "step_11",
+                    "description": "show UI",
+                    "type": "animation",
+                    "target": self,
+                    "args": {"display_ui_flag": 1},
+                    "round_values": True,
+                    "duration": 0.1,
+                    "transition": "linear",
+                    "from": "step_10",
                     "trigger": "on finish"
                 },
             ]
@@ -913,6 +972,7 @@ class Scene(State):
     def set_camera_on_player(self) -> None:
         self.camera.target = self.player.pos
         self.camera.zoom = ZOOM_LEVEL
+        self.group.center(self.camera.target)
         # TODO fix zoom
         # self.map_view.zoom = self.camera.zoom
 
@@ -1024,8 +1084,9 @@ class Scene(State):
                 # slide along wall or do a step_back
                 self.player.slide(self.NPCs)
 
-            # collision of weapon with other NPC
+            # collision of weapon with other NPC and destructibles
             if self.player.is_attacking and self.player.selected_weapon:
+                # check collision with NPCs
                 collided_index = self.player.selected_weapon.rect.collidelist(self.NPCs)  # type: ignore[type-var]
                 # collided with weapon rect
                 if collided_index > -1:
@@ -1038,6 +1099,38 @@ class Scene(State):
                     ):
                         # deal damage with weapon to enemy or nothing if friendly NPC
                         self.player.hit(self.NPCs[collided_index])
+
+                # check collision with destructibles
+                collided_index = self.player.selected_weapon.rect.collidelist(
+                    self.destructibles)  # type: ignore[type-var]
+
+                if collided_index > -1:
+                    destructible = self.destructibles[collided_index]
+                    # weapon rect is big, check if it collides with the mask of weapon
+                    if self.player.selected_weapon.mask.overlap(
+                        destructible.mask,
+                        (destructible.rect.x - self.player.selected_weapon.rect.x,  # type: ignore[union-attr]
+                         destructible.rect.y - self.player.selected_weapon.rect.y)  # type: ignore[union-attr]
+                    ):
+                        # make the tile walkable
+                        x = int(destructible.rect.x // TILE_SIZE)
+                        y = int(destructible.rect.y // TILE_SIZE)
+
+                        self.path_finding_grid[y][x] = destructible.step_cost
+                        # unfortunately, the whole A* paths cache need to be recalculated
+                        clear_maze_cache()
+                        # destroy wall rect
+                        wall = destructible.wall
+                        self.walls.remove(wall)
+                        # trigger destruction particle system
+                        rect = self.map_view.translate_rect(destructible.rect)
+                        particle = ParticleDestructible(self.game.canvas, self.group,
+                                                        self.camera, rect, destructible.type)
+                        particle.add()
+                        self.particles.append(particle)
+                        # destroy object
+                        destructible.kill()
+                        self.destructibles.remove(destructible)
 
         colliders = self.walls
         # if self.player.is_flying:
@@ -1221,6 +1314,8 @@ class Scene(State):
         self.hour = INITIAL_HOUR
         self.minute = 0
         self.minute_f = 0.0
+        self.display_ui_flag = True
+        self.cutscene_framing = 0.0
 
         # shadow = self.player.shadow
         self.reset_sprite_groups()
@@ -1233,7 +1328,7 @@ class Scene(State):
         self.label_sprites.empty()
         self.exit_sprites.empty()
         self.item_sprites.empty()
-        self.chest_sprites.empty()
+        self.obstacles_sprites.empty()
         self.shadow_sprites.empty()
         self.group.empty()
 
@@ -1242,10 +1337,10 @@ class Scene(State):
     def draw(self, screen: pygame.Surface, dt: float) -> None:
         # MARK: draw
         # center map on player
-        self.group.center(self.player.pos)
+        # self.group.center(self.player.pos)
         # self.map_view.center(self.camera.target)
         # self.map_view.zoom = self.camera.zoom
-        # self.group.center(self.camera.target)
+        self.group.center(self.camera.target)
 
         self.group.draw(screen)
 
@@ -1263,28 +1358,9 @@ class Scene(State):
 
         if SHOW_DEBUG_INFO:
             self.show_debug()
-        # else:
-        #     pass
-            # fps = f"FPS: {self.game.fps: 6.1f}"
-            # # 3s: {self.game.avg_fps_3s: 6.1f} 10s: {self.game.avg_fps_10s: 6.1f}"
-            # stats = f"Health: {
-            #     self.player.model.health}/{self.player.model.max_health} Money: {self.player.model.money}"
 
-            # inventory_list = []
-            # for idx, item in enumerate(self.player.items):
-            #     label = f"{item.model.name}[{item.model.type.value[0].upper()}][{item.model.count}]"
-            #     if idx == self.player.selected_item_idx:
-            #         label = f"-->{label}<--"
-            #     inventory_list.append(label)
-
-            # weight = f"{self.player.total_items_weight:4.2f}/{self.player.model.max_carry_weight:4.2f}"
-            # inventory = ", ".join(inventory_list)
-            # weapon = f"{self.player.selected_weapon.model.name}[{
-            #     self.player.selected_weapon.model.damage}]" if self.player.selected_weapon else "n/a"
-
-            # self.debug([fps, stats, f"Items[{weight}]: {inventory}", f"Weapon: {weapon}"])
-
-        self.ui.display_ui(self.game.time_elapsed)
+        if self.display_ui_flag:
+            self.ui.display_ui(self.game.time_elapsed)
 
     #############################################################################################################
 

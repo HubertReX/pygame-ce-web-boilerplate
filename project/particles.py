@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import cache
 from typing import Any, Callable
+from rich import print
 
 import pygame
 from camera import Camera
@@ -53,12 +54,13 @@ class ParticleImageBased:
         camera: Camera,
         animation: list[pygame.Surface] | None = None,
         animation_speed: float = 0.0,
+        loop_animation: bool = True,
         freeze_after_nth_frame: int = 10_000,
-        rate: int = 1,
+        rate: int | float = 1,
         scale_speed: float = 1.0,
         rotation_speed: float = 1.0,
         alpha_speed: float = 1.0,
-        spawn_rect: pygame.Rect | None = None,
+        spawn_rect: pygame.Rect | pygame.FRect | None = None,
         x_oscillation: Callable | None = None,
     ):
 
@@ -70,6 +72,7 @@ class ParticleImageBased:
         self.camera = camera
         self.animation = animation
         self.animation_speed = animation_speed
+        self.loop_animation = loop_animation
         self.freeze_after_nth_frame = freeze_after_nth_frame
         self.frame_index: float = 0.0
         self.width = self.image.get_rect().width
@@ -78,11 +81,11 @@ class ParticleImageBased:
         self.center = self.rect.center
 
         # amount of new particles per second
-        self.rate: int = rate
+        self.rate: int | float = rate
         self.custom_event_id: int  = pygame.event.custom_type()
 
-        self.interval: int = 1000 // rate
-        pygame.time.set_timer(pygame.event.Event(self.custom_event_id), self.interval)
+        self.interval: float = 1000.0 // rate
+        pygame.time.set_timer(pygame.event.Event(self.custom_event_id), int(self.interval))
 
         # scale_speed: 1.0 ==> from 100% to 0% size in 1 second
         self.scale_speed = scale_speed
@@ -97,14 +100,14 @@ class ParticleImageBased:
 
     ###################################################################################################################
     # MAR: animate
-    def animate(self, time_elapsed: float, loop: bool = True) -> None:
+    def animate(self, time_elapsed: float) -> None:
         if not self.animation:
             return
 
         self.frame_index = (self.animation_speed * time_elapsed)
 
         if int(self.frame_index) >= len(self.animation):
-            self.frame_index = 0.0 if loop else len(self.animation) - 1.0
+            self.frame_index = 0.0 if self.loop_animation else len(self.animation) - 1.0
         # print(f"{len(self.animation)=} {self.frame_index:4.1f} {int(self.frame_index)=}")
 
         self.image = self.animation[int(self.frame_index)].copy()
@@ -116,6 +119,7 @@ class ParticleImageBased:
             return
 
         self.delete_old_particles()
+        # test = 0
         for particle in self.particles:
             particle.time_elapsed += dt
             if self.animation:
@@ -141,10 +145,12 @@ class ParticleImageBased:
 
             surface  = self.image
             surface = pygame.transform.scale(
-                self.image, (self.width * particle.scale, self.height * particle.scale))
-            surface = pygame.transform.rotate(surface, particle.rotation)
-            self.rect.centerx = particle.x - int(surface.get_width() // 2)
-            self.rect.centery = particle.y - int(surface.get_height() // 2)
+                self.image,
+                (self.width * particle.scale, self.height * particle.scale)
+            )
+
+            self.rect = surface.get_rect(topleft=(particle.x, particle.y))
+
             # need to compensate for the camera move and zoom change since the creation of particle
             # this ensures that the particles are always in the same place relative to the ground
             view_offset = vec(
@@ -152,14 +158,13 @@ class ParticleImageBased:
                 particle.start_view.centery - self.group.view.centery) * self.camera.zoom
 
             self.rect = self.rect.move(view_offset.x, view_offset.y)
-
-            self.screen.blit(surface, self.rect.center)
+            self.screen.blit(surface, self.rect.topleft)
 
     ###################################################################################################################
     # MARK: add_particles
     def add_particles(
         self,
-        start_pos: tuple[int, int] | None = None,
+        start_pos: tuple[int | float, int | float] | None = None,
         move_speed: float = 100.0,
         move_dir: int = 180,
         rotation: int = 0,
@@ -172,20 +177,29 @@ class ParticleImageBased:
         # rotation:     0 ==> no rotation; 180 ==> flip upside down (initial rotation in degrees, clockwise)
         # scale:        1 ==> no change; 2 ==> extend 2 times (initial)
         # lifetime:     1 ==> 1 second
+        if not start_pos and not self.spawn_rect:
+            print("[red]ERROR[/] no start position for particle!")
 
         # if spawn area is provided use it; otherwise use the middle of the screen
         if self.spawn_rect:
-            pos_x = self.spawn_rect.x + random.randint(0, self.spawn_rect.width)
-            pos_y = self.spawn_rect.y + random.randint(0, self.spawn_rect.height)
+            pos_x = int(self.spawn_rect.x + random.random() * self.spawn_rect.width)
+            pos_y = int(self.spawn_rect.y + random.random() * self.spawn_rect.height)
         elif start_pos:
             pos_x = int(start_pos[0] - self.width / 2)
             pos_y = int(start_pos[1] - self.height / 2)
+
         dir_vec = vec(0, -1).rotate(move_dir).normalize() * move_speed
-        direction_x = int(dir_vec.x)  # random.randint(-3,3)
-        direction_y = int(dir_vec.y)  # random.randint(-3,3)
+        direction_x = int(dir_vec.x)
+        direction_y = int(dir_vec.y)
         # compensate the camera zoom level change
-        p = Particle(self.group.view, pos_x, pos_y, direction_x, direction_y,
-                     scale * (self.camera.zoom / ZOOM_LEVEL), rotation, alpha, lifetime)
+        p = Particle(self.group.view,
+                     pos_x, pos_y,
+                     direction_x, direction_y,
+                     scale * (self.camera.zoom / ZOOM_LEVEL),
+                     rotation,
+                     alpha,
+                     lifetime
+                     )
         # if self.x_oscillation:
         #     p.x_oscillation = self.x_oscillation
 
@@ -305,3 +319,148 @@ class ParticleRain(ParticleSystem):
     ###################################################################################################################
     def emit(self, dt: float) -> None:
         self.particle.emit(dt)
+
+#####################################################################################################################
+
+
+class ParticleDestructible(ParticleSystem):
+    # MARK: Destructible
+    def __init__(self,
+                 canvas: pygame.Surface,
+                 group: PyscrollGroup,
+                 camera: Camera,
+                 spawn_rect: pygame.Rect | pygame.FRect,
+                 type: str
+                 ) -> None:
+        self.spawn_rect = spawn_rect
+        self.type = type
+
+        from settings import (
+            import_sprite_sheet,
+            SPRITE_SHEET_DEFINITION_LEAF,
+            SPRITE_SHEET_DEFINITION_DESTRUCTIBLE_FOLIAGE,
+            SPRITE_SHEET_DEFINITION_ROCK,
+            SPRITE_SHEET_DEFINITION_DESTRUCTIBLE_ROCK,
+        )
+
+        # animation of leaf moving sideways
+        self.animations = import_sprite_sheet(str(PARTICLES_DIR / "Leaf.png"),
+                                              12, 7,
+                                              SPRITE_SHEET_DEFINITION_LEAF,
+                                              add_missing_directions=False
+                                              )
+
+        # animation of destructible object in place
+        dest_animations = import_sprite_sheet(str(PARTICLES_DIR / "Leaf_destruct.png"),
+                                              32, 28,
+                                              SPRITE_SHEET_DEFINITION_DESTRUCTIBLE_FOLIAGE,
+                                              add_missing_directions=False
+                                              )
+        self.animations.update(dest_animations)
+        dest_animations = import_sprite_sheet(str(PARTICLES_DIR / "Rock.png"),
+                                              16, 16,
+                                              SPRITE_SHEET_DEFINITION_ROCK,
+                                              add_missing_directions=False
+                                              )
+        self.animations.update(dest_animations)
+        dest_animations = import_sprite_sheet(str(PARTICLES_DIR / "Rock_destruct.png"),
+                                              30, 30,
+                                              SPRITE_SHEET_DEFINITION_DESTRUCTIBLE_ROCK,
+                                              add_missing_directions=False
+                                              )
+        self.animations.update(dest_animations)
+
+        animation_speed = 10.00
+        scale_speed     =  0.10
+        alpha_speed     =  0.80
+        rate            =  0.50
+
+        # leaf particles moving left
+        animation = self.animations[f"{self.type}_left"]
+        self.particle_left = ParticleImageBased(
+            screen          = canvas,
+            image           = animation[0].copy(),
+            group           = group,
+            camera          = camera,
+            animation       = animation,
+            animation_speed = animation_speed,
+            rate            = rate,
+            scale_speed     = scale_speed,
+            alpha_speed     = alpha_speed,
+            rotation_speed  = 0.0,
+            spawn_rect      = spawn_rect,
+        )
+
+        # leaf particles moving right
+        animation = self.animations[f"{self.type}_right"]
+        self.particle_right = ParticleImageBased(
+            screen          = canvas,
+            image           = animation[0].copy(),
+            group           = group,
+            camera          = camera,
+            animation       = animation,
+            animation_speed = animation_speed,
+            rate            = rate,
+            scale_speed     = scale_speed,
+            alpha_speed     = alpha_speed,
+            rotation_speed  = 0.0,
+            spawn_rect      = spawn_rect,
+        )
+
+        # destructible particle in place
+        animation = self.animations[self.type]
+        self.particle_destruct = ParticleImageBased(
+            screen          = canvas,
+            image           = animation[0].copy(),
+            group           = group,
+            camera          = camera,
+            animation       = animation,
+            animation_speed = animation_speed,
+            loop_animation  = False,
+            rate            = rate,
+            scale_speed     = 0.0,
+            alpha_speed     = 0.0,
+            rotation_speed  = 0.0,
+        )
+        self.custom_event_id = self.particle_left.custom_event_id
+
+    ###################################################################################################################
+    def add(self) -> None:
+        move_speed = 300
+        scale      = 5.0
+        lifetime   = 0.60
+        dir_span   = 60
+
+        #  3 x left + 3 x right, leaf moves 300 pixels/seconds
+        #  moves left +/- 120 degree, enlarge 5 x, kill after 0.6 a second
+        for _ in range(3):
+            self.particle_right.add_particles(
+                # start_pos=pygame.mouse.get_pos(),
+                move_speed = move_speed,
+                move_dir   = 90 + random.randint(-dir_span, dir_span),
+                scale      = scale,
+                lifetime   = lifetime
+            )
+
+            self.particle_left.add_particles(
+                # start_pos=pygame.mouse.get_pos(),
+                move_speed = move_speed,
+                move_dir   = 270 + random.randint(-dir_span, dir_span),
+                scale      = scale,
+                lifetime   = lifetime
+            )
+
+        # one time, in place
+        self.particle_destruct.add_particles(
+            start_pos  = self.spawn_rect.topleft,
+            move_speed = 0.0,
+            move_dir   =   0,
+            scale      = 4.0,
+            lifetime   = 0.8
+        )
+
+    ###################################################################################################################
+    def emit(self, dt: float) -> None:
+        self.particle_left.emit(dt)
+        self.particle_right.emit(dt)
+        self.particle_destruct.emit(dt)
