@@ -24,7 +24,7 @@
 # ///
 import asyncio
 import random
-
+from rich import print, rule
 from game import Game
 
 # 101 0017 # 106 0021 # 107 0030 no left down
@@ -34,8 +34,10 @@ random.seed(seed)
 
 
 def main() -> None:
+    print(rule.Rule(title="[bright_yellow]START[/]", characters="#"))
     game = Game()
     asyncio.run(game.loop())
+    print(rule.Rule(title="[bright_yellow]END[/]", characters="#"))
 
 
 if __name__ == "__main__":

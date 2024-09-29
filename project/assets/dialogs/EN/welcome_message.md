@@ -3,7 +3,8 @@
 
 ([act]I[/act]) [bold]Introduction[/bold]
 
-[shadow]There is a [char]hero[/char], I mean you :shocked_anim: , in the middle of [loc]Smuggi[/loc] village, who doesn't know what to do. Don't worry, we got you covered. Simply, by pressing :X: you can access you handy [link READ THE GENERAL WIKI]WIKI[/link] [/shadow]
+[shadow]There is a [char]hero[/char], I mean you :shocked_anim: , in the middle of [loc]Smuggi[/loc] village, who doesn't know what to do. Don't worry, we got you covered. Simply, by pressing :X: you can access you handy
+[link READ THE GENERAL WIKI]WIKI[/link] [/shadow]
 
 ([act]II[/act]) Fight system
 
@@ -16,6 +17,7 @@ And there's always...
 This is treated as a random event.
 You may be able to escape unscathed, but you may also lose something while escaping and it's not just about your honor.
 
-[shadow]SHADOW The outcome of a given encounter is affected by [item]equipment[/item] in use and current [quest]quest[/quest] ([link READ THE QUEST WIKI]see here[/link]).[/shadow]
+[shadow]SHADOW The outcome of a given encounter is affected by
+[item]equipment[/item] in use and current [quest]quest[/quest] ([link READ THE QUEST WIKI]see here[/link]).[/shadow]
 
 Visit the game page on [link https://hubertnafalski.itch.io/]itch.io[/link]
