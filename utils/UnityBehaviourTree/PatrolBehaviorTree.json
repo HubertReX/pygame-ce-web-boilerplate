@@ -1,0 +1,17 @@
+{
+    "Selector_01": {
+        "Sequence_01": {
+            "Condition_01": "is_tired",
+            "Action_01": "rest"
+        },
+        "Sequence_02": {
+            "Condition_01": "is_enemy_in_attack_range",
+            "Action_01": "attack"
+        },
+        "Sequence_03": {
+            "Condition_01": "is_enemy_in_FOV_range",
+            "Action_01": "approach_enemy"
+        },
+        "Action_01": "patrol_area"
+    }
+}
