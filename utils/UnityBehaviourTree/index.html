@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en-US" dir="ltr">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.2.1/+esm'
+    </script>
+</head>
+
+<body>
+    <pre class="mermaid">
+flowchart TD
+title[<u>Guard Patrol <br> Behaviour Tree</u>]
+title --- SEL1
+%% style title fill:#FFF,stroke:#FFF
+linkStyle 0 stroke:#FFF,stroke-width:0;
+
+
+subgraph SEL1 [Selection1]
+
+
+subgraph SG1 [sequence 1]
+direction TB
+S1[/Sequence/] --> C1{Condition}
+
+C1 --YES--> A1([Action])
+C1 --NO--> S1
+end
+
+subgraph SG2 [sequence 2]
+direction TB
+S2[/Sequence/]
+C2{Condition2}
+A2([Action2])
+S2 --> C2
+C2 --> A2
+end
+
+subgraph SG3 [sequence 3]
+direction TB
+S3[/Sequence/] --> C3{Condition}
+C3{Condition2}
+A3([Action2])
+C3 --> A3
+end
+
+%% SEL1 --> SG1
+SEL1_Title[[Selection 1]]
+SEL1_Title --> SG1
+SEL1_Title --> SG2
+SEL1_Title --> SG3
+
+
+
+end
+
+        click C1 callback "Tooltip"
+        click A1 "https://www.github.com" "This is a link"
+        click C2 call callback() "Tooltip"
+        click A2 href "https://www.github.com" "This is a link"
+  </pre>
+
+    <script>
+        window.callback = function () {
+            alert('A callback was triggered');
+        };
+        const config = {
+            startOnLoad: true,
+            flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'cardinal' },
+            securityLevel: 'loose',
+        };
+        mermaid.initialize(config);
+    </script>
+</body>
+
+</html>
