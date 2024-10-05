@@ -136,9 +136,9 @@ class Game:
         self.screen: pygame.Surface = pygame.display.set_mode((WIDTH * SCALE, HEIGHT * SCALE), self.flags, vsync=0)
         # helper surface, before scaling up
         # , 32 .convert_alpha() # pygame.SRCALPHA
-        self.canvas: pygame.Surface = pygame.Surface((WIDTH, HEIGHT)).convert_alpha() # , self.flags)
+        self.canvas: pygame.Surface = pygame.Surface((WIDTH, HEIGHT)).convert_alpha()  # , self.flags)
         # helper surface for HUD
-        self.HUD: pygame.Surface = pygame.Surface((WIDTH * SCALE, HEIGHT * SCALE)).convert_alpha() # | pygame.SRCALPHA
+        self.HUD: pygame.Surface = pygame.Surface((WIDTH * SCALE, HEIGHT * SCALE)).convert_alpha()  # | pygame.SRCALPHA
         if not USE_SHADERS:
             self.canvas = self.screen
             self.HUD    = self.screen
@@ -734,7 +734,7 @@ class Game:
     #############################################################################################################
 
     # @timeit
-    async def run(self):
+    async def run(self) -> None:
         # delta time since last frame in milliseconds
         dt = self.clock.tick(FPS_CAP) / 1000
         # slow down
@@ -783,7 +783,7 @@ class Game:
             platform.window.show_canvas(True)  # type: ignore[attr-defined]
 
         # MARK: loop
-        self.fps: float = 0.0
+        self.fps = 0.0
         # self.avg_fps_3s: float = 0.0
         # self.avg_fps_10s: float = 0.0
         # self.fps_data_3s = deque([], 3 * FPS_CAP)

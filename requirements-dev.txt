@@ -1,6 +1,6 @@
-pygame-ce==2.4.1
-pygame-menu-ce==4.4.3
-pygbag==0.9.1
+pygame-ce==2.5.1
+# pygame-menu-ce==4.4.3
+pygbag==0.9.2
 pyperclip==1.8.2
 pyscroll==2.31
 PyTMX==3.32
@@ -11,11 +11,13 @@ numpy>=1.26.4
 pydantic>=2.7.1
 pillow==10.3.0
 ffmpeg-python==0.2.0
+thorpy==2.1.9
 # only for utils
 # glcontext==2.5.0
 # tqdm==4.66.4
 # only for dev
-sourcery==1.19.0
+# huge file, AI coding
+# sourcery==1.19.0
 mypy==1.10.0
 mypy-extensions==1.0.0
 glcontext==2.5.0
