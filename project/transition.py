@@ -36,8 +36,8 @@ class Transition():
 
     #############################################################################################################
     def draw(self, screen: pygame.Surface) -> None:
-        # TODO Fix slow transition
-        if self.exiting:
+        # if alpha is at either of both value limits, do not show
+        if self.alpha not in (0, 255):
             self.fade_surf.fill(COLORS["black"])
             self.fade_surf.set_alpha(self.alpha)
             screen.blit(self.fade_surf, (0, 0))
@@ -48,8 +48,8 @@ class Transition():
 class TransitionCircle(Transition):
 
     def draw(self, screen: pygame.Surface) -> None:
-        # TODO Fix slow transition
-        if self.exiting:
+        # if alpha is at either of both value limits, do not show
+        if self.alpha not in (0, 255):
             self.fade_surf.fill((1, 1, 1))
             # pos = self.scene.player.pos
             # offset_x, offset_y = self.scene.map_view.get_center_offset()

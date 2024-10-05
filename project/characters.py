@@ -1054,8 +1054,7 @@ class NPC(pygame.sprite.Sprite):
                         f"\n[red]ERROR:[/] {self.name} Max carry weight "
                         f"'[num]{self.model.max_carry_weight:4.2f}[/num]' exceeded!\n")
                     self.scene.add_notification(
-                        f"Max carry weight '[num]{
-                            self.model.max_carry_weight:4.2f}[/num]' exceeded :red_exclamation_anim:",
+                        f"Max carry weight '[num]{self.model.max_carry_weight:4.2f}[/num]' exceeded :red_exclamation_anim:",
                         scene.NotificationTypeEnum.failure)
 
             else:

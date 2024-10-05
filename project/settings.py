@@ -85,6 +85,7 @@ USE_SOD = False
 USE_SHADERS = False
 SHOW_DEBUG_INFO = False
 SHOW_HELP_INFO = False
+SHOW_UI = True
 
 # inventory slots count
 MAX_HOTBAR_ITEMS = 6
@@ -230,9 +231,10 @@ ACTIONS: dict[str, dict[str, Any]] = {
     "accept":         {"show": None,             "msg": "accept",      "keys": [pygame.K_RETURN, pygame.K_KP_ENTER]},
     "help":           {"show": ["key_H"],        "msg": "show help",   "keys": [pygame.K_F1,     pygame.K_h]},
     "menu":           {"show": ["key_F2"],       "msg": "menu",        "keys": [pygame.K_F2]},
-    "screenshot":     {"show": ["key_F9"],       "msg": "screenshot",  "keys": [pygame.K_F9]},
+    "show_ui":        {"show": ["key_F3"],       "msg": "toggle UI",   "keys": [pygame.K_F3]},
+    # "screenshot":     {"show": ["key_F9"],       "msg": "screenshot",  "keys": [pygame.K_F9]},
     "intro":          {"show": ["key_F4"],       "msg": "intro",       "keys": [pygame.K_F4]},
-    "record":         {"show": ([] if IS_WEB else ["key_F3"]), "msg":  "record mp4", "keys": [pygame.K_F3]},
+    # "record":         {"show": ([] if IS_WEB else ["key_F3"]), "msg":  "record mp4", "keys": [pygame.K_F3]},
     "reload":         {"show": ([] if IS_WEB else ["key_R"]), "msg":   "reload map", "keys": [pygame.K_r]},
     "zoom_in":        {"show": ["key_+"],        "msg": "zoom in",     "keys": [pygame.K_EQUALS, pygame.K_KP_PLUS]},
     "zoom_out":       {"show": ["key_-"],        "msg": "zoom out",    "keys": [pygame.K_MINUS, pygame.K_KP_MINUS]},

@@ -136,11 +136,12 @@ class Game:
         self.screen: pygame.Surface = pygame.display.set_mode((WIDTH * SCALE, HEIGHT * SCALE), self.flags, vsync=0)
         # helper surface, before scaling up
         # , 32 .convert_alpha() # pygame.SRCALPHA
-        self.canvas: pygame.Surface = pygame.Surface((WIDTH, HEIGHT), self.flags)
+        self.canvas: pygame.Surface = pygame.Surface((WIDTH, HEIGHT)).convert_alpha() # , self.flags)
+        # helper surface for HUD
+        self.HUD: pygame.Surface = pygame.Surface((WIDTH * SCALE, HEIGHT * SCALE)).convert_alpha() # | pygame.SRCALPHA
         if not USE_SHADERS:
             self.canvas = self.screen
-        # helper surface for HUD
-        self.HUD: pygame.Surface = pygame.Surface((WIDTH * SCALE, HEIGHT * SCALE), self.flags | pygame.SRCALPHA)
+            self.HUD    = self.screen
 
         size = self.screen.get_size()
         self.rec_process: Any | None = None
@@ -582,16 +583,16 @@ class Game:
             print(f"{self.is_paused=}")
             INPUTS["pause"] = False
 
-        if INPUTS["record"]:
-            if not IS_WEB:
-                if not self.save_frame:
-                    self.start_recording()
-                else:
-                    self.save_recording()
-            INPUTS["record"] = False
+        # if INPUTS["record"]:
+        #     if not IS_WEB:
+        #         if not self.save_frame:
+        #             self.start_recording()
+        #         else:
+        #             self.save_recording()
+        #     INPUTS["record"] = False
 
-        if INPUTS["screenshot"]:
-            INPUTS["screenshot"] = not self.save_screenshot(self.add_notification_dummy)
+        # if INPUTS["screenshot"]:
+        #     INPUTS["screenshot"] = not self.save_screenshot(self.add_notification_dummy)
 
         if INPUTS["run"]:
             for joystick in self.joysticks.values():
@@ -735,8 +736,7 @@ class Game:
     # @timeit
     async def run(self):
         # delta time since last frame in milliseconds
-        # dt = self.clock.tick(FPS_CAP) / 1000
-        dt = self.clock.tick() / 1000
+        dt = self.clock.tick(FPS_CAP) / 1000
         # slow down
         # dt *= 0.25
         self.fps = self.clock.get_fps()
@@ -753,7 +753,8 @@ class Game:
             self.time_elapsed += dt
             self.states[-1].update(dt, events)
         self.canvas.fill(BG_COLOR)
-        self.HUD.fill(TRANSPARENT_COLOR)
+        if USE_SHADERS:
+            self.HUD.fill(TRANSPARENT_COLOR)
         self.states[-1].draw(self.canvas, dt)
         self.custom_cursor(self.HUD)
 
@@ -767,8 +768,8 @@ class Game:
             else:
                 self.screen.blit(self.canvas, (0, 0))
             self.postprocessing(dt)
-        else:
-            self.screen.blit(self.HUD, (0, 0))
+        # else:
+        #     self.screen.blit(self.HUD, (0, 0))
 
         pygame.display.flip()
         await asyncio.sleep(0)

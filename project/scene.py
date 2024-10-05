@@ -59,6 +59,7 @@ from settings import (
     PARTICLES,
     SHADERS_NAMES,
     SHOW_DEBUG_INFO,
+    SHOW_UI,
     STEP_COST_GROUND,
     STEP_COST_WALL,
     TEXT_ROW_SPACING,
@@ -207,7 +208,7 @@ class Scene(State):
         self.particles: list[ParticleSystem] = []
         # self.circle_gradient: pygame.Surface = (CIRCLE_GRADIENT).convert_alpha()
         self.ui = UI(self)
-        self.display_ui_flag: bool = True
+        self.display_ui_flag: bool = SHOW_UI
         # self.load_items_def()
         self.load_map()
         # self.start_particles()
@@ -1200,6 +1201,10 @@ class Scene(State):
         if INPUTS["help"]:
             self.ui.show_help_info = not self.ui.show_help_info
             INPUTS["help"] = False
+
+        if INPUTS["show_ui"]:
+            self.display_ui_flag = not self.display_ui_flag
+            INPUTS["show_ui"] = False
 
         if INPUTS["use_item"]:
             self.player.use_item()
