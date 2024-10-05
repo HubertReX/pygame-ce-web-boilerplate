@@ -18,7 +18,8 @@ from settings import (
 
 import game
 if IS_WEB:
-    from config_model.config import AttitudeEnum, Character, Item, ItemTypeEnum, Chest
+    from config_model.config import AttitudeEnum, Character, Item
+    from config_model.config import ItemTypeEnum, Chest
 else:
     from config_model.config_pydantic import AttitudeEnum, Character, Item  # type: ignore[assignment]
     from config_model.config_pydantic import ItemTypeEnum, Chest  # type: ignore[assignment]
@@ -175,6 +176,7 @@ class HealthBar(pygame.sprite.Sprite):
         super().__init__(groups)
         self.image: pygame.Surface = pygame.Surface((100, 20)).convert_alpha()
         self.image.fill(TRANSPARENT_COLOR)
+        self.visible: bool = True
         self.name = name
         self.model = model
         self.render_text = render_text
@@ -233,10 +235,14 @@ class HealthBar(pygame.sprite.Sprite):
 
 #################################################################################################################
     def show(self) -> None:
+        self.visible = True
         self.set_bar(self.model.health / self.model.max_health)
 
 #################################################################################################################
     def hide(self) -> None:
+        if not self.visible:
+            return
+        self.visible = False
         self.set_bar(-1)
 
 #################################################################################################################

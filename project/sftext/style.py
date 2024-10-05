@@ -139,7 +139,7 @@ class Style:
                 font = search_group.group("font")
             else:
                 font = search_group.group("font") + ".ttf"
-                print(font)
+                # print(font)
         else:
             font = cls.default_style["font"]
         cls.string = re.sub(
@@ -161,7 +161,7 @@ class Style:
                 separate_italic = search_group.group("separate_italic")
             else:
                 separate_italic = search_group.group("separate_italic") + ".ttf"
-                print(separate_italic)
+                # print(separate_italic)
         else:
             if cls.style["font"] == cls.default_style["font"]:
                 separate_italic = cls.default_style["separate_italic"]
@@ -186,7 +186,7 @@ class Style:
                 separate_bold = search_group.group("separate_bold")
             else:
                 separate_bold = search_group.group("separate_bold") + ".ttf"
-                print(separate_bold)
+                # print(separate_bold)
         else:
             if cls.style["font"] == cls.default_style["font"]:
                 separate_bold = cls.default_style["separate_bold"]
@@ -213,7 +213,7 @@ class Style:
             else:
                 separate_bolditalic = search_group.group(
                     "separate_bolditalic") + ".ttf"
-                print(separate_bolditalic)
+                # print(separate_bolditalic)
         else:
             if cls.style["font"] == cls.default_style["font"]:
                 separate_bolditalic = cls.default_style["separate_bolditalic"]

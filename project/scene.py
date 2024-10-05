@@ -11,11 +11,13 @@ from animation import animator
 from camera import Camera
 from maze_generator import hunt_and_kill_maze
 from maze_generator.maze_utils import (
+    _TIMEIT_CACHE,
     EMPTY_CELL,
     TILE_SIZE,
     build_tileset_map_from_maze,
     clear_maze_cache,
-    get_gid_from_tmx_id
+    get_gid_from_tmx_id,
+    timeit
 )
 from objects import (ChestSprite, Collider, DestructibleSprite, ItemSprite, Notification, NotificationTypeEnum)
 from particles import ParticleDestructible, ParticleSystem
@@ -1036,12 +1038,15 @@ class Scene(State):
         self.transition.exiting = False
 
     #############################################################################################################
+    # @timeit
     def update(self, dt: float, events: list[pygame.event.EventType]) -> None:
         # MARK: update
         global INPUTS
 
         self.remove_old_notifications()
-        self.ui.update(self.game.time_elapsed, events)
+
+        if self.display_ui_flag:
+            self.ui.update(self.game.time_elapsed, events)
 
         self.group.update(dt)
         self.animations.update(dt)
@@ -1172,6 +1177,9 @@ class Scene(State):
             # SplashScreen(self.game).enter_state()
             # Scene(self.game, "grasslands", "start").enter_state()
             # MainMenuScreen(self.game, next_scene).enter_state()
+            for fun, val in _TIMEIT_CACHE.items():
+                cnt, time = val
+                print(f"{fun};{cnt};{time:.10f};{time / cnt:.10f}")
             self.exit_state()
             self.game.reset_inputs()
 
@@ -1333,7 +1341,7 @@ class Scene(State):
         self.group.empty()
 
     #############################################################################################################
-
+    # @timeit
     def draw(self, screen: pygame.Surface, dt: float) -> None:
         # MARK: draw
         # center map on player
@@ -1354,10 +1362,12 @@ class Scene(State):
             self.apply_alpha_filter(screen)
 
         # draw black bars at the top and bottom when during cutscene
-        self.apply_cutscene_framing(screen, self.cutscene_framing)
+        if self.cutscene_framing:
+            self.apply_cutscene_framing(screen, self.cutscene_framing)
 
         if SHOW_DEBUG_INFO:
-            self.show_debug()
+            # self.show_debug()
+            self.debug([f"FPS: {self.game.fps: 5.1f} ",])
 
         if self.display_ui_flag:
             self.ui.display_ui(self.game.time_elapsed)

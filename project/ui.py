@@ -7,6 +7,7 @@ from rich import print
 import pygame
 from objects import ItemSprite, InventorySlot, Notification, NotificationTypeEnum
 from animation.transitions import AnimationTransition
+from maze_generator.maze_utils import timeit
 from sftext.style import Style
 from sftext.sftext import SFText
 
@@ -519,7 +520,7 @@ class UI:
         self.dialog_panel.formatted_text.scroll_top()
 
     #############################################################################################################
-
+    # @timeit
     def update(self, time_elapsed: float, events: list[pygame.event.EventType]) -> None:
         global INPUTS
         # if INPUTS["select"] or INPUTS["pick_up"]:
@@ -558,13 +559,16 @@ class UI:
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     self.dialog_panel.on_mouse_button(event)
 
-        self.modal_panel.on_mouse_move()
-        self.modal_panel.on_update(time_elapsed)
+        if self.show_modal_panel_flag:
+            self.modal_panel.on_mouse_move()
+            self.modal_panel.on_update(time_elapsed)
 
-        self.dialog_panel.on_mouse_move()
-        self.dialog_panel.on_update(time_elapsed)
+        if self.show_dialog_panel_flag:
+            self.dialog_panel.on_mouse_move()
+            self.dialog_panel.on_update(time_elapsed)
 
     #############################################################################################################
+    # @timeit
     def display_ui(self, elapsed_time: float) -> None:
         player: Player = self.scene.player
         # upper left corner

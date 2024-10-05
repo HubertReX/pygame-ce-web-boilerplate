@@ -5,18 +5,16 @@
 # version = "0.1"
 # description = "Boilerplate pygame-ce project for a top-down tiles sheet based RPG game that can run in the browser."
 # readme = {file = "../README.md", content-type = "text/markdown"}
-# requires-python = ">=3.11"
+# requires-python = ">=3.12"
 #
 # dependencies = [
 #  "numpy",
+#  "pillow",
 #  "pytmx",
 #  "pyscroll",
 #  "functools",
 #  "rich",
 #  "Pygments",
-#  "zengl",
-#  "zengl_extras",
-#  "struct",
 #  "pathlib",
 #  "pillow",
 #  "thorpy",

@@ -66,7 +66,7 @@ TILE_SIZE = 16
 _CACHE: dict[tuple[tuple[int, int], tuple[int, int]], list[tuple[int, int]]] = {}
 _sum: float = 0.0
 _cnt: int = 0
-
+_TIMEIT_CACHE = {}
 #######################################################################################################################
 
 
@@ -76,13 +76,19 @@ def timeit(func: Callable) -> Callable:
     def timeit_wrapper(*args: Any, **kwargs: Any) -> Any:
         global _sum, _cnt
 
-        start_time = time.perf_counter()
+        start_time = time.time_ns()  # perf_counter()
         result = func(*args, **kwargs)
-        end_time = time.perf_counter()
+        end_time = time.time_ns()  # perf_counter()
         total_time = end_time - start_time
         # func.add_execute_time(total_time)
+        fun_name = repr(func).split(" ")[1]
+        _cnt, _sum = _TIMEIT_CACHE.get(fun_name, (0, 0.0))
         _cnt += 1
         _sum += total_time
+        _TIMEIT_CACHE[fun_name] = (_cnt, _sum)
+        # if _cnt % 50 == 0:
+        #     print(f"{fun_name};{_sum / _cnt:.10f}")  # {_sum=} {_cnt=}
+
         # el = float(kwargs["fps"][-4:])
         # if el <= 10.00:
         #     print(f'{func.__name__} {str(kwargs["start"]):8}
@@ -92,9 +98,9 @@ def timeit(func: Callable) -> Callable:
     return timeit_wrapper
 
 #######################################################################################################################
+
+
 # @timeit
-
-
 def a_star_cached(
     grid: list[list[int]],
     start: tuple[int, int],

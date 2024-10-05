@@ -75,7 +75,7 @@ class NinePatch():
 
     def get_scaled_to_image(self, image: pygame.Surface) -> pygame.Surface:
         rect = image.get_rect()
-        print(rect.width, rect.height)
+        # print(rect.width, rect.height)
 
         self.get_scaled_fit(rect.width, rect.height)
         self.image.blit(image, (self.border, self.border))

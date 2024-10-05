@@ -36,24 +36,28 @@ class Transition():
 
     #############################################################################################################
     def draw(self, screen: pygame.Surface) -> None:
-        self.fade_surf.fill(COLORS["black"])
-        self.fade_surf.set_alpha(self.alpha)
-        screen.blit(self.fade_surf, (0, 0))
-        # pygame.draw.circle(screen, (10,10,10), (WIDTH//2, HEIGHT//2), self.radius)
+        # TODO Fix slow transition
+        if self.exiting:
+            self.fade_surf.fill(COLORS["black"])
+            self.fade_surf.set_alpha(self.alpha)
+            screen.blit(self.fade_surf, (0, 0))
+            # pygame.draw.circle(screen, (10,10,10), (WIDTH//2, HEIGHT//2), self.radius)
 
 
 #################################################################################################################
 class TransitionCircle(Transition):
 
     def draw(self, screen: pygame.Surface) -> None:
-        self.fade_surf.fill((1, 1, 1))
-        # pos = self.scene.player.pos
-        # offset_x, offset_y = self.scene.map_view.get_center_offset()
-        # zoom = self.scene.map_view.zoom
-        pos = self.scene.map_view.translate_point(self.scene.player.pos)  # type: ignore[has-type]
-        # pygame.draw.circle(self.fade_surf, (0,0,0), (WIDTH//2, HEIGHT//2), self.radius)
-        pygame.draw.circle(self.fade_surf, (0, 0, 0), pos, self.radius)
-        # self.fade_surf.set_alpha(self.alpha)
-        self.fade_surf.set_colorkey((0, 0, 0))
-        screen.blit(self.fade_surf, (0, 0))
-        # pygame.draw.circle(screen, (10,10,10), (WIDTH//2, HEIGHT//2), self.radius)
+        # TODO Fix slow transition
+        if self.exiting:
+            self.fade_surf.fill((1, 1, 1))
+            # pos = self.scene.player.pos
+            # offset_x, offset_y = self.scene.map_view.get_center_offset()
+            # zoom = self.scene.map_view.zoom
+            pos = self.scene.map_view.translate_point(self.scene.player.pos)  # type: ignore[has-type]
+            # pygame.draw.circle(self.fade_surf, (0,0,0), (WIDTH//2, HEIGHT//2), self.radius)
+            pygame.draw.circle(self.fade_surf, (0, 0, 0), pos, self.radius)
+            # self.fade_surf.set_alpha(self.alpha)
+            self.fade_surf.set_colorkey((0, 0, 0))
+            screen.blit(self.fade_surf, (0, 0))
+            # pygame.draw.circle(screen, (10,10,10), (WIDTH//2, HEIGHT//2), self.radius)

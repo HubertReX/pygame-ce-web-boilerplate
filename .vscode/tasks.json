@@ -1,0 +1,69 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "markdownlint",
+			"problemMatcher": [
+				"$markdownlint"
+			],
+			"label": "markdownlint: Lint all Markdown files in the workspace with markdownlint"
+		},
+		{
+			"type": "austin",
+			"command": [
+				// "${workspaceFolder}/run.ps1"
+				// "./run.ps1"
+				// "echo ok;",
+				// "cd project",
+				"python",
+				"main.py",
+				// "austin -i 100 --pipe"
+			],
+			// "args": [
+			// 	"python",
+			// 	"main.py"
+			// ],
+			"label": "Profile PyGame-CE Game wit Austin",
+			// "file": "main.py",
+			// "options": {
+			// 	"cwd": "${workspaceFolder}/project"
+			// },
+			"problemMatcher": [],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		},
+		{
+			"type": "shell",
+			"command": [
+				"${workspaceFolder}/serve_web.bat"
+			],
+			"label": "Serve Web server",
+			"problemMatcher": [],
+			"group": {
+				"kind": "build",
+				"isDefault": false
+			}
+		},
+		{
+			"type": "shell",
+			"command": [
+				"${workspaceFolder}/update_config_schema.bat"
+			],
+			"label": "Update json config schema",
+			"problemMatcher": [],
+		},
+		{
+			"type": "shell",
+			"command": [
+				"echo $PWD"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/project"
+			},
+			"label": "Test CWD",
+			"problemMatcher": [],
+		}
+	]
+}

@@ -82,7 +82,7 @@ IS_PAUSED = False
 USE_ALPHA_FILTER = False
 USE_CUSTOM_MOUSE_CURSOR = True
 USE_SOD = False
-USE_SHADERS = True
+USE_SHADERS = False
 SHOW_DEBUG_INFO = False
 SHOW_HELP_INFO = False
 
@@ -96,7 +96,7 @@ INVENTORY_ITEM_WIDTH = 22 * INVENTORY_ITEM_SCALE
 AVATAR_SCALE: int = 32
 
 # game render fps cap
-FPS_CAP = 130
+FPS_CAP = 0  # 130
 # gameplay recording fps (doesn't need to be the same as FPS_CAP)
 RECORDING_FPS = 30
 
@@ -429,11 +429,12 @@ PROGRAM_ICON      = ASSETS_DIR / "icon.png"
 MOUSE_CURSOR_IMG  = ASSETS_DIR / "pointer4.png"
 # CIRCLE_GRADIENT   = HUD_DIR / "circle_gradient_big.png"
 # LOGO_IMG          = HUD_DIR / "logo.png"
-COMMON_SHADERS_DIR = Path("shaders") / "common"
+SHADERS_DIR = CURRENT_DIR / "shaders"
+COMMON_SHADERS_DIR = SHADERS_DIR / "common"
 if IS_WEB:
-    SHADERS_DIR = Path("shaders") / "OpenGL3.0_ES"
+    SHADERS_DIR = SHADERS_DIR / "OpenGL3.0_ES"
 else:
-    SHADERS_DIR = Path("shaders") / "OpenGL3.3"
+    SHADERS_DIR = SHADERS_DIR / "OpenGL3.3"
 
 SHADERS_NAMES = [
     "RETRO_CRT",

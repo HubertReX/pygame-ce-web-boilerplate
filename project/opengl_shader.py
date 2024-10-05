@@ -7,11 +7,6 @@ import pygame
 import zengl
 from settings import COMMON_SHADERS_DIR, IS_WEB, MAX_LIGHTS_COUNT, SHADERS_DIR, vec, vec3
 
-if IS_WEB:
-    zengl.init()
-else:
-    zengl_extras.init()
-
 
 try:
     CSI("test")  # type: ignore[used-before-def]  # noqa: F821
@@ -24,6 +19,11 @@ except NameError:
 
 class OpenGL_shader():
     def __init__(self, size: tuple[int, int], shader_name: str = "") -> None:
+
+        if IS_WEB:
+            zengl.init()
+        else:
+            zengl_extras.init()
 
         def compile_error_debug(shader: str, shader_type: int, log: str) -> None:
             name = {0x8B31: "Vertex Shader", 0x8B30: "Fragment Shader"}[shader_type]
@@ -215,10 +215,6 @@ class OpenGL_shader():
 
         """
         self.ctx.new_frame()
-        self.image.clear()
-        self.image.write(pygame.image.tobytes(surface, "RGBA", flipped=True))
-        self.HUD.clear()
-        self.HUD.write(pygame.image.tobytes(HUD, "RGBA", flipped=True))
         # Fatal Python error: none_dealloc: deallocating None: bug likely caused by a refcount error in a C extension
         # Python runtime state: initialized
 
@@ -230,6 +226,11 @@ class OpenGL_shader():
         res = None
 
         if use_shaders:
+            self.image.clear()
+            self.image.write(pygame.image.tobytes(surface, "RGBA", flipped=True))
+            self.HUD.clear()
+            # self.HUD.write(pygame.image.tobytes(HUD, "RGBA", flipped=True))
+
             for i, p in enumerate(lights_pos):
                 data = struct.pack("3f4x", p.x, p.y, p.z)
                 self.lights_pos_buffer.write(data, offset= (i * 16))
@@ -251,6 +252,10 @@ class OpenGL_shader():
                 if save_frame:
                     res = self.image.read()
         else:
+            surface.blit(HUD, (0, 0))
+            self.image.clear()
+            self.image.write(pygame.image.tobytes(surface, "RGBA", flipped=True))
+
             self.image.blit()
         self.ctx.end_frame()
 

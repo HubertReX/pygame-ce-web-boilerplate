@@ -8,10 +8,10 @@ from os import environ
 from typing import TYPE_CHECKING, Any, Callable, cast
 
 import pygame
-from opengl_shader import OpenGL_shader
 from PIL import Image
 from rich import print, traceback
 from objects import NotificationTypeEnum
+from maze_generator.maze_utils import timeit
 from settings import (
     ACTIONS,
     BG_COLOR,
@@ -65,6 +65,8 @@ from settings import (
     vec,
     vec3
 )
+if USE_SHADERS:
+    from opengl_shader import OpenGL_shader
 
 if IS_WEB:
     from config_model.config import load_config
@@ -92,7 +94,7 @@ traceback.install(show_locals=True, width=150)
 
 class Game:
     # MARK: Game
-    def __init__(self) -> None:
+    def __init__(self) -> None:  # 1_004_511
         self.conf = load_config(CONFIG_FILE)
         pygame.init()
 
@@ -113,33 +115,34 @@ class Game:
         pygame.display.set_icon(program_icon)
 
         # https://coderslegacy.com/python/pygame-rpg-improving-performance/
-        self.flags: int = 0
+        self.flags: int = pygame.DOUBLEBUF
 
         if IS_FULLSCREEN:
             self.flags |= pygame.FULLSCREEN
 
-        if IS_WEB:
-            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
-            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 0)
-            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_ES)
-        else:
-            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
-            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 3)
-            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_CORE)
-        pygame.display.gl_set_attribute(pygame.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, True)
-        # pygame.RESIZABLE , | pygame.SCALED
-        self.flags = self.flags | pygame.OPENGL | pygame.DOUBLEBUF
+        if USE_SHADERS:
+            if IS_WEB:
+                pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
+                pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 0)
+                pygame.display.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_ES)
+            else:
+                pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
+                pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 3)
+                pygame.display.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_CORE)
+            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, True)
+            # pygame.RESIZABLE , | pygame.SCALED
+            self.flags = self.flags | pygame.OPENGL
         # final surface, afters scaling up
         self.screen: pygame.Surface = pygame.display.set_mode((WIDTH * SCALE, HEIGHT * SCALE), self.flags, vsync=0)
-
         # helper surface, before scaling up
         # , 32 .convert_alpha() # pygame.SRCALPHA
         self.canvas: pygame.Surface = pygame.Surface((WIDTH, HEIGHT), self.flags)
+        if not USE_SHADERS:
+            self.canvas = self.screen
         # helper surface for HUD
         self.HUD: pygame.Surface = pygame.Surface((WIDTH * SCALE, HEIGHT * SCALE), self.flags | pygame.SRCALPHA)
 
         size = self.screen.get_size()
-        self.shader = OpenGL_shader(size, DEFAULT_SHADER)
         self.rec_process: Any | None = None
         self.save_frame: bool = False
 
@@ -156,7 +159,9 @@ class Game:
         self.is_paused = False
 
         # self.show_loading_screen()
-        self.shader.create_pipeline()
+        if USE_SHADERS:
+            self.shader = OpenGL_shader(size, DEFAULT_SHADER)
+            self.shader.create_pipeline()
         # self.loading_screen()
 
         if USE_CUSTOM_MOUSE_CURSOR:
@@ -203,10 +208,11 @@ class Game:
             centred=True,
             bg_color=PANEL_BG_COLOR,
         )
-        self.shader.render(
-            self.screen, self.HUD, [], 1.0, -1.0, 0.01,
-            use_shaders=USE_SHADERS, save_frame=self.save_frame
-        )
+        if USE_SHADERS:
+            self.shader.render(
+                self.screen, self.HUD, [], 1.0, -1.0, 0.01,
+                use_shaders=USE_SHADERS, save_frame=self.save_frame
+            )
         pygame.display.flip()
 
     #############################################################################################################
@@ -327,7 +333,7 @@ class Game:
         # works well for single line of text
         if bg_color:
             bg_rect: pygame.Rect = rect.copy().inflate(18, 18).move(-4, -4)
-            bg_surf = pygame.Surface(bg_rect.size, pygame.SRCALPHA)
+            bg_surf = pygame.Surface(bg_rect.size)  # pygame.SRCALPHA
             pygame.draw.rect(bg_surf, bg_color, bg_surf.get_rect())
             surface.blit(bg_surf, bg_rect)
 
@@ -633,12 +639,13 @@ class Game:
         )
 
         # positions = [vec3(0, 0, 0)]
-        ratio: float = -1.0
-        dt: float = self.clock.tick(FPS_CAP) / 1000.0
-        self.shader.render(
-            self.screen, self.HUD, [], 1.0, ratio, dt,
-            use_shaders=USE_SHADERS, save_frame=self.save_frame
-        )
+        if USE_SHADERS:
+            ratio: float = -1.0
+            dt: float = self.clock.tick(FPS_CAP) / 1000.0
+            self.shader.render(
+                self.screen, self.HUD, [], 1.0, ratio, dt,
+                use_shaders=USE_SHADERS, save_frame=self.save_frame
+            )
         pygame.display.flip()
         self.rec_process.wait()
 
@@ -710,19 +717,61 @@ class Game:
         # when save_frame is True, the final image is returned as byte buffer
         # to be saved to a file (for screenshot or video recording)
         # returned image is not converted to Surface since it's a very slow process
-        res = self.shader.render(
-            self.screen, self.HUD, positions, scale, ratio, dt,
-            USE_SHADERS, save_frame=self.save_frame
-            # USE_SHADERS
-        )  # self.save_frame)
+        if USE_SHADERS:
+            res = self.shader.render(
+                self.screen, self.HUD, positions, scale, ratio, dt,
+                USE_SHADERS, save_frame=self.save_frame
+                # USE_SHADERS
+            )  # self.save_frame)
 
-        if self.save_frame:
-            if INPUTS["screenshot"]:
-                self.save_screenshot(add_notification, res)
-            else:
-                if self.rec_process:
-                    self.rec_process.stdin.write(res)
+            if self.save_frame:
+                if INPUTS["screenshot"]:
+                    self.save_screenshot(add_notification, res)
+                else:
+                    if self.rec_process:
+                        self.rec_process.stdin.write(res)
     #############################################################################################################
+
+    # @timeit
+    async def run(self):
+        # delta time since last frame in milliseconds
+        # dt = self.clock.tick(FPS_CAP) / 1000
+        dt = self.clock.tick() / 1000
+        # slow down
+        # dt *= 0.25
+        self.fps = self.clock.get_fps()
+        # print(f"FPS: {self.fps:4.2f}")
+        # self.fps_data_3s.append(self.fps)
+        # self.fps_data_10s.append(self.fps)
+        # self.avg_fps_3s = sum(self.fps_data_3s) / len(self.fps_data_3s)
+        # self.avg_fps_10s = sum(self.fps_data_10s) / len(self.fps_data_10s)
+        # events = []
+        events = self.get_inputs()
+
+        # first draw on separate Surface (game.canvas)
+        if not self.is_paused:
+            self.time_elapsed += dt
+            self.states[-1].update(dt, events)
+        self.canvas.fill(BG_COLOR)
+        self.HUD.fill(TRANSPARENT_COLOR)
+        self.states[-1].draw(self.canvas, dt)
+        self.custom_cursor(self.HUD)
+
+        if self.is_paused:
+            self.show_pause_message()
+        # than scale and copy on final Surface (game.screen)
+
+        if USE_SHADERS:
+            if SCALE != 1:
+                self.screen.blit(pygame.transform.scale_by(self.canvas, SCALE), (0, 0))
+            else:
+                self.screen.blit(self.canvas, (0, 0))
+            self.postprocessing(dt)
+        else:
+            self.screen.blit(self.HUD, (0, 0))
+
+        pygame.display.flip()
+        await asyncio.sleep(0)
 
     async def loop(self) -> None:
         # import platform
@@ -738,43 +787,9 @@ class Game:
         # self.avg_fps_10s: float = 0.0
         # self.fps_data_3s = deque([], 3 * FPS_CAP)
         # self.fps_data_10s = deque([], 10 * FPS_CAP)
-
         try:
             while self.is_running:
-                # delta time since last frame in milliseconds
-                dt = self.clock.tick(FPS_CAP) / 1000
-                # slow down
-                # dt *= 0.25
-                self.fps = self.clock.get_fps()
-                # print(f"FPS: {self.fps:4.2f}")
-                # self.fps_data_3s.append(self.fps)
-                # self.fps_data_10s.append(self.fps)
-                # self.avg_fps_3s = sum(self.fps_data_3s) / len(self.fps_data_3s)
-                # self.avg_fps_10s = sum(self.fps_data_10s) / len(self.fps_data_10s)
-                # events = []
-                events = self.get_inputs()
-
-                # first draw on separate Surface (game.canvas)
-                if not self.is_paused:
-                    self.time_elapsed += dt
-                    self.states[-1].update(dt, events)
-                self.canvas.fill(BG_COLOR)
-                self.HUD.fill(TRANSPARENT_COLOR)
-                self.states[-1].draw(self.canvas, dt)
-                self.custom_cursor(self.HUD)
-
-                if self.is_paused:
-                    self.show_pause_message()
-                # than scale and copy on final Surface (game.screen)
-                if SCALE != 1:
-                    self.screen.blit(pygame.transform.scale_by(self.canvas, SCALE), (0, 0))
-                else:
-                    self.screen.blit(self.canvas, (0, 0))
-
-                self.postprocessing(dt)
-
-                pygame.display.flip()
-                await asyncio.sleep(0)
+                await self.run()
         finally:
             self.save_recording()
             pygame.quit()
