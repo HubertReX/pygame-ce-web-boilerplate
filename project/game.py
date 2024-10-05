@@ -774,6 +774,26 @@ class Game:
         pygame.display.flip()
         await asyncio.sleep(0)
 
+    def get_local_storage(self) -> None:
+        if not IS_WEB:
+            return
+
+        from platform import window  # type: ignore[attr-defined]
+        window.localStorage.setItem("MoM.test", "test")
+
+        result = window.localStorage.getItem("MoM.test")
+        print(f"got from storage: {result}")
+
+        # erase:
+        keys = []
+        for i in range(window.localStorage.length):
+            key = window.localStorage.key(i)
+            val = window.localStorage.getItem(key)
+            keys.append(key)
+            print(key, val)
+        # while keys:
+        #     window.localStorage.removeItem(keys.pop())
+
     async def loop(self) -> None:
         # import platform
         # print(platform.platform())  # Linux-6.1.52-valve16-1-neptune-61-x86_64-with-glibc2.37
@@ -781,6 +801,7 @@ class Game:
         if IS_WEB:
             import platform
             platform.window.show_canvas(True)  # type: ignore[attr-defined]
+            self.get_local_storage()
 
         # MARK: loop
         self.fps = 0.0
