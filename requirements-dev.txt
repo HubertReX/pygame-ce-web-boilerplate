@@ -25,3 +25,12 @@ isort==5.13.2
 PyOpenGL==3.1.7
 setuptools==70.0.0
 zengl-extras==0.5.0
+# pygbag simulator
+platform_wasm
+packaging
+pyparsing
+installer
+#MULTIDICT_NO_EXTENSIONS=1
+aiohttp
+asyncio_socks_server
+token_utils
