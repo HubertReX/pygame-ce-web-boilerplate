@@ -20,7 +20,12 @@
 #  "thorpy",
 # ]
 # ///
-import asyncio
+from settings import USE_WEB_SIMULATOR
+
+if USE_WEB_SIMULATOR:
+    import pygbag.aio as asyncio
+else:
+    import asyncio
 import random
 from rich import print, rule
 from game import Game

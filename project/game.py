@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import os
 import random
 from datetime import datetime
@@ -58,6 +57,7 @@ from settings import (
     UI_BORDER_WIDTH,
     USE_CUSTOM_MOUSE_CURSOR,
     USE_SHADERS,
+    USE_WEB_SIMULATOR,
     USE_SOD,
     WIDTH,
     load_image,
@@ -65,6 +65,11 @@ from settings import (
     vec,
     vec3
 )
+if USE_WEB_SIMULATOR:
+    import pygbag.aio as asyncio
+else:
+    import asyncio
+
 if USE_SHADERS:
     from opengl_shader import OpenGL_shader
 
@@ -95,6 +100,11 @@ traceback.install(show_locals=True, width=150)
 class Game:
     # MARK: Game
     def __init__(self) -> None:  # 1_004_511
+        import platform
+        if IS_WEB and not USE_WEB_SIMULATOR:
+            self.log = platform.console.log  # type: ignore[attr-defined]
+        else:
+            self.log = print
         self.conf = load_config(CONFIG_FILE)
         pygame.init()
 
@@ -427,7 +437,7 @@ class Game:
                 platform.window.download_from_browser_fs(  # type: ignore[attr-defined]
                     file_name.as_posix(), "image/png")
             else:
-                print(f"screenshot saved to file '{file_name}'")
+                self.log(f"screenshot saved to file '{file_name}'")
                 if ".." in str(file_name):
                     short_name = str(file_name).split("..")[-1]
                 add_notification(f"screenshot saved to file '[u]{short_name}[/u]'", NotificationTypeEnum.info)
@@ -474,7 +484,7 @@ class Game:
 
             if event.type in [pygame.WINDOWHIDDEN, pygame.WINDOWMINIMIZED, pygame.WINDOWFOCUSLOST]:
                 self.is_paused = True
-                print(f"{self.is_paused=}")
+                self.log(f"{self.is_paused=}")
 
             elif event.type in [
                     pygame.WINDOWSHOWN, pygame.WINDOWMAXIMIZED, pygame.WINDOWRESTORED, pygame.WINDOWFOCUSGAINED]:
@@ -529,7 +539,7 @@ class Game:
         for joystick in self.joysticks.values():
             for i in range(joystick.get_numbuttons()):
                 if joystick.get_button(i):
-                    print(f"{i} pressed")
+                    self.log(f"{i} pressed")
                     self.is_joystick_in_use = True
                     break
             else:
@@ -580,7 +590,7 @@ class Game:
         if INPUTS["pause"]:
             # IS_PAUSED = not IS_PAUSED
             self.is_paused = not self.is_paused
-            print(f"{self.is_paused=}")
+            self.log(f"{self.is_paused=}")
             INPUTS["pause"] = False
 
         # if INPUTS["record"]:
@@ -628,9 +638,9 @@ class Game:
             return
 
         self.save_frame = False
-        print("Recording stopped")
+        self.log("Recording stopped")
         self.rec_process.stdin.close()
-        print("saving recordings - this can take a while...")
+        self.log("saving recordings - this can take a while...")
         self.render_text(
             "SAVING...",
             (WIDTH * SCALE // 2, HEIGHT * SCALE // 2),
@@ -656,7 +666,7 @@ class Game:
 
         time_str = datetime.now().strftime("%Y%m%d_%H%M%S")
         file_name = SCREENSHOTS_DIR / f"recording_{time_str}.mp4"
-        print(f"Recording started: {file_name}")
+        self.log(f"Recording started: {file_name}")
 
         self.rec_process = (
             ffmpeg.input(
@@ -775,14 +785,14 @@ class Game:
         await asyncio.sleep(0)
 
     def get_local_storage(self) -> None:
-        if not IS_WEB:
+        if not IS_WEB or USE_WEB_SIMULATOR:
             return
 
         from platform import window  # type: ignore[attr-defined]
         window.localStorage.setItem("MoM.test", "test")
 
         result = window.localStorage.getItem("MoM.test")
-        print(f"got from storage: {result}")
+        self.log(f"got from storage: {result}")
 
         # erase:
         keys = []
@@ -790,7 +800,7 @@ class Game:
             key = window.localStorage.key(i)
             val = window.localStorage.getItem(key)
             keys.append(key)
-            print(key, val)
+            self.log(f"{key}, {val}")
         # while keys:
         #     window.localStorage.removeItem(keys.pop())
 

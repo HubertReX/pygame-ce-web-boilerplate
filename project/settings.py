@@ -75,7 +75,8 @@ ZOOM_LEVEL = 4.4
 # camera zoom for intro cutscene (zooms out)
 ZOOM_WIDE  = 3.10
 
-IS_WEB = __import__("sys").platform == "emscripten"
+USE_WEB_SIMULATOR = False
+IS_WEB = __import__("sys").platform == "emscripten" or USE_WEB_SIMULATOR
 IS_LINUX = __import__("sys").platform == "linux"
 IS_FULLSCREEN = False
 IS_PAUSED = False
