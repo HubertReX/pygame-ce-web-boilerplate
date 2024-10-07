@@ -97,8 +97,9 @@ class UI:
         self.weapon_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(weapon_s, weapon_s)
         self.stats_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(300, 190)
 
-        help_w = int(24 * FONT_SIZE_MEDIUM * 2.2)
-        self.help_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(400 - 2, help_w)
+        show_actions = [action for action in ACTIONS.values() if action["show"]]
+        help_w = int((len(show_actions) + 2) * FONT_SIZE_MEDIUM * 2.1)
+        self.help_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(300, help_w)
 
         # self.panel_border_size = self.panel_border.get_size()
         # self.factor = 6 * 4
@@ -386,12 +387,13 @@ class UI:
         if self.show_help_info:
             # list actions to be displayed by the property "show"
             show_actions = [action for action in ACTIONS.values() if action["show"]]
+            row_spacing = 2.2
             # render semitransparent panel in background
             rect = pygame.Rect(
-                WIDTH - 400 - 32,
-                15 + FONT_SIZE_MEDIUM * TEXT_ROW_SPACING,
+                WIDTH - 300 - 32,
+                TILE_SIZE // 2,
                 400 - 2,
-                (len(show_actions) + 1) * FONT_SIZE_MEDIUM * TEXT_ROW_SPACING
+                (len(show_actions) + 1) * FONT_SIZE_MEDIUM * row_spacing
             )
 
             # self.game.render_panel(rect, PANEL_BG_COLOR)
@@ -401,11 +403,11 @@ class UI:
                 self.game.render_text(
                     # f"{', '.join(action['show']):>11} - {action['msg']}",
                     f"{action['msg']}",
-                    (WIDTH - 400 + 38, 40 + int(i * FONT_SIZE_MEDIUM * 2.2)),
+                    (WIDTH - 300 + 38, 2 + int(i * FONT_SIZE_MEDIUM * row_spacing)),
                     shadow = True
                 )
                 self.display_surface.blit(
-                    self.icons_dict[action['show'][0]][0], (WIDTH - 400, 32 + int(i * FONT_SIZE_MEDIUM * 2.2)))
+                    self.icons_dict[action['show'][0]][0], (WIDTH - 300, -6 + int(i * FONT_SIZE_MEDIUM * row_spacing)))
         # else:
         #     self.display_surface.blit(self.icons_dict["key_H"], (WIDTH // 2 -
         #                               36, int(FONT_SIZE_MEDIUM * TEXT_ROW_SPACING) - 10))
@@ -583,8 +585,8 @@ class UI:
 
         # upper right corner
         # FPS counter
-        self.box(WIDTH - 200, TILE_SIZE, 180, 10 + (25 * 1))
-        self.display_text(f"FPS: {self.game.fps:5.1f}", (WIDTH - 200 + 10, TILE_SIZE + 10))
+        # self.box(WIDTH - 200, TILE_SIZE, 180, 10 + (25 * 1))
+        # self.display_text(f"FPS: {self.game.fps:5.1f}", (WIDTH - 200 + 10, TILE_SIZE + 10))
 
         # lower left corner
         # weapon panel
@@ -598,11 +600,12 @@ class UI:
 
             # middle upper
             # help panel
-            self.show_help()
-
-            # lower right corner
-            # available actions key shortcuts
-            self.show_available_actions()
+            if self.show_help_info:
+                self.show_help()
+            else:
+                # lower right corner
+                # available actions key shortcuts
+                self.show_available_actions()
 
         if self.show_modal_panel_flag:
             self.show_modal_panel()

@@ -11,6 +11,7 @@ from maze_generator.maze_utils import a_star_cached
 from pygame.math import Vector2 as vec
 from config_model.config import RaceEnum
 from settings import (
+    INVENTORY_ITEM_SCALE,
     MAX_NO_ATTEMPTS_TO_FIND_RANDOM_POS,
     NPC_MAX_REST_TIME,
     NPC_MIN_REST_TIME,
@@ -1128,7 +1129,7 @@ class Player(NPC):
         self.speed_run  = int(self.speed_run * 1.7)
         self.speed_walk = int(self.speed_walk * 1.4)
         self.speed = self.speed_run
-        self.health_bar_ui = self.create_health_bar_ui(label_group, pos, 4)
+        self.health_bar_ui = self.create_health_bar_ui(label_group, pos, INVENTORY_ITEM_SCALE)
         # label_group.remove(self.health_bar)
     #############################################################################################################
 

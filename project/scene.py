@@ -51,6 +51,7 @@ from settings import (
     HUD_SHEET_FILE,
     INITIAL_HOUR,
     INPUTS,
+    INVENTORY_ITEM_SCALE,
     IS_WEB,
     ITEMS_DIR,
     ITEMS_SHEET_DEFINITION,
@@ -70,6 +71,7 @@ from settings import (
     TEXT_ROW_SPACING,
     TRANSPARENT_COLOR,
     USE_ALPHA_FILTER,
+    USE_PARTICLES,
     USE_SHADERS,
     WAYPOINTS_LINE_COLOR,
     WIDTH,
@@ -227,6 +229,8 @@ class Scene(State):
         self.display_ui_flag: bool = SHOW_UI
         # self.load_items_def()
         self.load_map()
+        if USE_PARTICLES:
+            self.start_particles()
         # self.start_particles()
         # self.set_camera_on_player()
 
@@ -368,7 +372,7 @@ class Scene(State):
         # create new renderer (camera)
         self.map_view = pyscroll.BufferedRenderer(
             data = pyscroll.data.TiledMapData(tileset_map),
-            size = self.game.screen.get_size(),
+            size = self.game.canvas.get_size(),
             # camera stops at map borders (no black area around), player blocked to be stopped separately
             clamp_camera = True,
         )
@@ -1051,7 +1055,8 @@ class Scene(State):
             self.game.unregister_custom_events()
             self.populate_sprite_groups()
 
-        self.start_particles()
+        if USE_PARTICLES:
+            self.start_particles()
         self.transition.exiting = False
 
     #############################################################################################################
@@ -1351,7 +1356,8 @@ class Scene(State):
         # self.map_view.reload()
         self.player.reset()
         self.load_map()
-        self.start_particles()
+        if USE_PARTICLES:
+            self.start_particles()
 
     def reset_sprite_groups(self) -> None:
         self.label_sprites.empty()

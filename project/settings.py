@@ -70,12 +70,13 @@ def lerp_vectors(v1: vec, v2: vec, t: float) -> vec:
 TILE_SIZE = 16
 X_TILES = 80  # 100
 Y_TILES = 45  # 64
-WIDTH, HEIGHT = X_TILES * TILE_SIZE, Y_TILES * TILE_SIZE  # 80x45 => 1280x720 ; 100x64 => 1600x1024
 SCALE = 1
+WIDTH, HEIGHT = X_TILES * TILE_SIZE, Y_TILES * TILE_SIZE  # 80x45 => 1280x720 ; 100x64 => 1600x1024
+WIDTH_SCALED, HEIGHT_SCALED = WIDTH * SCALE, HEIGHT * SCALE
 FILTER_SCALE = 8
 CIRCLE_RADIUS = 192 // FILTER_SCALE
 # default camera zoom
-ZOOM_LEVEL = 4.4
+ZOOM_LEVEL = 3.8
 # camera zoom for intro cutscene (zooms out)
 ZOOM_WIDE  = 3.10
 
@@ -85,6 +86,7 @@ IS_LINUX = __import__("sys").platform == "linux"
 IS_FULLSCREEN = False
 IS_PAUSED = False
 USE_ALPHA_FILTER = False
+USE_PARTICLES = False
 USE_CUSTOM_MOUSE_CURSOR = True
 USE_SOD = False
 USE_SHADERS = False
@@ -99,7 +101,7 @@ INVENTORY_ITEM_SCALE = 4
 # width (with padding) of hotbar slot
 INVENTORY_ITEM_WIDTH = 22 * INVENTORY_ITEM_SCALE
 # avatar (faceset) size in tiles
-AVATAR_SCALE: int = 32
+AVATAR_SCALE: int = 24
 
 # game render fps cap
 FPS_CAP = 0  # 130
@@ -211,50 +213,49 @@ STYLE_TAGS_DICT: dict[str, str] = {
 
 
 ACTIONS: dict[str, dict[str, Any]] = {
-    "quit":           {"show": ["key_Esc", "key_Q"], "msg": "main menu",   "keys": [pygame.K_ESCAPE,    pygame.K_q]},
-    "debug":          {"show": ["key_`", "key_Z"],   "msg": "debug",       "keys": [pygame.K_BACKQUOTE, pygame.K_z]},
-    "alpha":          {"show": ["key_B"],        "msg": "filter",      "keys": [pygame.K_b]},
+    "quit":   {"show": ["key_Esc", "key_Q"], "msg": "main menu",   "keys": [pygame.K_ESCAPE,    pygame.K_q]},
+    "debug":  {"show": ["key_`", "key_Z"],   "msg": "debug",       "keys": [pygame.K_BACKQUOTE, pygame.K_z]},
+    "alpha":  {"show": ["key_B"],            "msg": "filter",      "keys": [pygame.K_b]},
     # "shaders_toggle": {"show": ["g"],        "msg": "shader 0/1",  "keys": [pygame.K_g]},
     # "next_shader":    {"show": [".", ">"],   "msg": "next shader", "keys": [pygame.K_PERIOD]},
-    "run":            {"show": ["key_Shift"],    "msg": "toggle run",  "keys": [pygame.K_LSHIFT, pygame.K_RSHIFT]},
-    "jump":           {"show": None,             "msg": "jump",        "keys": [pygame.K_SPACE]},
-    "fly":            {"show": ["key_Alt"],      "msg": "toggle fly",  "keys": [pygame.K_LALT, pygame.K_RALT]},
-    "open":           {"show": ["key_Space"],    "msg": "open",        "keys": [pygame.K_SPACE]},
-    "attack":         {"show": ["key_Space"],    "msg": "attack",      "keys": [pygame.K_SPACE]},
-    "talk":           {"show": ["key_Space"],    "msg": "talk",        "keys": [pygame.K_SPACE]},
-    "pick_up":        {"show": ["key_E"],        "msg": "pick up",     "keys": [pygame.K_e]},
-    "drop":           {"show": ["key_X"],        "msg": "drop",        "keys": [pygame.K_x]},
-    "next_item":      {"show": ["key_>"],        "msg": "next item",   "keys": [pygame.K_PERIOD]},
-    "prev_item":      {"show": ["key_<"],        "msg": "prev item",   "keys": [pygame.K_COMMA]},
-    "item_1":         {"show": None,             "msg": "item 1",      "keys": [pygame.K_1]},
-    "item_2":         {"show": None,             "msg": "item 2",      "keys": [pygame.K_2]},
-    "item_3":         {"show": None,             "msg": "item 3",      "keys": [pygame.K_3]},
-    "item_4":         {"show": None,             "msg": "item 4",      "keys": [pygame.K_4]},
-    "item_5":         {"show": None,             "msg": "item 5",      "keys": [pygame.K_5]},
-    "item_6":         {"show": None,             "msg": "item 6",      "keys": [pygame.K_6]},
-    "use_item":       {"show": ["key_F"],        "msg": "use item",    "keys": [pygame.K_f]},
-    "select":         {"show": None,             "msg": "select",      "keys": [pygame.K_SPACE]},
-    "accept":         {"show": None,             "msg": "accept",      "keys": [pygame.K_RETURN, pygame.K_KP_ENTER]},
-    "help":           {"show": ["key_H"],        "msg": "show help",   "keys": [pygame.K_F1,     pygame.K_h]},
-    "menu":           {"show": ["key_F2"],       "msg": "menu",        "keys": [pygame.K_F2]},
-    "show_ui":        {"show": ["key_F3"],       "msg": "toggle UI",   "keys": [pygame.K_F3]},
+    "run":       {"show": ["key_Shift"], "msg": "toggle run",  "keys": [pygame.K_LSHIFT, pygame.K_RSHIFT]},
+    "jump":      {"show": None,          "msg": "jump",        "keys": [pygame.K_SPACE]},
+    "fly":       {"show": None,          "msg": "toggle fly",  "keys": [pygame.K_LALT, pygame.K_RALT]},
+    "open":      {"show": ["key_Space"], "msg": "open",        "keys": [pygame.K_SPACE]},
+    "attack":    {"show": ["key_Space"], "msg": "attack",      "keys": [pygame.K_SPACE]},
+    "talk":      {"show": ["key_Space"], "msg": "talk",        "keys": [pygame.K_SPACE]},
+    "pick_up":   {"show": ["key_E"],     "msg": "pick up",     "keys": [pygame.K_e]},
+    "drop":      {"show": ["key_X"],     "msg": "drop",        "keys": [pygame.K_x]},
+    "next_item": {"show": None,          "msg": "next item",   "keys": [pygame.K_PERIOD]},
+    "prev_item": {"show": None,          "msg": "prev item",   "keys": [pygame.K_COMMA]},
+    "item_1":    {"show": None,          "msg": "item 1",      "keys": [pygame.K_1]},
+    "item_2":    {"show": None,          "msg": "item 2",      "keys": [pygame.K_2]},
+    "item_3":    {"show": None,          "msg": "item 3",      "keys": [pygame.K_3]},
+    "item_4":    {"show": None,          "msg": "item 4",      "keys": [pygame.K_4]},
+    "item_5":    {"show": None,          "msg": "item 5",      "keys": [pygame.K_5]},
+    "item_6":    {"show": None,          "msg": "item 6",      "keys": [pygame.K_6]},
+    "use_item":  {"show": ["key_F"],     "msg": "use item",    "keys": [pygame.K_f]},
+    "select":    {"show": None,          "msg": "select",      "keys": [pygame.K_SPACE]},
+    "accept":    {"show": None,          "msg": "accept",      "keys": [pygame.K_RETURN, pygame.K_KP_ENTER]},
+    "help":      {"show": ["key_H"],     "msg": "show help",   "keys": [pygame.K_F1,     pygame.K_h]},
+    "menu":      {"show": ["key_F2"],    "msg": "menu",        "keys": [pygame.K_F2]},
+    "show_ui":   {"show": ["key_F3"],    "msg": "toggle UI",   "keys": [pygame.K_F3]},
     # "screenshot":     {"show": ["key_F9"],       "msg": "screenshot",  "keys": [pygame.K_F9]},
-    "intro":          {"show": ["key_F4"],       "msg": "intro",       "keys": [pygame.K_F4]},
+    "intro":     {"show": ["key_F4"],       "msg": "intro",       "keys": [pygame.K_F4]},
     # "record":         {"show": ([] if IS_WEB else ["key_F3"]), "msg":  "record mp4", "keys": [pygame.K_F3]},
-    "reload":         {"show": ([] if IS_WEB else ["key_R"]), "msg":   "reload map", "keys": [pygame.K_r]},
-    "zoom_in":        {"show": ["key_+"],        "msg": "zoom in",     "keys": [pygame.K_EQUALS, pygame.K_KP_PLUS]},
-    "zoom_out":       {"show": ["key_-"],        "msg": "zoom out",    "keys": [pygame.K_MINUS, pygame.K_KP_MINUS]},
-    "left":           {"show": None,             "msg": "",            "keys": [pygame.K_LEFT,  pygame.K_a]},
-    "right":          {"show": None,             "msg": "",            "keys": [pygame.K_RIGHT, pygame.K_d]},
-    "up":             {"show": None,             "msg": "",            "keys": [pygame.K_UP,    pygame.K_w]},
-    "down":           {"show": None,             "msg": "",            "keys": [pygame.K_DOWN,  pygame.K_s]},
+    "reload":    {"show": ([] if IS_WEB else ["key_R"]), "msg":   "reload map", "keys": [pygame.K_r]},
+    "zoom_in":   {"show": ["key_+"],     "msg": "zoom in",     "keys": [pygame.K_EQUALS, pygame.K_KP_PLUS]},
+    "zoom_out":  {"show": ["key_-"],     "msg": "zoom out",    "keys": [pygame.K_MINUS, pygame.K_KP_MINUS]},
+    "left":      {"show": None,          "msg": "",            "keys": [pygame.K_LEFT,  pygame.K_a]},
+    "right":     {"show": None,          "msg": "",            "keys": [pygame.K_RIGHT, pygame.K_d]},
+    "up":        {"show": None,          "msg": "",            "keys": [pygame.K_UP,    pygame.K_w]},
+    "down":      {"show": None,          "msg": "",            "keys": [pygame.K_DOWN,  pygame.K_s]},
+    "pause":     {"show": None,          "msg": "pause",       "keys": [pygame.K_F8]},
 
-    "pause":          {"show": ["key_F8"],       "msg": "pause",       "keys": [pygame.K_F8]},
-
-    "scroll_up":      {"show": None,            "msg": "",         "keys": []},
-    "left_click":     {"show": ["mouse_LMB"],   "msg": "go to",    "keys": []},
-    "right_click":    {"show": ["mouse_RMB"],   "msg": "stop",     "keys": []},
-    "scroll_click":   {"show": None,            "msg": "",         "keys": []},
+    "scroll_up":   {"show": None,          "msg": "",         "keys": []},
+    "left_click":  {"show": ["mouse_LMB"], "msg": "go to",    "keys": []},
+    "right_click": {"show": ["mouse_RMB"], "msg": "stop",     "keys": []},
+    "scroll_click": {"show": None,          "msg": "",         "keys": []},
 }
 
 INPUTS: dict[str, float | bool] = {key: False for key in ACTIONS}

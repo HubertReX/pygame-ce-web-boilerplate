@@ -6,6 +6,7 @@ PYGAME-MENU
 A menu for pygame. Simple, and easy to use.
 """
 
+import os
 __all__ = [
 
     # Common classes
@@ -83,7 +84,7 @@ if __pygame_version__ is not None:
 """
 Version: Library version
 """
-import pygame_menu.version
+import pygame_menu.version  # noqa: E402
 
 """
 Metadata: Information about the project
@@ -133,7 +134,6 @@ __version__ = pygame_menu.version.ver
 """
 Print pygame-menu version.
 """
-import os
 
 if 'PYGAME_MENU_HIDE_VERSION' not in os.environ and 'PYGAME_HIDE_SUPPORT_PROMPT' not in os.environ:
     print(f'{__module_name__} {__version__}')

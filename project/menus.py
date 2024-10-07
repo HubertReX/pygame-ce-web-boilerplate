@@ -3,7 +3,10 @@ import pygame
 import pygame_menu
 import scene
 import splash_screen
-from settings import ABOUT, FPS_CAP, HEIGHT, HUD_DIR, INPUTS, IS_WEB, MENU_FONT, PANEL_BG_COLOR, SHOW_DEBUG_INFO, WIDTH
+from settings import (
+    ABOUT, FPS_CAP, HEIGHT, HUD_DIR, INPUTS, INVENTORY_ITEM_SCALE, IS_WEB, MENU_FONT,
+    PANEL_BG_COLOR, SHOW_DEBUG_INFO, WIDTH
+)
 from state import State
 
 #######################################################################################################################
@@ -108,7 +111,8 @@ class MainMenuScreen(MenuScreen):
             # drawing_mode=pygame_menu.baseimage.IMAGE_MODE_FILL,
             # drawing_mode=pygame_menu.baseimage.IMAGE_MODE_SIMPLE,
             # drawing_offset=(0, 0)
-        ).scale(4, 4, smooth=False)  # resize(18 * 4, 18 * 4, smooth=False)
+            # resize(18 * 4, 18 * 4, smooth=False)
+        ).scale(INVENTORY_ITEM_SCALE, INVENTORY_ITEM_SCALE, smooth=False)
         # my_image.set_alpha(64)
         # my_image.set_at((0, 0), (0, 0, 0, 0))
 
@@ -216,7 +220,7 @@ class AboutMenuScreen(MenuScreen):
             # drawing_mode=pygame_menu.baseimage.IMAGE_MODE_FILL,
             # drawing_mode=pygame_menu.baseimage.IMAGE_MODE_SIMPLE,
             # drawing_offset=(0, 0)
-        ).scale(4, 4, smooth=False)  # resize(18 * 4, 18 * 4, smooth=False)
+        ).scale(INVENTORY_ITEM_SCALE, INVENTORY_ITEM_SCALE, smooth=False)  # resize(18 * 4, 18 * 4, smooth=False)
         # self.bg_image.set_alpha(64)
         # self.bg_image.set_at((0, 0), (0, 0, 0, 0))
 
@@ -242,7 +246,7 @@ class AboutMenuScreen(MenuScreen):
         )
 
         for m in ABOUT:
-            about_menu.add.label(m, align=pygame_menu.locals.ALIGN_LEFT, font_size=20)
+            about_menu.add.label(m, align=pygame_menu.locals.ALIGN_LEFT, font_size=16)
         about_menu.add.vertical_margin(30)
         about_menu.add.button("Back", self.deactivate)
         # about_menu.add.button("Close menu", pygame_menu.events.BACK)
@@ -275,8 +279,8 @@ class AboutMenuScreen(MenuScreen):
             # self.exit_state()
             self.deactivate()
 
-        if INPUTS["screenshot"]:
-            self.game.save_screenshot(self.game.add_notification_dummy)
+        # if INPUTS["screenshot"]:
+        #     self.game.save_screenshot(self.game.add_notification_dummy)
 
         # if INPUTS["help"]:
         #     self.deactivate()

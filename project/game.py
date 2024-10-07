@@ -14,6 +14,7 @@ from maze_generator.maze_utils import timeit
 from settings import (
     ACTIONS,
     BG_COLOR,
+    BLACK_COLOR,
     CONFIG_FILE,
     CUTSCENE_BG_COLOR,
     DEFAULT_SHADER,
@@ -32,6 +33,7 @@ from settings import (
     GAMEPAD_XBOX_BUTTON2ACTIONS,
     GAMEPAD_XBOX_CONTROL_NAMES,
     HEIGHT,
+    HEIGHT_SCALED,
     HUD_DIR,
     INPUTS,
     IS_FULLSCREEN,
@@ -60,6 +62,7 @@ from settings import (
     USE_WEB_SIMULATOR,
     USE_SOD,
     WIDTH,
+    WIDTH_SCALED,
     load_image,
     # ColorValue,
     vec,
@@ -148,18 +151,18 @@ class Game:
         if IS_FULLSCREEN:
             res = (0, 0)
         else:
-            res = (WIDTH * SCALE, HEIGHT * SCALE)
+            res = (WIDTH_SCALED, HEIGHT_SCALED)
         self.screen: pygame.Surface = pygame.display.set_mode(res, self.flags, vsync=0)
-        info = pygame.display.Info()
-        print(repr(info))
         # helper surface, before scaling up
         # , 32 .convert_alpha() # pygame.SRCALPHA
-        self.canvas: pygame.Surface = pygame.Surface((WIDTH, HEIGHT)).convert_alpha()  # , self.flags)
+        self.canvas: pygame.Surface = pygame.Surface((WIDTH, HEIGHT))  # .convert_alpha()  # , self.flags)
         # helper surface for HUD
-        self.HUD: pygame.Surface = pygame.Surface((WIDTH * SCALE, HEIGHT * SCALE)).convert_alpha()  # | pygame.SRCALPHA
+        self.HUD: pygame.Surface = pygame.Surface((WIDTH, HEIGHT)).convert_alpha()  # | pygame.SRCALPHA
+
         if not USE_SHADERS:
-            self.canvas = self.screen
-            self.HUD    = self.screen
+            # self.canvas = self.screen
+            # self.HUD    = self.screen
+            self.HUD    = self.canvas
 
         size = self.screen.get_size()
         self.rec_process: Any | None = None
@@ -204,6 +207,7 @@ class Game:
         # bg_image = load_image(HUD_DIR / "main_menu_bg.png").convert_alpha()
         # bg_image = load_image(HUD_DIR / "big_tree_1600x1024.png").convert_alpha()
         bg_image = load_image(HUD_DIR / "Main_menu_bg-0001.png").convert_alpha()
+        bg_image = pygame.transform.scale(bg_image, (WIDTH, HEIGHT))
         # logo_image = load_image(LOGO_IMG).convert_alpha()
         # logo_image = pygame.transform.scale_by(logo_image, 5)
         # bg_image.blit(logo_image, (WIDTH // 2, 100))
@@ -696,7 +700,7 @@ class Game:
     def show_pause_message(self) -> None:
         self.render_text(
             "PAUSED",
-            (WIDTH * SCALE // 2, HEIGHT * SCALE // 2),
+            (WIDTH // 2, HEIGHT // 2),
             font_size=FONT_SIZE_HUGE,
             centred=True,
             bg_color=PANEL_BG_COLOR,
@@ -770,7 +774,7 @@ class Game:
         if not self.is_paused:
             self.time_elapsed += dt
             self.states[-1].update(dt, events)
-        self.canvas.fill(BG_COLOR)
+        # self.canvas.fill(BLACK_COLOR)
         if USE_SHADERS:
             self.HUD.fill(TRANSPARENT_COLOR)
         self.states[-1].draw(self.canvas, dt)
@@ -780,11 +784,12 @@ class Game:
             self.show_pause_message()
         # than scale and copy on final Surface (game.screen)
 
+        if SCALE != 1:
+            self.screen.blit(pygame.transform.scale_by(self.canvas, SCALE), (0, 0))
+        else:
+            self.screen.blit(self.canvas, (0, 0))
+
         if USE_SHADERS:
-            if SCALE != 1:
-                self.screen.blit(pygame.transform.scale_by(self.canvas, SCALE), (0, 0))
-            else:
-                self.screen.blit(self.canvas, (0, 0))
             self.postprocessing(dt)
         # else:
         #     self.screen.blit(self.HUD, (0, 0))

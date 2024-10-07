@@ -17,8 +17,8 @@ class Transition():
         self.fade_surf: pygame.Surface = pygame.Surface((WIDTH, HEIGHT))
         self.scene = scene
         self.exiting: bool = False
-        self.fade_out_speed: int = 800
-        self.fade_in_speed: int = 200
+        self.fade_out_speed: int = 500
+        self.fade_in_speed: int = 500
         self.alpha: int = 255
         self.radius: int = 0
 
@@ -35,6 +35,7 @@ class Transition():
         self.radius = int((WIDTH * 2.7) -  (WIDTH * 2.7) * (self.alpha / 255))
 
     #############################################################################################################
+
     def draw(self, screen: pygame.Surface) -> None:
         # if alpha is at either of both value limits, do not show
         if self.alpha not in (0, 255):

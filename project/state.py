@@ -51,9 +51,9 @@ class State:
         # print(f"STATE {SHOW_DEBUG_INFO=}")
         # if SHOW_DEBUG_INFO:
         rect = pygame.Rect(
-            500 - 4,
-            -10 + FONT_SIZE_MEDIUM * TEXT_ROW_SPACING,
-            600,
+            500 - 8,
+            -16 + FONT_SIZE_MEDIUM * TEXT_ROW_SPACING,
+            200,
             (len(msgs) + 1) * FONT_SIZE_MEDIUM * TEXT_ROW_SPACING
         )
         self.game.render_panel(rect, (10, 10, 10, 150))
