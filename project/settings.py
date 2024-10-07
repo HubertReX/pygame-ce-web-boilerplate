@@ -67,9 +67,13 @@ def lerp_vectors(v1: vec, v2: vec, t: float) -> vec:
     return v1 + (v2 - v1) * t
 
 
-WIDTH, HEIGHT = 1600, 1024
 TILE_SIZE = 16
+X_TILES = 80  # 100
+Y_TILES = 45  # 64
+WIDTH, HEIGHT = X_TILES * TILE_SIZE, Y_TILES * TILE_SIZE  # 80x45 => 1280x720 ; 100x64 => 1600x1024
 SCALE = 1
+FILTER_SCALE = 8
+CIRCLE_RADIUS = 192 // FILTER_SCALE
 # default camera zoom
 ZOOM_LEVEL = 4.4
 # camera zoom for intro cutscene (zooms out)
@@ -145,6 +149,7 @@ NPC_RANDOM_WALK_DISTANCE: int = 3
 MAX_NO_ATTEMPTS_TO_FIND_RANDOM_POS: int = 100
 
 TRANSPARENT_COLOR = (0, 0, 0, 0)
+FULL_WHITE_COLOR = (255, 255, 255, 255)
 FONT_COLOR = "white"
 CHAR_NAME_COLOR = (255, 252, 103)
 BLACK_COLOR = (0, 0, 0, 255)
@@ -168,9 +173,9 @@ WAYPOINTS_LINE_COLOR = (0, 0, 128, 32)
 # NPC stunned color
 STUNNED_COLOR = (200, 0, 0, 64)
 # cold, dark and bluish light at night
-NIGHT_FILTER: tuple[int, int, int, int] = (0, 0, 30, 220)
+NIGHT_FILTER: tuple[int, int, int, int] = (0, 0, 30, 190)
 # sunny, warm yellow light during daytime
-DAY_FILTER: tuple[int, int, int, int] = (152, 152, 0, 20)
+DAY_FILTER: tuple[int, int, int, int] = (152, 152, 0, 0)
 # amount of light sources passed to shader
 MAX_LIGHTS_COUNT: int = 32
 
@@ -208,7 +213,7 @@ STYLE_TAGS_DICT: dict[str, str] = {
 ACTIONS: dict[str, dict[str, Any]] = {
     "quit":           {"show": ["key_Esc", "key_Q"], "msg": "main menu",   "keys": [pygame.K_ESCAPE,    pygame.K_q]},
     "debug":          {"show": ["key_`", "key_Z"],   "msg": "debug",       "keys": [pygame.K_BACKQUOTE, pygame.K_z]},
-    # "alpha":          {"show": ["f"],        "msg": "filter",      "keys": [pygame.K_f]},
+    "alpha":          {"show": ["key_B"],        "msg": "filter",      "keys": [pygame.K_b]},
     # "shaders_toggle": {"show": ["g"],        "msg": "shader 0/1",  "keys": [pygame.K_g]},
     # "next_shader":    {"show": [".", ">"],   "msg": "next shader", "keys": [pygame.K_PERIOD]},
     "run":            {"show": ["key_Shift"],    "msg": "toggle run",  "keys": [pygame.K_LSHIFT, pygame.K_RSHIFT]},

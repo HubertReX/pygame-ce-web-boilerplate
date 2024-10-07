@@ -31,22 +31,27 @@ from settings import (
     # ACTIONS,
     # BG_COLOR,
     # CIRCLE_GRADIENT,
+    BG_COLOR,
     CHEST_OPEN_DISTANCE,
+    CIRCLE_RADIUS,
     CUTSCENE_BG_COLOR,
     DAY_FILTER,
     EMOTE_SHEET_DEFINITION,
     EMOTE_SHEET_FILE,
+    FILTER_SCALE,
     FONT_COLOR,
     FONT_SIZE_MEDIUM,
     FONT_SIZE_SMALL,
     FONT_SIZE_TINY,
     FRIENDLY_WAKE_DISTANCE,
+    FULL_WHITE_COLOR,
     GAME_TIME_SPEED,
     HEIGHT,
     HUD_SHEET_DEFINITION,
     HUD_SHEET_FILE,
     INITIAL_HOUR,
     INPUTS,
+    IS_WEB,
     ITEMS_DIR,
     ITEMS_SHEET_DEFINITION,
     ITEMS_SHEET_FILE,
@@ -63,6 +68,7 @@ from settings import (
     STEP_COST_GROUND,
     STEP_COST_WALL,
     TEXT_ROW_SPACING,
+    TRANSPARENT_COLOR,
     USE_ALPHA_FILTER,
     USE_SHADERS,
     WAYPOINTS_LINE_COLOR,
@@ -72,6 +78,7 @@ from settings import (
     # ColorValue,
     Point,
     to_point,
+    to_vector,
     tuple_to_vector,
     # to_vector,
     # tuple_to_vector,
@@ -200,6 +207,15 @@ class Scene(State):
         self.minute_f: float = 0.0
         # are we outdoors? shell there be night and day cycle?
         self.outdoor: bool = False
+        self.filter_surf = pygame.Surface((WIDTH // FILTER_SCALE, HEIGHT // FILTER_SCALE),
+                                          pygame.SRCALPHA)  # .convert(self.game.canvas)
+
+        self.b_and_w_circle = pygame.Surface((2 * CIRCLE_RADIUS, 2 * CIRCLE_RADIUS),
+                                             pygame.SRCALPHA)  # .convert(self.game.canvas)
+        self.b_and_w_circle.fill(FULL_WHITE_COLOR)
+        pygame.draw.circle(self.b_and_w_circle, DAY_FILTER, (CIRCLE_RADIUS, CIRCLE_RADIUS), CIRCLE_RADIUS)
+        # self.day_filter = pygame.Surface((2 * CIRCLE_RADIUS, 2 * CIRCLE_RADIUS), pygame.SRCALPHA)
+        # self.day_filter.fill(DAY_FILTER)
         self.layers: list[str] = []
         self.path_finding_grid: list[list[int]] = []
         self.entry_points: dict[str, vec] = {}
@@ -1189,10 +1205,10 @@ class Scene(State):
             SHOW_DEBUG_INFO = not SHOW_DEBUG_INFO
             INPUTS["debug"] = False
 
-        # global USE_ALPHA_FILTER
-        # if INPUTS["alpha"]:
-        #     USE_ALPHA_FILTER = not USE_ALPHA_FILTER
-        #     INPUTS["alpha"] = False
+        global USE_ALPHA_FILTER
+        if INPUTS["alpha"]:
+            USE_ALPHA_FILTER = not USE_ALPHA_FILTER
+            INPUTS["alpha"] = False
 
         if INPUTS["intro"]:
             self.start_intro()
@@ -1363,8 +1379,9 @@ class Scene(State):
         self.transition.draw(screen)
 
         # alpha filter demo
-        if USE_ALPHA_FILTER:
-            self.apply_alpha_filter(screen)
+        if USE_ALPHA_FILTER and not IS_WEB:
+            self.apply_time_of_day_filter(screen)
+            # self.apply_alpha_filter(screen)
 
         # draw black bars at the top and bottom when during cutscene
         if self.cutscene_framing:
@@ -1379,43 +1396,65 @@ class Scene(State):
 
     #############################################################################################################
 
-    # def apply_time_of_day_filter(self, screen: pygame.Surface) -> None:
-    #     # MARK: apply_time_of_day_filter
-    #     # do not apply night and day filter indoors
-    #     if not self.outdoor and not self.is_maze:
-    #         return
+    def apply_time_of_day_filter(self, screen: pygame.Surface) -> None:
+        # MARK: apply_time_of_day_filter
+        # do not apply night and day filter indoors
+        if not self.outdoor and not self.is_maze:
+            return
 
-    #     filter_surf = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        filter = list(BG_COLOR)
+        hour: float = self.hour + (self.minute / 60)
 
-    #     filter: pygame._common.ColorValue = BG_COLOR
-    #     hour: float = self.hour + (self.minute / 60)
+        if self.is_maze:
+            filter = list(NIGHT_FILTER)
+        else:
+            if hour < 6 or hour >= 20:
+                filter = list(NIGHT_FILTER)
+            elif 6 <= hour < 9:
+                weight = (hour - 6) / (9 - 6)
+                for i in range(4):
+                    filter[i] = pygame.math.lerp(NIGHT_FILTER[i], DAY_FILTER[i], weight)  # type: ignore[call-overload]
+            elif 9 <= hour < 17:
+                filter = list(DAY_FILTER)
+            elif 17 <= hour < 20:
+                weight = (hour - 17) / (20 - 17)
+                for i in range(4):
+                    filter[i] = pygame.math.lerp(DAY_FILTER[i], NIGHT_FILTER[i], weight)  # type: ignore[call-overload]
 
-    #     if self.is_maze:
-    #         filter = NIGHT_FILTER
-    #     else:
-    #         if hour < 6 or hour >= 20:
-    #             filter = NIGHT_FILTER
-    #         elif 6 <= hour < 9:
-    #             weight = (hour - 6) / (9 - 6)
-    #             for i in range(4):
-    #                 filter[i] = pygame.math.lerp(NIGHT_FILTER[i], DAY_FILTER[i], weight)
-    #         elif 9 <= hour < 17:
-    #             filter = DAY_FILTER
-    #         elif 17 <= hour < 20:
-    #             weight = (hour - 17) / (20 - 17)
-    #             for i in range(4):
-    #                 filter[i] = pygame.math.lerp(DAY_FILTER[i], NIGHT_FILTER[i], weight)
+        self.filter_surf.fill(filter)
 
-    #     filter_surf.fill(filter)
+        if (hour > 17 or hour < 9) or self.is_maze:
+            scale = (self.camera.zoom / ZOOM_LEVEL)
+            for npc in self.NPCs + [self.player]:
+                pos = self.map_view.translate_point(npc.pos + vec(0, -8))
+                pos_vec = (tuple_to_vector(pos) / FILTER_SCALE) - vec(CIRCLE_RADIUS, CIRCLE_RADIUS) * scale
+                self.filter_surf.blit(
+                    # self.b_and_w_circle,
+                    pygame.transform.scale_by(self.b_and_w_circle, scale),
+                    pos_vec,
+                    special_flags=pygame.BLEND_RGBA_MIN)
 
-    #     if filter == NIGHT_FILTER or self.is_maze:
-    #         for npc in self.NPC + [self.player]:
-    #             pos = self.map_view.translate_point(npc.pos + vec(0, -8))
-    #             pygame.draw.circle(filter_surf, DAY_FILTER, pos, 196)
-    #         if "intro" in self.waypoints:
-    #             village_pos = self.waypoints["intro"][0]
-    #             pos = self.map_view.translate_point(village_pos + vec(0, 0))
-    #             pygame.draw.circle(filter_surf, DAY_FILTER, pos, 256)
+            if "intro" in self.waypoints:
+                scale = 2 * (self.camera.zoom / ZOOM_LEVEL)
+                village_pos = to_vector(self.waypoints["intro"][0])
+                pos = self.map_view.translate_point(village_pos + vec(0, 0))
+                pos_vec = (tuple_to_vector(pos) / FILTER_SCALE) - vec(CIRCLE_RADIUS, CIRCLE_RADIUS) * scale
+                self.filter_surf.blit(
+                    pygame.transform.scale_by(self.b_and_w_circle, scale),
+                    pos_vec,
+                    special_flags=pygame.BLEND_RGBA_MIN)
+
+                village_pos = to_vector(self.waypoints["intro"][-1])
+                pos = self.map_view.translate_point(village_pos)
+                pos_vec = (tuple_to_vector(pos) / FILTER_SCALE) - vec(CIRCLE_RADIUS, CIRCLE_RADIUS) * scale
+                self.filter_surf.blit(
+                    pygame.transform.scale_by(self.b_and_w_circle, scale),
+                    pos_vec,
+                    special_flags=pygame.BLEND_RGBA_MIN)
+
+        screen.blit(pygame.transform.scale(self.filter_surf, (WIDTH, HEIGHT)))  # FILTER_SCALE
+        # print(screen.get_bitsize(), self.filter_surf.get_bitsize())
+        # pygame.transform.scale(self.filter_surf, (WIDTH, HEIGHT), screen)  # FILTER_SCALE
 
     #############################################################################################################
 
@@ -1488,6 +1527,7 @@ class Scene(State):
         screen.blit(half_screen, (0, h))
 
     #############################################################################################################
+
     def apply_cutscene_framing(self, screen: pygame.Surface, percentage: float) -> None:
         # MARK: apply_cutscene_framing
         if percentage <= 0.001:

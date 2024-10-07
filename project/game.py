@@ -110,6 +110,8 @@ class Game:
 
         # initialise the joystick module
         pygame.joystick.init()
+        # https://www.codeproject.com/Articles/5298051/Improving-Performance-in-Pygame-Speed-Up-Your-Game
+        # pygame.event.set_allowed([pygame.QUIT, pygame.KEYDOWN, pygame.KEYUP])
 
         # create empty list to store joysticks
         self.joysticks: dict[int, pygame.joystick.JoystickType] = {}
@@ -125,10 +127,10 @@ class Game:
         pygame.display.set_icon(program_icon)
 
         # https://coderslegacy.com/python/pygame-rpg-improving-performance/
-        self.flags: int = pygame.DOUBLEBUF
+        self.flags: int =  0
 
         if IS_FULLSCREEN:
-            self.flags |= pygame.FULLSCREEN
+            self.flags |= pygame.FULLSCREEN | pygame.DOUBLEBUF
 
         if USE_SHADERS:
             if IS_WEB:
@@ -141,9 +143,15 @@ class Game:
                 pygame.display.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_CORE)
             pygame.display.gl_set_attribute(pygame.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, True)
             # pygame.RESIZABLE , | pygame.SCALED
-            self.flags = self.flags | pygame.OPENGL
+            self.flags = self.flags | pygame.OPENGL | pygame.DOUBLEBUF
         # final surface, afters scaling up
-        self.screen: pygame.Surface = pygame.display.set_mode((WIDTH * SCALE, HEIGHT * SCALE), self.flags, vsync=0)
+        if IS_FULLSCREEN:
+            res = (0, 0)
+        else:
+            res = (WIDTH * SCALE, HEIGHT * SCALE)
+        self.screen: pygame.Surface = pygame.display.set_mode(res, self.flags, vsync=0)
+        info = pygame.display.Info()
+        print(repr(info))
         # helper surface, before scaling up
         # , 32 .convert_alpha() # pygame.SRCALPHA
         self.canvas: pygame.Surface = pygame.Surface((WIDTH, HEIGHT)).convert_alpha()  # , self.flags)
