@@ -6,7 +6,7 @@ from NPC_behavior_tree import PatrolBehaviorTree
 def main() -> None:
     ai = PatrolBehaviorTree()
 
-    DURATION = 10.0
+    DURATION = 20.0
     loop_count = 0.0
 
     while loop_count < DURATION:

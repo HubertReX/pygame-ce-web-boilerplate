@@ -90,6 +90,37 @@ class Sequence(Node):
 #############################################################################################################
 
 
+class Inventer(Node):
+
+    def evaluate(self) -> NodeState:
+        traceback = self.get_context("traceback", [])
+        traceback.append(f"{self.__class__.__name__}{self.get_suffix()}")
+
+        if len(self.children) != 1:
+            print(f"[red]ERROR[/]: {self} must have exactly one child!")
+            exit(-1)
+
+        self.set_context("inventer", True)
+        result = self.children[0].evaluate()
+        self.set_context("inventer", False)
+
+        # match result:
+        #     case NodeState.FAILURE:
+        #         result = NodeState.SUCCESS
+        #     case NodeState.RUNNING:
+        #         pass
+        #     case NodeState.SUCCESS:
+        #         result = NodeState.FAILURE
+        #     case _:
+        #         result = NodeState.SUCCESS
+
+        # evaluate_trace(self.children[0], result)
+        traceback.pop()
+        return result
+
+#############################################################################################################
+
+
 class Condition(Node):
 
     def get_node_children(self, indent: int = 0) -> list[str]:
@@ -121,7 +152,11 @@ class Condition(Node):
         traceback.append(self.__class__.__name__)
         traceback.append(repr(self.condition_func).split(" ")[1])
 
-        result = NodeState.SUCCESS if self.condition_func(self) else NodeState.FAILURE
+        condition = self.condition_func(self)
+        is_inventer = self.get_context("inventer", False)
+        if is_inventer:
+            condition = not condition
+        result = NodeState.SUCCESS if condition else NodeState.FAILURE
         evaluate_trace(self, result)
         traceback.pop()
         traceback.pop()

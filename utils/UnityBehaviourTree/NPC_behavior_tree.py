@@ -2,13 +2,14 @@ from rich import print
 from node import Node
 import random
 
-from behavior_tree_base import Action, BehaviorTreeBase, Condition, Selector, Sequence
+from behavior_tree_base import Action, BehaviorTreeBase, Condition, Inventer, Selector, Sequence
 
 #############################################################################################################
 
 
-def is_healthy(node: Node) -> bool:
-    res = True  # random.randint(0, 2) == 0
+def is_health_ok(node: Node) -> bool:
+    health = node.get_context("health", 50)
+    res = health > 25
     # print(f"'is_healthy' {res}")
 
     return res
@@ -16,8 +17,26 @@ def is_healthy(node: Node) -> bool:
 #############################################################################################################
 
 
+def heal(node: Node) -> bool:
+    health = node.get_context("health", 100)
+    node.set_context("health", health + 25)
+    res = True
+    # print(f"'heal' {node.get_context("health", 100)}")
+
+    return res
+
+
+def has_potion(node: Node) -> bool:
+    res = random.randint(0, 3) == 0
+    # print(f"[red]Potion[/]'has_potion' {res}")
+
+    return res
+
+#############################################################################################################
+
+
 def is_enemy_in_attack_range(node: Node) -> bool:
-    res = random.randint(0, 2) == 0
+    res = random.randint(0, 1) == 0
     # print(f"'is_enemy_in_attack_range' {res}")
 
     return res
@@ -79,7 +98,22 @@ def patrol_area(node: Node) -> bool:
 #############################################################################################################
 
 
+def run_away(node: Node) -> bool:
+    tiredness = node.get_context("tiredness", 0)
+    node.set_context("tiredness", tiredness + 20)
+    # print("'run Forest, run!'")
+
+    res = True  # random.randint(0, 2) == 0
+    return res
+
+#############################################################################################################
+
+
 def attack(node: Node) -> bool:
+    health = node.get_context("health", 100)
+    health = max(0, health - 10)
+    node.set_context("health", health)
+
     res = True  # random.randint(0, 2) == 0
     # print("'attack'")
 
@@ -102,11 +136,22 @@ class PatrolBehaviorTree(BehaviorTreeBase):
     def setup(self) -> Node:
         self._root = Selector(
             Sequence(
+                Inventer(Condition(is_health_ok)),
+                Condition(has_potion),
+                Action(heal),
+            ),
+            Sequence(
                 Condition(is_tired),
                 Action(rest),
             ),
             Sequence(
                 Condition(is_enemy_in_attack_range),
+                Inventer(Condition(is_health_ok)),
+                Action(run_away),
+            ),
+            Sequence(
+                Condition(is_enemy_in_attack_range),
+                Condition(is_health_ok),
                 Action(attack),
             ),
             Sequence(

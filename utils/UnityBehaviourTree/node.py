@@ -29,7 +29,7 @@ class Node():
         self.context: dict[str, Any] = {}
         self.children: list[Node] = []
         self.parent: Node | None = None
-        self.state: NodeState = NodeState.SUCCESS
+        # self.state: NodeState = NodeState.SUCCESS
 
         for child in children:
             self._attach(child)
@@ -158,7 +158,8 @@ def evaluate_trace(node: Node, node_result: NodeState):
     traceback = node.get_context("traceback", [f"!{node.__class__.__name__}!"])
     SHOW_CONTEXT = True
     if SHOW_CONTEXT:
-        context = {key: val for key, val in node.context.items() if key not in ["traceback", "time_elapsed", "dt"]}
+        context = {key: val for key, val in node.context.items(
+        ) if key not in ["traceback", "time_elapsed", "dt", "inventer"]}
     else:
         context = {}
     print(f"{context} [bright_magenta]{"[/][bright_white].[/][bright_magenta]".join(traceback[:-1])}[/]"
