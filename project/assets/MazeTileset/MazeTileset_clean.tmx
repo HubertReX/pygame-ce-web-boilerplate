@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="38" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="13" nextobjectid="4">
+<map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="38" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="13" nextobjectid="6">
  <editorsettings>
   <export format="tmx"/>
  </editorsettings>
@@ -258,7 +258,7 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2147483981,0,34,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2147483981,317,34,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -291,12 +291,26 @@
     <property name="to_map" value="Return"/>
    </properties>
   </object>
+  <object id="4" name="Stairs" x="560" y="128" width="16" height="16">
+   <properties>
+    <property name="entry_point" value="Entry"/>
+    <property name="is_maze" type="bool" value="true"/>
+    <property name="maze_cols" type="int" value="10"/>
+    <property name="maze_rows" type="int" value="7"/>
+    <property name="obj_type" value="exit"/>
+    <property name="return_entry_point" value="0"/>
+    <property name="to_map" value="Maze_02"/>
+   </properties>
+  </object>
  </objectgroup>
  <objectgroup id="5" name="entry_points">
   <object id="1" name="start" x="176" y="176">
    <point/>
   </object>
   <object id="2" name="Entry" x="552" y="120">
+   <point/>
+  </object>
+  <object id="5" name="Re-Entry" x="568" y="120">
    <point/>
   </object>
  </objectgroup>

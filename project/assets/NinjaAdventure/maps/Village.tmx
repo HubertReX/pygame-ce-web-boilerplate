@@ -482,7 +482,7 @@
     <property name="maze_rows" type="int" value="7"/>
     <property name="obj_type" value="exit"/>
     <property name="return_entry_point" value="Stairs"/>
-    <property name="to_map" value="Maze"/>
+    <property name="to_map" value="Maze_01"/>
    </properties>
   </object>
   <object id="31" name="BigChest_Village" x="880" y="720" width="16" height="16">

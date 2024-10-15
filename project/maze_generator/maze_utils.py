@@ -1,3 +1,4 @@
+import copy
 import heapq
 import random
 import time
@@ -23,9 +24,29 @@ SUBTILE_GRID_ROWS = 4
 SUBTILE_ROWS_SEP = 2
 SUBTILE_ROWS_OFFSET = SUBTILE_ROWS + SUBTILE_ROWS_SEP
 
+ENTRY_X_OFFSET = 3
+ENTRY_Y_OFFSET = 3
+
+RE_ENTRY_X_OFFSET = 3
+RE_ENTRY_Y_OFFSET = 5
+
+RETURN_X_OFFSET = 3
+RETURN_Y_OFFSET = 1
+
+STAIRS_DOWN_X_OFFSET = 4
+STAIRS_DOWN_Y_OFFSET = 4
+
+STAIRS_UP_X_OFFSET = 1
+STAIRS_UP_Y_OFFSET = 4
+
+WALLS_DECORS_OFFSET_RANGE_X = 2
+WALLS_DECORS_OFFSET_RANGE_Y = 1
+
 EMPTY_CELL = 0
 BACKGROUND_CELL = 0
-STAIRS_CELL = 33  # 332
+RETURN_CELL = 33  # 332
+STAIRS_DOWN_CELL = 50  # 184 # 200
+STAIRS_UP_CELL = 16  # 184  # 200
 # background decors (holes, gray stones)
 BACKGROUND_DECORS_MAX = 80
 # BACKGROUND_DECORS_IDS = [12, 24]
@@ -55,6 +76,74 @@ ITEMS_MAX_COUNT = {
     "sword_short": 1,
     "sword_long": 1
 }
+
+mapping = {
+    0:  "┼",
+    1:  "┤",
+    2:  "├",
+    3:  "│",
+    4:  "┴",
+    5:  "┘",
+    6:  "└",
+    7:  "╵",
+    8:  "┬",
+    9:  "┐",
+    10: "┌",
+    11: "╷",
+    12: "─",
+    13: "╴",
+    14: "╶",
+}
+GRID_FACTOR = 3
+
+mapping_grid = {
+    0:  [[100,   0, 100],
+         [0,     0,   0],
+         [100,   0, 100]],
+    1:  [[100,   0, 100],
+         [0,     0, 100],
+         [100,   0, 100]],
+    2:  [[100,   0, 100],
+         [100,   0,   0],
+         [100,   0, 100]],
+    3:  [[100,   0, 100],
+         [100,   0, 100],
+         [100,   0, 100]],
+    4:  [[100,   0, 100],
+         [0,     0,   0],
+         [100, 100, 100]],
+    5:  [[100,   0, 100],
+         [0,     0, 100],
+         [100, 100, 100]],
+    6:  [[100,   0, 100],
+         [100,   0,   0],
+         [100, 100, 100]],
+    7:  [[100,   0, 100],
+         [100,   0, 100],
+         [100, 100, 100]],
+    8:  [[100, 100, 100],
+         [0,     0,   0],
+         [100,   0, 100]],
+    9:  [[100, 100, 100],
+         [0,     0, 100],
+         [100,   0, 100]],
+    10: [[100, 100, 100],
+         [100,   0,   0],
+         [100,   0, 100]],
+    11: [[100, 100, 100],
+         [100,   0, 100],
+         [100,   0, 100]],
+    12: [[100, 100, 100],
+         [0,     0,   0],
+         [100, 100, 100]],
+    13: [[100, 100, 100],
+         [0,     0, 100],
+         [100, 100, 100]],
+    14: [[100, 100, 100],
+         [100,   0,   0],
+         [100, 100, 100]],
+}
+
 
 MARGIN = 3
 
@@ -258,6 +347,9 @@ def copy_subtile(new_data: list[list[int]], x: int, y: int, subtile_sheet: list[
 
 def get_gid_from_tmx_id(tmx_id: int, tileset_map: pytmx.TiledMap) -> int:
     gid_tuple = tileset_map.gidmap[tmx_id + 1]
+    if tmx_id == STAIRS_DOWN_CELL:
+        print(gid_tuple)
+        print(tileset_map.gidmap[tmx_id - 1])
     if len(gid_tuple):
         return gid_tuple[0][0]
     else:
@@ -328,13 +420,20 @@ def place_tile_randomly(
 #######################################################################################################################
 
 
-def build_tileset_map_from_maze(clean_tileset_map: pytmx.TiledMap, maze: Maze, to_map: str, entry_point: str) -> None:
+def build_tileset_map_from_maze(
+    clean_tileset_map: pytmx.TiledMap,
+    maze: Maze,
+    current_map: str,
+    to_map: str,
+    entry_point: str,
+) -> None:
     """
     Builds a final maze map from a maze grid.
 
     Args:
         clean_tileset_map (pytmx.TiledMap): The tileset map with maze template. Will be overwritten with the final map.
         maze (Maze): The input maze grid to convert.
+        current_map (str): the name of current maze (contains maze level)
         to_map (str): The exit to map (name of map file, eg. `Village.tmx)`.
         entry_point (str): The starting point in the exit map (name of object on exits layer).
 
@@ -365,24 +464,44 @@ def build_tileset_map_from_maze(clean_tileset_map: pytmx.TiledMap, maze: Maze, t
     # if "entry_points" in self.layers:
     #     for obj in tileset_map.get_layer_by_name("entry_points"):
     #         self.entry_points[obj.name] = vec(obj.x, obj.y)
-    ENTRY_X_OFFSET = 3
-    ENTRY_Y_OFFSET = 3
 
-    RETURN_X_OFFSET = 3
-    RETURN_Y_OFFSET = 1
+    # elements_layer = clean_tileset_map.get_layer_by_name("elements")
+    # print(elements_layer.data[8][36])
+    print(f"{current_map=}, {to_map=}")
 
-    WALLS_DECORS_OFFSET_RANGE_X = 2
-    WALLS_DECORS_OFFSET_RANGE_Y = 1
-
+    current_map_name: str = current_map.split("_")[0]
+    current_map_level: int = int(current_map.split("_")[1])
+    print(f"{current_map_level=}")
     entry_obj = clean_tileset_map.get_object_by_name("Entry")
-    entry_obj.x = (MARGIN + ENTRY_X_OFFSET) * TILE_SIZE + (TILE_SIZE // 2)
-    entry_obj.y = (MARGIN + ENTRY_Y_OFFSET) * TILE_SIZE
+    if current_map_level == 1:
+        entry_obj.x = (MARGIN + ENTRY_X_OFFSET) * TILE_SIZE + (TILE_SIZE // 2)
+        entry_obj.y = (MARGIN + ENTRY_Y_OFFSET) * TILE_SIZE
+    else:
+        entry_obj.x = (MARGIN + ENTRY_X_OFFSET - 1) * TILE_SIZE + (TILE_SIZE // 2)
+        entry_obj.y = (MARGIN + ENTRY_Y_OFFSET + 2) * TILE_SIZE
 
     return_obj = clean_tileset_map.get_object_by_name("Return")
-    return_obj.x = (MARGIN + RETURN_X_OFFSET) * TILE_SIZE
-    return_obj.y = (MARGIN + RETURN_Y_OFFSET) * TILE_SIZE
-    return_obj.to_map = to_map  # "Village"
-    return_obj.entry_point = entry_point  # "Stairs"
+    if current_map_level == 1:
+        return_obj.x = (MARGIN + RETURN_X_OFFSET) * TILE_SIZE
+        return_obj.y = (MARGIN + RETURN_Y_OFFSET) * TILE_SIZE
+        return_obj.to_map = to_map  # "Village"
+        return_obj.entry_point = entry_point  # "Stairs"
+    else:
+        # not accessible
+        return_obj.x = (MARGIN + STAIRS_UP_X_OFFSET) * TILE_SIZE
+        return_obj.y = (MARGIN + STAIRS_UP_Y_OFFSET) * TILE_SIZE
+        return_obj.to_map = f"{current_map_name}_{(current_map_level - 1):02d}"
+        return_obj.entry_point = "Re-Entry"  # "Stairs"
+
+    stairs_obj = clean_tileset_map.get_object_by_name("Stairs")
+    stairs_obj.x = (MARGIN + STAIRS_DOWN_X_OFFSET) * TILE_SIZE
+    stairs_obj.y = (MARGIN + STAIRS_DOWN_Y_OFFSET) * TILE_SIZE
+    stairs_obj.to_map = f"{current_map_name}_{(current_map_level + 1):02d}"
+    stairs_obj.entry_point = "Entry"
+
+    re_entry_obj = clean_tileset_map.get_object_by_name("Re-Entry")
+    re_entry_obj.x = (MARGIN + RE_ENTRY_X_OFFSET) * TILE_SIZE + (TILE_SIZE // 2)
+    re_entry_obj.y = (MARGIN + RE_ENTRY_Y_OFFSET) * TILE_SIZE
 
     new_cols_cnt = (maze.num_cols * SUBTILE_COLS) + (2 * MARGIN)
     new_rows_cnt = (maze.num_rows * SUBTILE_ROWS) + (2 * MARGIN)
@@ -491,6 +610,8 @@ def build_tileset_map_from_maze(clean_tileset_map: pytmx.TiledMap, maze: Maze, t
 
     # put WALL_DECORS_MAX decors randomly selected from the list of WALLS_DECORS_IDS tiles
     decors_layer = clean_tileset_map.get_layer_by_name("walls_decors")
+    floor_decors_layer = clean_tileset_map.get_layer_by_name("floor_decors")
+    items_layer = clean_tileset_map.get_layer_by_name("items")
     # walls_decors_gids = [get_gid_from_tmx_id(cell_id, clean_tileset_map) for cell_id in WALLS_DECORS_IDS]
     wall_decors_cnt = 0
     while wall_decors_cnt < WALL_DECORS_MAX:
@@ -506,14 +627,22 @@ def build_tileset_map_from_maze(clean_tileset_map: pytmx.TiledMap, maze: Maze, t
             wall_decors_cnt += 1
 
     # place exit doors (must be last since nothing should cover them)
-    stairs_id = get_gid_from_tmx_id(STAIRS_CELL, clean_tileset_map)
-    decors_layer.data[MARGIN + RETURN_Y_OFFSET][MARGIN + RETURN_X_OFFSET] = stairs_id
+    if current_map_level == 1:
+        return_id = get_gid_from_tmx_id(RETURN_CELL, clean_tileset_map)
+        decors_layer.data[MARGIN + RETURN_Y_OFFSET][MARGIN + RETURN_X_OFFSET] = return_id
+    else:
+        # return_id = get_gid_from_tmx_id(RETURN_CELL, clean_tileset_map)
+        decors_layer.data[MARGIN + STAIRS_UP_Y_OFFSET][MARGIN + STAIRS_UP_X_OFFSET] =  STAIRS_UP_CELL
+
+    # decors_layer = clean_tileset_map.get_layer_by_name("walls_decors")
 
     # put random items on the map
-    items_layer = clean_tileset_map.get_layer_by_name("items")
 
     for item_name, count in ITEMS_MAX_COUNT.items():
         place_tile_randomly(maze, items_gids, items_layer, item_name, count)
+    # print(clean_tileset_map.gidmap)
+    # stairs_id = get_gid_from_tmx_id(STAIRS_CELL, clean_tileset_map)
+    floor_decors_layer.data[MARGIN + STAIRS_DOWN_Y_OFFSET][MARGIN + STAIRS_DOWN_X_OFFSET] = 50  # stairs_id
 
     clean_tileset_map.width = new_cols_cnt
     clean_tileset_map.height = new_rows_cnt

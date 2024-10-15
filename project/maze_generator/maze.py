@@ -10,26 +10,28 @@ class Maze:
     def __init__(self, cols: int, rows: int) -> None:
         self.num_rows = rows
         self.num_cols = cols
+        self.clear()
 
+    def clear(self) -> None:
         self.cell_rows: list[list[Cell]] = []
 
-        for y in range(rows):
+        for y in range(self.num_rows):
             cells = []
-            for x in range(cols):
+            for x in range(self.num_cols):
                 cell = Cell(x, y)
                 cells.append(cell)
             self.cell_rows.append(cells)
 
-        for y in range(rows):
-            for x in range(cols):
+        for y in range(self.num_rows):
+            for x in range(self.num_cols):
                 cell = self.cell_rows[y][x]
                 if x > 0:
                     cell.add_neighbor(CELL_WEST, self.cell_rows[y][x - 1])
-                if x < cols - 1:
+                if x < self.num_cols - 1:
                     cell.add_neighbor(CELL_EAST, self.cell_rows[y][x + 1])
                 if y > 0:
                     cell.add_neighbor(CELL_NORTH, self.cell_rows[y - 1][x])
-                if y < rows - 1:
+                if y < self.num_rows - 1:
                     cell.add_neighbor(CELL_SOUTH, self.cell_rows[y + 1][x])
 
     #############################################################################################################

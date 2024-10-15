@@ -609,6 +609,7 @@ class Scene(State):
             build_tileset_map_from_maze(
                 tileset_map,
                 self.maze,
+                self.current_map,
                 to_map = self.return_map,
                 entry_point = self.return_entry_point
             )
@@ -1395,7 +1396,7 @@ class Scene(State):
 
         if SHOW_DEBUG_INFO:
             # self.show_debug()
-            self.debug([f"FPS: {self.game.fps: 5.1f} ",])
+            self.debug([f"FPS: {self.game.fps: 5.1f} M: {self.current_map}",])
 
         if self.display_ui_flag:
             self.ui.display_ui(self.game.time_elapsed)
