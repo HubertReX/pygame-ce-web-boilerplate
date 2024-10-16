@@ -3,7 +3,7 @@
  <image source="../../../kenney_tinyDungeon/Tilemap/tilemap_packed.png" trans="000000" width="192" height="176"/>
  <tile id="12">
   <properties>
-   <property name="background_decors" value="holes"/>
+   <property name="floor_decors" value="holes"/>
   </properties>
  </tile>
  <tile id="19">
@@ -13,7 +13,7 @@
  </tile>
  <tile id="24">
   <properties>
-   <property name="background_decors" value="gray_stones"/>
+   <property name="floor_decors" value="gray_stones"/>
   </properties>
  </tile>
  <tile id="28">

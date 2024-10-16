@@ -13,7 +13,11 @@ from maze_generator import hunt_and_kill_maze
 from maze_generator.maze_utils import (
     _TIMEIT_CACHE,
     EMPTY_CELL,
+    MARGIN,
+    SUBTILE_COLS,
+    SUBTILE_ROWS,
     TILE_SIZE,
+    analyze_maze,
     build_tileset_map_from_maze,
     clear_maze_cache,
     get_gid_from_tmx_id,
@@ -111,6 +115,7 @@ class Scene(State):
         super().__init__(game)
         self.properties: list[str] = [
             "is_maze",
+            "maze_stats",
             "maze_cols",
             "maze_rows",
             "waypoints",
@@ -144,6 +149,7 @@ class Scene(State):
         self.entry_point = entry_point
         self.new_scene: Collider | None = None
         self.is_maze = is_maze
+        self.maze_stats: dict[str, Any] = {}
         self.maze_cols = maze_cols
         self.maze_rows = maze_rows
         self.waypoints: dict[str, tuple[Point, ...]] = {}
@@ -603,12 +609,14 @@ class Scene(State):
                 # generate new maze
                 self.maze = hunt_and_kill_maze.HuntAndKillMaze(self.maze_cols, self.maze_rows)
                 self.maze.generate()
+                self.maze_stats = analyze_maze(self.maze)
 
             tileset_map: TiledMap = load_pygame(str(MAZE_DIR / "MazeTileset_clean.tmx"))
             # combine tileset clean template with maze grid into final map
             build_tileset_map_from_maze(
                 tileset_map,
                 self.maze,
+                self.maze_stats,
                 self.current_map,
                 to_map = self.return_map,
                 entry_point = self.return_entry_point
@@ -686,7 +694,8 @@ class Scene(State):
                     )
                     self.loaded_NPCs[obj.name] = npc
 
-        if self.is_maze and self.current_map not in self.loaded_maps:
+        # TODO: revert after implementing infinite maze
+        if self.is_maze and self.current_map not in self.loaded_maps and 1 < 0:
             # spawning 4 random NPCs in upper right, lower right, lower left corners and in the middle of the map
             spawn_positions: list[tuple[int, int]] = [
                 ((5 + ((self.maze_cols  - 1) * 6)) * TILE_SIZE + 2,
@@ -1395,8 +1404,8 @@ class Scene(State):
             self.apply_cutscene_framing(screen, self.cutscene_framing)
 
         if SHOW_DEBUG_INFO:
-            # self.show_debug()
-            self.debug([f"FPS: {self.game.fps: 5.1f} M: {self.current_map}",])
+            self.show_debug()
+            self.debug([f"FPS: {self.game.fps: 7.1f} M: {self.current_map}",])
 
         if self.display_ui_flag:
             self.ui.display_ui(self.game.time_elapsed)
@@ -1574,15 +1583,27 @@ class Scene(State):
         # ]
         # self.debug(msgs)
 
+        if self.is_maze:
+            current_map_level: int = int(self.current_map.split("_")[1])
+            if current_map_level == 1:
+                path = self.maze_stats["longest_N_wall_path"]
+            else:
+                path = self.maze_stats["longest_dead_end_path"]
+            self.mark_maze_sub_grid(path[0], "red")
+            self.mark_maze_sub_grid(path[-1], "blue")
+            for step in path[1:-1]:
+                self.mark_maze_sub_grid(step, "green")
+            pass
+
         # display npc (and players) debug messages
         for npc in self.NPCs + [self.player]:
             # prepare text displayed under NPC
             texts = [
                 npc.name,
-                f"px={npc.pos.x // 1:3} y={(npc.pos.y - 4) // 1:3}",
-                # f"gx={npc.tileset_coord.x:3} y={npc.tileset_coord.y:3}",
+                # f"px={npc.pos.x // 1:3} y={(npc.pos.y - 4) // 1:3}",
+                f"gx={npc.tileset_coord.x:3} y={npc.tileset_coord.y:3}",
                 # f"s ={npc.state} j={npc.is_flying}",
-                f"st ={npc.state} sp = {npc.speed}",
+                # f"st ={npc.state} sp = {npc.speed}",
                 # f"wc={npc.waypoints_cnt} wn={npc.current_waypoint_no}",
                 # f"tx={npc.get_tileset_coord(npc.target).x:3} y={npc.get_tileset_coord(npc.target).y:3}",
             ]
@@ -1614,3 +1635,14 @@ class Scene(State):
         #             img = pygame.Surface(rect_s.size, pygame.SRCALPHA)
         #             pygame.draw.rect(img, (0,0,200,64), img.get_rect())
         #             self.game.canvas.blit(img, rect_s)
+
+    def mark_maze_sub_grid(self, start: tuple[int, int], color: str) -> None:
+        # MARGIN = 3
+        # MARGIN_X = 3
+        # MARGIN_Y = 3
+        # SUBTILE_GRID = 6
+
+        left = MARGIN * TILE_SIZE + start[0] * SUBTILE_COLS * TILE_SIZE
+        top  = MARGIN * TILE_SIZE + start[1] * SUBTILE_ROWS * TILE_SIZE
+        rect = self.map_view.translate_rect((left, top, SUBTILE_COLS * TILE_SIZE, SUBTILE_ROWS * TILE_SIZE))
+        pygame.draw.rect(self.game.canvas, color, rect, width=4)

@@ -2,6 +2,7 @@ import copy
 import heapq
 import random
 import time
+import itertools
 from functools import partial, wraps
 from typing import Any, Callable
 
@@ -10,58 +11,62 @@ from pygame.math import Vector2 as vec
 from rich import inspect, pretty, print, traceback
 
 from .maze import Maze
+from .mappings import TILE_INDEX_TO_SYMBOL, TILE_INDEX_TO_GRID
 
 help = partial(inspect, help=True, methods=True)
 pretty.install()
 
-SUBTILE_COLS = 6
+SUBTILE_COLS      = 6
 SUBTILE_GRID_COLS = 4
-SUBTILE_COLS_SEP = 2
+SUBTILE_COLS_SEP  = 2
 SUBTILE_COLS_OFFSET = SUBTILE_COLS + SUBTILE_COLS_SEP
 
-SUBTILE_ROWS = 6
+SUBTILE_ROWS      = 6
 SUBTILE_GRID_ROWS = 4
-SUBTILE_ROWS_SEP = 2
+SUBTILE_ROWS_SEP  = 2
 SUBTILE_ROWS_OFFSET = SUBTILE_ROWS + SUBTILE_ROWS_SEP
 
 ENTRY_X_OFFSET = 3
 ENTRY_Y_OFFSET = 3
 
-RE_ENTRY_X_OFFSET = 3
-RE_ENTRY_Y_OFFSET = 5
+# RE_ENTRY_X_OFFSET = 3
+# RE_ENTRY_Y_OFFSET = 5
 
 RETURN_X_OFFSET = 3
 RETURN_Y_OFFSET = 1
 
-STAIRS_DOWN_X_OFFSET = 4
-STAIRS_DOWN_Y_OFFSET = 4
+# STAIRS_DOWN_X_OFFSET = 4
+# STAIRS_DOWN_Y_OFFSET = 4
 
-STAIRS_UP_X_OFFSET = 1
-STAIRS_UP_Y_OFFSET = 4
+# STAIRS_UP_X_OFFSET = 1
+# STAIRS_UP_Y_OFFSET = 4
 
 WALLS_DECORS_OFFSET_RANGE_X = 2
 WALLS_DECORS_OFFSET_RANGE_Y = 1
 
-EMPTY_CELL = 0
-BACKGROUND_CELL = 0
-RETURN_CELL = 33  # 332
-STAIRS_DOWN_CELL = 50  # 184 # 200
-STAIRS_UP_CELL = 16  # 184  # 200
+EMPTY_CELL       = 0
+BACKGROUND_CELL  = 0
+RETURN_CELL      = 33  # 332
+# STAIRS_DOWN_CELL = 50  # 184 # 200
+# STAIRS_UP_CELL   = 16  # 184  # 200
+
 # background decors (holes, gray stones)
 BACKGROUND_DECORS_MAX = 80
 # BACKGROUND_DECORS_IDS = [12, 24]
 
 # elements on floor (dead rat, barrel, crate, stool)
 ELEMENTS_MAX = 6
+
+# map image_index to offset of elements
 ELEMENTS_OFFSETS_MAP = {
-    14: vec(1, 3),
-    13: vec(4, 3),
+    14: vec(1, 2),
+    13: vec(4, 2),
     11: vec(2, 2),
     10: vec(2, 2),
-    9: vec(4, 2),
-    7: vec(3, 4),
-    6: vec(1, 4),
-    5: vec(4, 4),
+    9:  vec(4, 2),
+    7:  vec(4, 4),
+    6:  vec(1, 4),
+    5:  vec(4, 4),
 }
 
 # wall decors(bars, banner, glyph)
@@ -77,77 +82,90 @@ ITEMS_MAX_COUNT = {
     "sword_long": 1
 }
 
-mapping = {
-    0:  "┼",
-    1:  "┤",
-    2:  "├",
-    3:  "│",
-    4:  "┴",
-    5:  "┘",
-    6:  "└",
-    7:  "╵",
-    8:  "┬",
-    9:  "┐",
-    10: "┌",
-    11: "╷",
-    12: "─",
-    13: "╴",
-    14: "╶",
-}
-GRID_FACTOR = 3
-
-mapping_grid = {
-    0:  [[100,   0, 100],
-         [0,     0,   0],
-         [100,   0, 100]],
-    1:  [[100,   0, 100],
-         [0,     0, 100],
-         [100,   0, 100]],
-    2:  [[100,   0, 100],
-         [100,   0,   0],
-         [100,   0, 100]],
-    3:  [[100,   0, 100],
-         [100,   0, 100],
-         [100,   0, 100]],
-    4:  [[100,   0, 100],
-         [0,     0,   0],
-         [100, 100, 100]],
-    5:  [[100,   0, 100],
-         [0,     0, 100],
-         [100, 100, 100]],
-    6:  [[100,   0, 100],
-         [100,   0,   0],
-         [100, 100, 100]],
-    7:  [[100,   0, 100],
-         [100,   0, 100],
-         [100, 100, 100]],
-    8:  [[100, 100, 100],
-         [0,     0,   0],
-         [100,   0, 100]],
-    9:  [[100, 100, 100],
-         [0,     0, 100],
-         [100,   0, 100]],
-    10: [[100, 100, 100],
-         [100,   0,   0],
-         [100,   0, 100]],
-    11: [[100, 100, 100],
-         [100,   0, 100],
-         [100,   0, 100]],
-    12: [[100, 100, 100],
-         [0,     0,   0],
-         [100, 100, 100]],
-    13: [[100, 100, 100],
-         [0,     0, 100],
-         [100, 100, 100]],
-    14: [[100, 100, 100],
-         [100,   0,   0],
-         [100, 100, 100]],
-}
-
-
 MARGIN = 3
 
 TILE_SIZE = 16
+
+#######################################
+#         analyze maze const          #
+#######################################
+STEP_COST_WALL: int   = 100
+STEP_COST_GROUND: int = 0
+
+MAZE_COLS = 10
+
+MAZE_ROWS = 7
+
+
+DIVIDER = 4
+
+FROM_NORTH =  7
+FROM_SOUTH = 11
+FROM_WEST  = 13
+FROM_EAST  = 14
+
+DEAD_ENDS = [FROM_NORTH, FROM_SOUTH, FROM_EAST, FROM_WEST]
+
+IMAGE_DIRECTION_TO_POS_OFFSET = {
+    FROM_NORTH: (3, 4),
+    FROM_SOUTH: (3, 4),
+    FROM_WEST:  (3, 4),
+    FROM_EAST:  (2, 4),
+}
+
+IMAGE_DIRECTION_TO_OFFSET = {
+    FROM_NORTH: (3, 4),
+    FROM_SOUTH: (3, 2),
+    FROM_WEST:  (4, 3),
+    FROM_EAST:  (1, 3),
+}
+
+
+# IMAGE_DIRECTION_TO_IDX = {
+#     "stairs_up": {
+#         FROM_NORTH: 50,
+#         FROM_SOUTH: 52,
+#         FROM_WEST:  56,
+#         FROM_EAST:  16,
+#     },
+#     "stairs_down": {
+#         FROM_NORTH: 51,
+#         FROM_SOUTH: 53,
+#         FROM_WEST:  57,
+#         FROM_EAST:  54,
+#     },
+# }
+
+IMAGE_DIRECTION_TO_IDX = {
+    "stairs_up": {
+        FROM_NORTH: 20,
+        FROM_SOUTH: 21,
+        FROM_WEST:  22,
+        FROM_EAST:  23,
+    },
+    "stairs_down": {
+        FROM_NORTH: 16,
+        FROM_SOUTH: 17,
+        FROM_WEST:  18,
+        FROM_EAST:  19,
+    },
+}
+# STAIRS_TYPES_IDX = {
+#     "stairs_up": {
+#         "north": 50,
+#         "south": 52,
+#         "west":  16,
+#         "east":  56,
+#     },
+#     "stairs_down": {
+#         "north": 53,
+#         "south": 51,
+#         "east":  54,
+#         "west":  57,
+#     },
+# }
+
+GRID_FACTOR = 3
 
 # dict of results of a_star function
 # key is a tuple of start and goal coordinates
@@ -332,8 +350,182 @@ def a_star(grid: list[list[int]], start: tuple[int, int], goal: tuple[int, int])
 # path = a_star(grid, start, goal)
 # print("Shortest path:", path)
 
+#######################################
+#      analyze maze functions         #
+#######################################
+
+
+def print_maze(maze: Maze, path: list[tuple[int, int]] | None = None) -> None:
+    if not path:
+        path = []
+
+    for cell in maze.get_all_cells(start_from_top_row=True):
+        if cell.x == 0:
+            print("")
+        # cell.x > maze_cols // DIVIDER and cell.y > maze_rows // DIVIDER and
+        if (cell.x, cell.y) == path[0]:
+            color = "bright_red"
+        elif (cell.x, cell.y) == path[-1]:
+            color = "red"
+        elif cell.image_index in DEAD_ENDS:
+            color = "bright_yellow"
+        elif (cell.x, cell.y) in path:
+            color = "bright_cyan"
+        else:
+            color = "white"
+
+        # print(f"[{color}]{cell.image_index:3}[/]", sep=" ", end="")
+        print(f"[{color}]{TILE_INDEX_TO_SYMBOL[cell.image_index]}[/]", sep=" ", end="")
+
+    print("")
+
 #######################################################################################################################
 
+
+def find_dead_ends(maze: Maze) -> list[tuple[int, int]]:
+    candidates = []
+    for cell in maze.get_all_cells():
+        # cell.x > maze_cols // DIVIDER and cell.y > maze_rows // DIVIDER and
+        if cell.image_index in DEAD_ENDS:
+            candidates.append((cell.x, cell.y))
+
+    return candidates
+
+
+#######################################################################################################################
+
+def find_tiles_with_N_wall(maze: Maze) -> list[tuple[int, int]]:
+    candidates = []
+    for cell in maze.get_all_cells():
+        if cell.image_index > 7:
+            candidates.append((cell.x, cell.y))
+
+    return candidates
+
+
+#######################################################################################################################
+
+def generate_grid(maze: Maze) -> list[list[int]]:
+    path_finding_grid: list[list[int]] = [[STEP_COST_GROUND for _ in range(MAZE_COLS * GRID_FACTOR)]
+                                          for _ in range(MAZE_ROWS * GRID_FACTOR)]
+    for y, row in enumerate(maze.cell_rows):
+        for x, cell in enumerate(row):
+            tile_index = TILE_INDEX_TO_GRID[cell.image_index]
+            copy_subtile(path_finding_grid, x * GRID_FACTOR, y * GRID_FACTOR, tile_index)
+
+    return path_finding_grid
+
+#######################################################################################################################
+
+
+def scale_step(step: tuple[int, int]) -> tuple[int, int]:
+    return (1 + step[1] * GRID_FACTOR, 1 + step[0] * GRID_FACTOR)
+
+#######################################################################################################################
+
+
+def fix_path(path: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    if not path:
+        print("[red]ERROR[/] No path!")
+        return []
+    fixed_path: list[tuple[int, int]] = []
+    fixed_path.append((path[0][1] // GRID_FACTOR, path[0][0] // GRID_FACTOR))
+    for step in path:
+        new_step = (step[1] // GRID_FACTOR, step[0] // GRID_FACTOR)
+        if not fixed_path[-1] == new_step:
+            fixed_path.append(new_step)
+    return fixed_path
+
+#######################################################################################################################
+
+
+def analyze_maze(maze: Maze) -> dict[str, Any]:
+    stats: dict[str, Any] = {}
+
+    path_finding_grid = generate_grid(maze)
+    dead_ends = find_dead_ends(maze)
+
+    if len(dead_ends) == 0:
+        print("[red]ERROR[/] no 'dead end' tiles!")
+        exit()
+
+    dead_ends_pairs = itertools.combinations(dead_ends, 2)
+    dead_end_paths = []
+    dead_end_paths_len = []
+    for dead_ends_pair in dead_ends_pairs:
+        start = scale_step(dead_ends_pair[0])
+        goal = scale_step(dead_ends_pair[1])
+        path = fix_path(a_star(start=start, goal=goal, grid=path_finding_grid))
+        dead_end_paths.append(path)
+        dead_end_paths_len.append(len(path))
+
+    tiles_with_N_wall = find_tiles_with_N_wall(maze)
+
+    if len(tiles_with_N_wall) == 0:
+        print("[red]ERROR[/] no tiles with Northern wall")
+        exit()
+
+    n_wall_with_dead_end_paris = []
+    for tile_with_N_wall in tiles_with_N_wall:
+        for dead_end in dead_ends:
+            if not tile_with_N_wall == dead_end:
+                n_wall_with_dead_end_paris.append((tile_with_N_wall, dead_end))
+
+    from_N_wall_paths = []
+    from_N_wall_paths_len = []
+    for n_wall_with_dead_end_pair in n_wall_with_dead_end_paris:
+        start = scale_step(n_wall_with_dead_end_pair[0])
+        goal = scale_step(n_wall_with_dead_end_pair[1])
+        path = fix_path(a_star(start=start, goal=goal, grid=path_finding_grid))
+        from_N_wall_paths.append(path)
+        from_N_wall_paths_len.append(len(path))
+
+    # print(
+    #     f"count end points {len(candidates):2d}",
+    #     # f"count paths {len(paths):2d}",
+    #     # f"min {min(paths_len):2d}",
+    #     # f"avg {(sum(paths_len) / len(paths_len)):2.1f}",
+    #     f"max {max(paths_len):2d}",
+    #     f"sum {sum(paths_len):4d}",
+    # )
+
+    # simple maze
+    if len(dead_ends) < 8 and sum(dead_end_paths_len) < 600:  # and max(paths_len) < 40:
+        stats["is_simple"] = True
+    else:
+        stats["is_simple"] = False
+
+    # hard maze
+    if len(dead_ends) > 9 and sum(dead_end_paths_len)  > 900:  # or max(paths_len) > 45:
+        stats["is_hard"] = True
+    else:
+        stats["is_hard"] = False
+
+    stats["dead_ends"] = dead_ends
+    stats["dead_ends_count"] = len(dead_ends)
+    stats["dead_end_paths"] = dead_end_paths
+    stats["dead_end_paths_lengths"] = dead_end_paths_len
+    longest_dead_end_path          = dead_end_paths[dead_end_paths_len.index(min(dead_end_paths_len))]
+    stats["longest_dead_end_path"] = longest_dead_end_path
+    stats["longest_dead_end_path_start"] = longest_dead_end_path[0]
+    stats["longest_dead_end_path_end"] = longest_dead_end_path[-1]
+    stats["longest_dead_end_path_len"] = len(longest_dead_end_path)
+    stats["sum_all_dead_end_paths"] = sum(dead_end_paths_len)
+
+    # TODO: revert after finished
+    longest_N_wall_path          = from_N_wall_paths[from_N_wall_paths_len.index(min(from_N_wall_paths_len))]
+    stats["longest_N_wall_path"] = longest_N_wall_path
+    stats["longest_N_wall_path_start"] = longest_N_wall_path[0]
+    stats["longest_N_wall_path_end"] = longest_N_wall_path[-1]
+    stats["longest_N_wall_path_len"] = len(longest_N_wall_path)
+
+    # from_N_wall_paths
+    return stats
+
+
+#######################################
+#      build map functions            #
+#######################################
 
 def copy_subtile(new_data: list[list[int]], x: int, y: int, subtile_sheet: list[list[int]]) -> None:
     rows = len(subtile_sheet)
@@ -347,9 +539,7 @@ def copy_subtile(new_data: list[list[int]], x: int, y: int, subtile_sheet: list[
 
 def get_gid_from_tmx_id(tmx_id: int, tileset_map: pytmx.TiledMap) -> int:
     gid_tuple = tileset_map.gidmap[tmx_id + 1]
-    if tmx_id == STAIRS_DOWN_CELL:
-        print(gid_tuple)
-        print(tileset_map.gidmap[tmx_id - 1])
+
     if len(gid_tuple):
         return gid_tuple[0][0]
     else:
@@ -420,9 +610,19 @@ def place_tile_randomly(
 #######################################################################################################################
 
 
+def translate_grid_to_sub_grid(cell: tuple[int, int]) -> tuple[int, int]:
+    left = MARGIN * TILE_SIZE + cell[0] * SUBTILE_COLS * TILE_SIZE
+    top  = MARGIN * TILE_SIZE + cell[1] * SUBTILE_ROWS * TILE_SIZE
+
+    return (left, top)
+
+#######################################################################################################################
+
+
 def build_tileset_map_from_maze(
     clean_tileset_map: pytmx.TiledMap,
     maze: Maze,
+    maze_stats: dict[str, Any],
     current_map: str,
     to_map: str,
     entry_point: str,
@@ -442,21 +642,22 @@ def build_tileset_map_from_maze(
         representing one of maze elements.
         * -> wall
         . -> floor
+        9 -> image_index
 
         #..#  #..#  #..#  #..#
-        ....  ...#  #...  #..#
+        ..0.  ..1#  #.2.  #.3#
         #..#  #..#  #..#  #..#
 
         #..#  #..#  #..#  #..#
-        ....  ...#  #...  #..#
+        ..4.  ..5#  #.6.  #.7#
         ####  ####  ####  ####
 
         ####  ####  ####  ####
-        ....  ...#  #...  #..#
+        ..8.  ..9#  #10.  #11#
         #..#  #..#  #..#  #..#
 
         ####  ####  ####
-        ....  ...#  #...
+        .12.  .13#  #14.
         ####  ####  ####
 
     """
@@ -465,43 +666,76 @@ def build_tileset_map_from_maze(
     #     for obj in tileset_map.get_layer_by_name("entry_points"):
     #         self.entry_points[obj.name] = vec(obj.x, obj.y)
 
-    # elements_layer = clean_tileset_map.get_layer_by_name("elements")
-    # print(elements_layer.data[8][36])
-    print(f"{current_map=}, {to_map=}")
+    # elements_layer = clean_tileset_map.get_layer_by_name("floor_decors")
+    # for x in range(32, 36):
+    #     print(elements_layer.data[8][x])
+    # for x in range(32, 36):
+    #     print(elements_layer.data[9][x])
 
     current_map_name: str = current_map.split("_")[0]
     current_map_level: int = int(current_map.split("_")[1])
+    stats = maze_stats  # analyze_maze(maze)
+    if current_map_level == 1:
+        start = stats["longest_N_wall_path_start"]
+        end   = stats["longest_N_wall_path_end"]
+    else:
+        start = stats["longest_dead_end_path_start"]
+        end   = stats["longest_dead_end_path_end"]
+    start_cell = maze.cell_rows[start[1]][start[0]]
+    end_cell   = maze.cell_rows[end[1]][end[0]]
+    print(f"{current_map=}, {to_map=}")
     print(f"{current_map_level=}")
+    print(f"{start=}")
+    print(f"{end=}")
+
+    # position (point) where the player will show up after entering the map from Village or lower maze level
     entry_obj = clean_tileset_map.get_object_by_name("Entry")
     if current_map_level == 1:
-        entry_obj.x = (MARGIN + ENTRY_X_OFFSET) * TILE_SIZE + (TILE_SIZE // 2)
-        entry_obj.y = (MARGIN + ENTRY_Y_OFFSET) * TILE_SIZE
-    else:
-        entry_obj.x = (MARGIN + ENTRY_X_OFFSET - 1) * TILE_SIZE + (TILE_SIZE // 2)
-        entry_obj.y = (MARGIN + ENTRY_Y_OFFSET + 2) * TILE_SIZE
+        # in front (below) of the door
 
+        entry_obj.x = (MARGIN + start[0] * SUBTILE_COLS + ENTRY_X_OFFSET) * TILE_SIZE + (TILE_SIZE // 2)
+        entry_obj.y = (MARGIN + start[1] * SUBTILE_ROWS + ENTRY_Y_OFFSET) * TILE_SIZE
+    else:
+        # next to stairs up sprite
+        # start = stats["longest_dead_end_path_start"]
+        entry_obj.x = (MARGIN + start[0] * SUBTILE_COLS +  # noqa: W504
+                       IMAGE_DIRECTION_TO_POS_OFFSET[start_cell.image_index][0]) * TILE_SIZE + (TILE_SIZE // 2)
+        entry_obj.y = (MARGIN + start[1] * SUBTILE_ROWS +  # noqa: W504
+                       IMAGE_DIRECTION_TO_POS_OFFSET[start_cell.image_index][1]) * TILE_SIZE
+
+    # return to previous map (Village or maze level - 1) collider
     return_obj = clean_tileset_map.get_object_by_name("Return")
     if current_map_level == 1:
-        return_obj.x = (MARGIN + RETURN_X_OFFSET) * TILE_SIZE
-        return_obj.y = (MARGIN + RETURN_Y_OFFSET) * TILE_SIZE
+        # same location as the location of doors sprite on the north wall
+        return_obj.x = (MARGIN + start[0] * SUBTILE_COLS + RETURN_X_OFFSET) * TILE_SIZE
+        return_obj.y = (MARGIN + start[1] * SUBTILE_ROWS + RETURN_Y_OFFSET) * TILE_SIZE
         return_obj.to_map = to_map  # "Village"
         return_obj.entry_point = entry_point  # "Stairs"
     else:
-        # not accessible
-        return_obj.x = (MARGIN + STAIRS_UP_X_OFFSET) * TILE_SIZE
-        return_obj.y = (MARGIN + STAIRS_UP_Y_OFFSET) * TILE_SIZE
+        # same location as the location of the stairs up sprite
+        # STAIRS_UP_X_OFFSET x STAIRS_UP_Y_OFFSET
+        return_obj.x = (MARGIN + start[0] * SUBTILE_COLS +  # noqa: W504
+                        IMAGE_DIRECTION_TO_OFFSET[start_cell.image_index][0]) * TILE_SIZE
+        return_obj.y = (MARGIN + start[1] * SUBTILE_ROWS +  # noqa: W504
+                        IMAGE_DIRECTION_TO_OFFSET[start_cell.image_index][1]) * TILE_SIZE
         return_obj.to_map = f"{current_map_name}_{(current_map_level - 1):02d}"
         return_obj.entry_point = "Re-Entry"  # "Stairs"
 
+    # go deeper (maze level + 1) collider (on stairs down sprite)
     stairs_obj = clean_tileset_map.get_object_by_name("Stairs")
-    stairs_obj.x = (MARGIN + STAIRS_DOWN_X_OFFSET) * TILE_SIZE
-    stairs_obj.y = (MARGIN + STAIRS_DOWN_Y_OFFSET) * TILE_SIZE
+    # STAIRS_DOWN_X_OFFSET x  STAIRS_DOWN_Y_OFFSET
+    stairs_obj.x = (MARGIN + end[0] * SUBTILE_COLS + IMAGE_DIRECTION_TO_OFFSET[end_cell.image_index][0]) * TILE_SIZE
+    stairs_obj.y = (MARGIN + end[1] * SUBTILE_ROWS + IMAGE_DIRECTION_TO_OFFSET[end_cell.image_index][1]) * TILE_SIZE
     stairs_obj.to_map = f"{current_map_name}_{(current_map_level + 1):02d}"
     stairs_obj.entry_point = "Entry"
 
+    # position (point) where the player will show up after returning from deeper maze level (next to stairs down)
     re_entry_obj = clean_tileset_map.get_object_by_name("Re-Entry")
-    re_entry_obj.x = (MARGIN + RE_ENTRY_X_OFFSET) * TILE_SIZE + (TILE_SIZE // 2)
-    re_entry_obj.y = (MARGIN + RE_ENTRY_Y_OFFSET) * TILE_SIZE
+    # RE_ENTRY_X_OFFSET x RE_ENTRY_Y_OFFSET
+    re_entry_obj.x = (MARGIN + end[0] * SUBTILE_COLS +  # noqa: W504
+                      IMAGE_DIRECTION_TO_POS_OFFSET[end_cell.image_index][0]) * TILE_SIZE + (TILE_SIZE // 2)
+    re_entry_obj.y = (MARGIN + end[1] * SUBTILE_ROWS +  # noqa: W504
+                      IMAGE_DIRECTION_TO_POS_OFFSET[end_cell.image_index][1]) * TILE_SIZE
 
     new_cols_cnt = (maze.num_cols * SUBTILE_COLS) + (2 * MARGIN)
     new_rows_cnt = (maze.num_rows * SUBTILE_ROWS) + (2 * MARGIN)
@@ -512,15 +746,6 @@ def build_tileset_map_from_maze(
     # print(layer_names)
 
     # background decors (holes, gray stones)
-    background_decors_gids = {}
-    background_decors_props = clean_tileset_map.get_tile_properties_by_layer(layer_names["floor_decors"])
-    for prop in background_decors_props:
-        gid, tile = prop
-        # print(tile)
-        if "background_decors" in tile:  # .keys():
-            background_decors_gids[tile["background_decors"]] = gid
-
-    # floor decors (dirt, gray stones)
     floor_decors_gids = {}
     floor_decors_props = clean_tileset_map.get_tile_properties_by_layer(layer_names["floor_decors"])
     for prop in floor_decors_props:
@@ -528,6 +753,15 @@ def build_tileset_map_from_maze(
         # print(tile)
         if "floor_decors" in tile:  # .keys():
             floor_decors_gids[tile["floor_decors"]] = gid
+
+    # floor decors (dirt, gray stones)
+    # floor_decors_gids = {}
+    # floor_decors_props = clean_tileset_map.get_tile_properties_by_layer(layer_names["floor_decors"])
+    # for prop in floor_decors_props:
+    #     gid, tile = prop
+    #     # print(tile)
+    #     if "floor_decors" in tile:  # .keys():
+    #         floor_decors_gids[tile["floor_decors"]] = gid
 
     # elements on floor (dead rat, barrel, crate, stool)
     elements_gids = {}
@@ -605,7 +839,7 @@ def build_tileset_map_from_maze(
         elif dir == 4:
             r_x = random.randint(0, new_cols_cnt - 1)
             r_y = random.randint(new_rows_cnt - MARGIN - 1, new_rows_cnt - 1)
-        bg_data[r_y][r_x] = random.choice(list(background_decors_gids.values()))
+        bg_data[r_y][r_x] = random.choice(list(floor_decors_gids.values()))
     bg_layer.data = bg_data
 
     # put WALL_DECORS_MAX decors randomly selected from the list of WALLS_DECORS_IDS tiles
@@ -626,13 +860,20 @@ def build_tileset_map_from_maze(
             decors_layer.data[y][x] = tile_gid
             wall_decors_cnt += 1
 
-    # place exit doors (must be last since nothing should cover them)
+    # place exit (return) doors (must be last since nothing should cover them)
     if current_map_level == 1:
         return_id = get_gid_from_tmx_id(RETURN_CELL, clean_tileset_map)
-        decors_layer.data[MARGIN + RETURN_Y_OFFSET][MARGIN + RETURN_X_OFFSET] = return_id
+        x = MARGIN + start[0] * SUBTILE_COLS + RETURN_X_OFFSET
+        y = MARGIN + start[1] * SUBTILE_COLS + RETURN_Y_OFFSET
+        decors_layer.data[y][x] = return_id
     else:
         # return_id = get_gid_from_tmx_id(RETURN_CELL, clean_tileset_map)
-        decors_layer.data[MARGIN + STAIRS_UP_Y_OFFSET][MARGIN + STAIRS_UP_X_OFFSET] =  STAIRS_UP_CELL
+        cell = maze.cell_rows[start[1]][start[0]]
+        idx = IMAGE_DIRECTION_TO_IDX["stairs_up"][cell.image_index]
+        x = MARGIN + start[0] * SUBTILE_COLS + IMAGE_DIRECTION_TO_OFFSET[cell.image_index][0]  # STAIRS_UP_X_OFFSET
+        y = MARGIN + start[1] * SUBTILE_COLS + IMAGE_DIRECTION_TO_OFFSET[cell.image_index][1]  # STAIRS_UP_Y_OFFSET
+
+        decors_layer.data[y][x] = idx  # STAIRS_TYPES_IDX["stairs_up"]["east"]  # STAIRS_UP_CELL
 
     # decors_layer = clean_tileset_map.get_layer_by_name("walls_decors")
 
@@ -642,7 +883,16 @@ def build_tileset_map_from_maze(
         place_tile_randomly(maze, items_gids, items_layer, item_name, count)
     # print(clean_tileset_map.gidmap)
     # stairs_id = get_gid_from_tmx_id(STAIRS_CELL, clean_tileset_map)
-    floor_decors_layer.data[MARGIN + STAIRS_DOWN_Y_OFFSET][MARGIN + STAIRS_DOWN_X_OFFSET] = 50  # stairs_id
+
+    # place stairs down sprite
+    # if current_map_level > 1:
+    cell = maze.cell_rows[end[1]][end[0]]
+    idx = IMAGE_DIRECTION_TO_IDX["stairs_down"][cell.image_index]
+
+    x = MARGIN + end[0] * SUBTILE_COLS + IMAGE_DIRECTION_TO_OFFSET[cell.image_index][0]
+    y = MARGIN + end[1] * SUBTILE_COLS + IMAGE_DIRECTION_TO_OFFSET[cell.image_index][1]
+
+    floor_decors_layer.data[y][x] = idx  # STAIRS_TYPES_IDX["stairs_down"]["west"]
 
     clean_tileset_map.width = new_cols_cnt
     clean_tileset_map.height = new_rows_cnt
