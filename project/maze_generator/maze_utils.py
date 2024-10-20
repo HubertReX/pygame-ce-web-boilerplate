@@ -45,7 +45,7 @@ WALLS_DECORS_OFFSET_RANGE_X = 2
 WALLS_DECORS_OFFSET_RANGE_Y = 1
 
 EMPTY_CELL       = 0
-BACKGROUND_CELL  = 0
+BACKGROUND_CELL  = 231
 RETURN_CELL      = 33  # 332
 # STAIRS_DOWN_CELL = 50  # 184 # 200
 # STAIRS_UP_CELL   = 16  # 184  # 200
@@ -55,7 +55,7 @@ BACKGROUND_DECORS_MAX = 80
 # BACKGROUND_DECORS_IDS = [12, 24]
 
 # elements on floor (dead rat, barrel, crate, stool)
-ELEMENTS_MAX = 6
+ELEMENTS_MAX = 12
 
 # map image_index to offset of elements
 ELEMENTS_OFFSETS_MAP = {
@@ -150,6 +150,22 @@ IMAGE_DIRECTION_TO_IDX = {
         FROM_EAST:  19,
     },
 }
+
+STAIRS_TILES_POS = {
+    "stairs_up": {
+        FROM_NORTH: (32, 9),
+        FROM_SOUTH: (33, 9),
+        FROM_WEST:  (34, 9),
+        FROM_EAST:  (35, 9),
+    },
+    "stairs_down": {
+        FROM_NORTH: (32, 8),
+        FROM_SOUTH: (33, 8),
+        FROM_WEST:  (34, 8),
+        FROM_EAST:  (35, 8),
+    },
+}
+
 # STAIRS_TYPES_IDX = {
 #     "stairs_up": {
 #         "north": 50,
@@ -665,10 +681,22 @@ def build_tileset_map_from_maze(
     # if "entry_points" in self.layers:
     #     for obj in tileset_map.get_layer_by_name("entry_points"):
     #         self.entry_points[obj.name] = vec(obj.x, obj.y)
+    global BACKGROUND_CELL, STAIRS_TILES_POS, IMAGE_DIRECTION_TO_IDX, RETURN_CELL
+    BACKGROUND_CELL = clean_tileset_map.get_layer_by_name("background").data[0][0]
+    # print(f"{BACKGROUND_CELL=}")
 
+    RETURN_CELL = clean_tileset_map.get_layer_by_name("floor_decors").data[9][36]
+    floor_decors = clean_tileset_map.get_layer_by_name("floor_decors")
+    for stair_type in STAIRS_TILES_POS:
+        for direction in STAIRS_TILES_POS[stair_type]:
+            pos = STAIRS_TILES_POS[stair_type][direction]
+            IMAGE_DIRECTION_TO_IDX[stair_type][direction] = floor_decors.data[pos[1]][pos[0]]
+            # print(IMAGE_DIRECTION_TO_IDX[stair_type][direction], pos, floor_decors.data[pos[1]][pos[0]])
     # elements_layer = clean_tileset_map.get_layer_by_name("floor_decors")
+    # print("stairs_down")
     # for x in range(32, 36):
     #     print(elements_layer.data[8][x])
+    # print("stairs_up")
     # for x in range(32, 36):
     #     print(elements_layer.data[9][x])
 
@@ -819,7 +847,8 @@ def build_tileset_map_from_maze(
         layer.height = new_rows_cnt
 
     # background
-    bg_id = get_gid_from_tmx_id(BACKGROUND_CELL, clean_tileset_map)
+    # bg_id = get_gid_from_tmx_id(BACKGROUND_CELL, clean_tileset_map)
+    bg_id = 0  # BACKGROUND_CELL
     # bg_data = [[bg_id for _ in range(maze.num_cols + (2 * margin))] for _ in range(maze.num_rows + (2 * margin))]
     bg_data = [[bg_id for _ in range(new_cols_cnt)] for _ in range(new_rows_cnt)]
     # background_decors_gids = [get_gid_from_tmx_id(cell_id, clean_tileset_map) for cell_id in BACKGROUND_DECORS_IDS]
@@ -862,7 +891,7 @@ def build_tileset_map_from_maze(
 
     # place exit (return) doors (must be last since nothing should cover them)
     if current_map_level == 1:
-        return_id = get_gid_from_tmx_id(RETURN_CELL, clean_tileset_map)
+        return_id = RETURN_CELL  # get_gid_from_tmx_id(RETURN_CELL, clean_tileset_map)
         x = MARGIN + start[0] * SUBTILE_COLS + RETURN_X_OFFSET
         y = MARGIN + start[1] * SUBTILE_COLS + RETURN_Y_OFFSET
         decors_layer.data[y][x] = return_id

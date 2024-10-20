@@ -611,7 +611,8 @@ class Scene(State):
                 self.maze.generate()
                 self.maze_stats = analyze_maze(self.maze)
 
-            tileset_map: TiledMap = load_pygame(str(MAZE_DIR / "MazeTileset_clean.tmx"))
+            # tileset_map: TiledMap = load_pygame(str(MAZE_DIR / "MazeTileset_clean.tmx"))
+            tileset_map: TiledMap = load_pygame(str(MAZE_DIR / "MazeTileset_Ninja.tmx"))
             # combine tileset clean template with maze grid into final map
             build_tileset_map_from_maze(
                 tileset_map,
