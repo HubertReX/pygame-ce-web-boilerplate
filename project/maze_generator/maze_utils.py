@@ -848,27 +848,27 @@ def build_tileset_map_from_maze(
 
     # background
     # bg_id = get_gid_from_tmx_id(BACKGROUND_CELL, clean_tileset_map)
-    bg_id = 0  # BACKGROUND_CELL
+    bg_id = BACKGROUND_CELL
     # bg_data = [[bg_id for _ in range(maze.num_cols + (2 * margin))] for _ in range(maze.num_rows + (2 * margin))]
     bg_data = [[bg_id for _ in range(new_cols_cnt)] for _ in range(new_rows_cnt)]
     # background_decors_gids = [get_gid_from_tmx_id(cell_id, clean_tileset_map) for cell_id in BACKGROUND_DECORS_IDS]
     bg_layer = clean_tileset_map.get_layer_by_name("background")
 
-    for _ in range(BACKGROUND_DECORS_MAX):
-        dir = random.randint(1, 4)
-        if dir == 1:
-            r_x = random.randint(0, MARGIN - 1)
-            r_y = random.randint(0, new_rows_cnt - 1)
-        elif dir == 2:
-            r_x = random.randint(0, new_cols_cnt - 1)
-            r_y = random.randint(0, MARGIN - 1)
-        elif dir == 3:
-            r_x = random.randint(new_cols_cnt - MARGIN - 1, new_cols_cnt - 1)
-            r_y = random.randint(0, new_rows_cnt - 1)
-        elif dir == 4:
-            r_x = random.randint(0, new_cols_cnt - 1)
-            r_y = random.randint(new_rows_cnt - MARGIN - 1, new_rows_cnt - 1)
-        bg_data[r_y][r_x] = random.choice(list(floor_decors_gids.values()))
+    # for _ in range(BACKGROUND_DECORS_MAX):
+    #     dir = random.randint(1, 4)
+    #     if dir == 1:
+    #         r_x = random.randint(0, MARGIN - 1)
+    #         r_y = random.randint(0, new_rows_cnt - 1)
+    #     elif dir == 2:
+    #         r_x = random.randint(0, new_cols_cnt - 1)
+    #         r_y = random.randint(0, MARGIN - 1)
+    #     elif dir == 3:
+    #         r_x = random.randint(new_cols_cnt - MARGIN - 1, new_cols_cnt - 1)
+    #         r_y = random.randint(0, new_rows_cnt - 1)
+    #     elif dir == 4:
+    #         r_x = random.randint(0, new_cols_cnt - 1)
+    #         r_y = random.randint(new_rows_cnt - MARGIN - 1, new_rows_cnt - 1)
+    #     bg_data[r_y][r_x] = random.choice(list(floor_decors_gids.values()))
     bg_layer.data = bg_data
 
     # put WALL_DECORS_MAX decors randomly selected from the list of WALLS_DECORS_IDS tiles
