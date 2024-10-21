@@ -41,6 +41,23 @@ class ItemTypeEnum(StrEnum):
 # MARK: Character
 
 
+class MazeLevelProperties(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    monsters_list:  Annotated[list[str],    Field(
+        description="List of regular monster NPC models names", repr=False, default_factory=list)]
+
+    boss_monster:   str                   = Field(min_length=3, description="Boss monster NPC model name")
+    monsters_count: Annotated[int,          Field(4, description="Number of regular monster per level (without boss)",
+                                                  ge=0, repr=False)]
+    chest_count: Annotated[int,             Field(1, description="Number of chest on the map",
+                                                  ge=0, repr=False)]
+    maze_cols: Annotated[int,              Field(10, description="Number of columns in map grid",
+                                                 ge=0, repr=False)]
+    maze_rows: Annotated[int,              Field(7, description="Number of rows in map grid",
+                                                 ge=0, repr=False)]
+
+
 class Character(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -116,6 +133,7 @@ class Config(BaseModel):
     characters: dict[str, Character]
     items: dict[str, Item]
     chests: dict[str, Chest]
+    maze_configs: dict[int, MazeLevelProperties]
 
 
 class ConfigForSchemaGen(Config):

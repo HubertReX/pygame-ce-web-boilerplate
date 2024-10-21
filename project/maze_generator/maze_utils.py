@@ -29,6 +29,9 @@ SUBTILE_ROWS_OFFSET = SUBTILE_ROWS + SUBTILE_ROWS_SEP
 ENTRY_X_OFFSET = 3
 ENTRY_Y_OFFSET = 3
 
+X_CENTER = 3
+Y_CENTER = 4
+
 # RE_ENTRY_X_OFFSET = 3
 # RE_ENTRY_Y_OFFSET = 5
 
@@ -91,11 +94,6 @@ TILE_SIZE = 16
 #######################################
 STEP_COST_WALL: int   = 100
 STEP_COST_GROUND: int = 0
-
-MAZE_COLS = 10
-
-MAZE_ROWS = 7
-
 
 DIVIDER = 4
 
@@ -413,6 +411,8 @@ def find_dead_ends(maze: Maze) -> list[tuple[int, int]]:
 def find_tiles_with_N_wall(maze: Maze) -> list[tuple[int, int]]:
     candidates = []
     for cell in maze.get_all_cells():
+        # all tiles that have solid wall to the north
+        # happen to have image_index lower than 7
         if cell.image_index > 7:
             candidates.append((cell.x, cell.y))
 
@@ -421,9 +421,21 @@ def find_tiles_with_N_wall(maze: Maze) -> list[tuple[int, int]]:
 
 #######################################################################################################################
 
+def find_tiles_with_cross_way(maze: Maze) -> list[tuple[int, int]]:
+    candidates = []
+    for cell in maze.get_all_cells():
+        # all T-shaped and a 4-way crossing
+        if cell.image_index in (0, 1, 2, 4, 8):
+            candidates.append((cell.x, cell.y))
+
+    return candidates
+
+
+#######################################################################################################################
+
 def generate_grid(maze: Maze) -> list[list[int]]:
-    path_finding_grid: list[list[int]] = [[STEP_COST_GROUND for _ in range(MAZE_COLS * GRID_FACTOR)]
-                                          for _ in range(MAZE_ROWS * GRID_FACTOR)]
+    path_finding_grid: list[list[int]] = [[STEP_COST_GROUND for _ in range(len(maze.cell_rows[0]) * GRID_FACTOR)]
+                                          for _ in range(len(maze.cell_rows) * GRID_FACTOR)]
     for y, row in enumerate(maze.cell_rows):
         for x, cell in enumerate(row):
             tile_index = TILE_INDEX_TO_GRID[cell.image_index]
@@ -709,12 +721,15 @@ def build_tileset_map_from_maze(
     else:
         start = stats["longest_dead_end_path_start"]
         end   = stats["longest_dead_end_path_end"]
+    stats["current_map_level"] = current_map_level
+    stats["start"] = start
+    stats["end"]   = end
     start_cell = maze.cell_rows[start[1]][start[0]]
     end_cell   = maze.cell_rows[end[1]][end[0]]
-    print(f"{current_map=}, {to_map=}")
-    print(f"{current_map_level=}")
-    print(f"{start=}")
-    print(f"{end=}")
+    # print(f"{current_map=}, {to_map=}")
+    # print(f"{current_map_level=}")
+    # print(f"{start=}")
+    # print(f"{end=}")
 
     # position (point) where the player will show up after entering the map from Village or lower maze level
     entry_obj = clean_tileset_map.get_object_by_name("Entry")

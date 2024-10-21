@@ -431,5 +431,53 @@
                 "shrimp"
             ]
         }
+    },
+    "maze_configs": {
+        "1": {
+            "monsters_list": [
+                "Spirit_01"
+            ],
+            "boss_monster": "Spider_01",
+            "monsters_count": 4,
+            "chest_count": 1,
+            "maze_cols": 9,
+            "maze_rows": 6
+        },
+        "2": {
+            "monsters_list": [
+                "Spirit_01",
+                "Slime_01"
+            ],
+            "boss_monster": "Spider_01",
+            "monsters_count": 5,
+            "chest_count": 1,
+            "maze_cols": 10,
+            "maze_rows": 7
+        },
+        "3": {
+            "monsters_list": [
+                "Spirit_01",
+                "Slime_01",
+                "Spider_01"
+            ],
+            "boss_monster": "Spider_01",
+            "monsters_count": 6,
+            "chest_count": 2,
+            "maze_cols": 11,
+            "maze_rows": 8
+        },
+        "4": {
+            "monsters_list": [
+                "Spirit_01",
+                "Slime_01",
+                "Spider_01",
+                "Snake_01"
+            ],
+            "boss_monster": "Spider_01",
+            "monsters_count": 7,
+            "chest_count": 2,
+            "maze_cols": 12,
+            "maze_rows": 9
+        }
     }
 }

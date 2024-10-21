@@ -57,6 +57,27 @@ class ItemTypeEnum(StrEnum):
 
 
 @dataclass(slots=True)
+class MazeLevelProperties():
+    monsters_list:  Annotated[list[str],    field(repr=False)]
+    boss_monster:   str =                   field(repr=False)
+    monsters_count: Annotated[int,          field(repr=False)]
+    chest_count:    Annotated[int,          field(repr=False)]
+    maze_cols:      Annotated[int,          field(repr=False)]
+    maze_rows:      Annotated[int,          field(repr=False)]
+
+    @classmethod
+    def from_dict(cls: type["MazeLevelProperties"], data: dict[str, Any]) -> "MazeLevelProperties":
+        return cls(
+            monsters_list  = data.get("monsters_list",  []),
+            boss_monster   = data.get("boss_monster",   ""),
+            monsters_count = data.get("monsters_count", 4),
+            chest_count    = data.get("chest_count",    21),
+            maze_cols      = data.get("maze_cols",      10),
+            maze_rows      = data.get("maze_rows",      7)
+        )
+
+
+@dataclass(slots=True)
 class Character():
     name: str
     sprite: str = field(repr=False)
@@ -148,9 +169,10 @@ class Chest():
 
 @dataclass
 class Config():
-    characters: dict[str, Character]
-    items:      dict[str, Item]
-    chests:     dict[str, Chest]
+    characters:   dict[str, Character]
+    items:        dict[str, Item]
+    chests:       dict[str, Chest]
+    maze_configs: dict[int, MazeLevelProperties]
 
     @classmethod
     def build(cls, data: dict[str, Any]) -> "Config":
@@ -169,7 +191,12 @@ class Config():
             chest = Chest.from_dict(chest_dict)
             chests[name] = chest
 
-        return cls(chars, items, chests)
+        maze_configs = {}
+        for name, maze_config_dict in data["maze_configs"].items():
+            maze_config = MazeLevelProperties.from_dict(maze_config_dict)
+            maze_configs[int(name)] = maze_config
+
+        return cls(chars, items, chests, maze_configs)
 ###################################################################################################################
 
 

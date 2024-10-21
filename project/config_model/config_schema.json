@@ -234,6 +234,58 @@
             "title": "ItemTypeEnum",
             "type": "string"
         },
+        "MazeLevelProperties": {
+            "additionalProperties": false,
+            "properties": {
+                "monsters_list": {
+                    "description": "List of regular monster NPC models names",
+                    "items": {
+                        "type": "string"
+                    },
+                    "title": "Monsters List",
+                    "type": "array"
+                },
+                "boss_monster": {
+                    "description": "Boss monster NPC model name",
+                    "minLength": 3,
+                    "title": "Boss Monster",
+                    "type": "string"
+                },
+                "monsters_count": {
+                    "default": 4,
+                    "description": "Number of regular monster per level (without boss)",
+                    "minimum": 0,
+                    "title": "Monsters Count",
+                    "type": "integer"
+                },
+                "chest_count": {
+                    "default": 1,
+                    "description": "Number of chest on the map",
+                    "minimum": 0,
+                    "title": "Chest Count",
+                    "type": "integer"
+                },
+                "maze_cols": {
+                    "default": 10,
+                    "description": "Number of columns in map grid",
+                    "minimum": 0,
+                    "title": "Maze Cols",
+                    "type": "integer"
+                },
+                "maze_rows": {
+                    "default": 7,
+                    "description": "Number of rows in map grid",
+                    "minimum": 0,
+                    "title": "Maze Rows",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "boss_monster"
+            ],
+            "title": "MazeLevelProperties",
+            "type": "object"
+        },
         "RaceEnum": {
             "enum": [
                 "humanoid",
@@ -267,12 +319,20 @@
             "title": "Chests",
             "type": "object"
         },
+        "maze_configs": {
+            "additionalProperties": {
+                "$ref": "#/$defs/MazeLevelProperties"
+            },
+            "title": "Maze Config",
+            "type": "object"
+        },
         "$schema": "./config_schema.json"
     },
     "required": [
         "characters",
         "items",
-        "chests"
+        "chests",
+        "maze_configs"
     ],
     "title": "ConfigForSchemaGen",
     "type": "object"

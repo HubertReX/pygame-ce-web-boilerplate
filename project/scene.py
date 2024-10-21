@@ -17,9 +17,12 @@ from maze_generator.maze_utils import (
     SUBTILE_COLS,
     SUBTILE_ROWS,
     TILE_SIZE,
+    X_CENTER,
+    Y_CENTER,
     analyze_maze,
     build_tileset_map_from_maze,
     clear_maze_cache,
+    find_tiles_with_cross_way,
     get_gid_from_tmx_id,
     timeit
 )
@@ -606,6 +609,13 @@ class Scene(State):
                 self.prev_state = self.game.states[-1]
 
             if self.current_map not in self.loaded_maps:
+                # get maze properties based on maze level
+                # if level higher than maze_configs count, use highest
+                maze_configs = self.game.conf.maze_configs
+                level = int(self.current_map.split("_")[1])
+                level_properties = maze_configs.get(level, maze_configs[len(maze_configs)])
+                self.maze_cols = level_properties.maze_cols
+                self.maze_rows = level_properties.maze_rows
                 # generate new maze
                 self.maze = hunt_and_kill_maze.HuntAndKillMaze(self.maze_cols, self.maze_rows)
                 self.maze.generate()
@@ -669,17 +679,13 @@ class Scene(State):
     #############################################################################################################
 
     def load_NPCs(self, spawn_points: TiledObjectGroup) -> None:
-        # moved here to avoid circular imports
-        from characters import NPC
 
         # layer of invisible objects being single points determining where NPCs will spawn
         if "spawn_points" in self.layers:
+            # moved here to avoid circular imports
+            from characters import NPC
             for obj in spawn_points:
                 if obj.name not in self.loaded_NPCs:
-                    # model = self.game.conf.characters[obj.model_name]
-                    # if model.race == RaceEnum.animal and not obj.name.startswith("Chicken"):
-                    # if obj.name.startswith("Fish"):
-                    #     continue
                     # list of waypoints attached by NPCs name
                     waypoint = self.waypoints.get(obj.name, ())
                     npc = NPC(
@@ -695,66 +701,69 @@ class Scene(State):
                     )
                     self.loaded_NPCs[obj.name] = npc
 
-        # TODO: revert after implementing infinite maze
-        if self.is_maze and self.current_map not in self.loaded_maps and 1 < 0:
-            # spawning 4 random NPCs in upper right, lower right, lower left corners and in the middle of the map
-            spawn_positions: list[tuple[int, int]] = [
-                ((5 + ((self.maze_cols  - 1) * 6)) * TILE_SIZE + 2,
-                    ((7 + (self.maze_rows  - 1) * 6)) * TILE_SIZE + 2),
+        if self.is_maze and self.current_map not in self.loaded_maps:
+            # collect positions for possible monster placement
+            # all T-shaped tiles and 4-way crossing
+            candidates = find_tiles_with_cross_way(self.maze)
+            # all map corner and map center
+            candidates.append((0,                    0))
+            candidates.append((self.maze_cols  - 1,  self.maze_rows  - 1))
+            candidates.append((self.maze_cols  - 1,  0))
+            candidates.append((0,                    self.maze_rows  - 1))
+            candidates.append((self.maze_cols  // 2, self.maze_rows  // 2))
 
-                ((5)                               * TILE_SIZE + 2,
-                    ((7 + (self.maze_rows  - 1) * 6)) * TILE_SIZE + 2),
+            # prevent from adding regular monter in the start position
+            player_pos = self.maze_stats["start"]
+            if player_pos in candidates:
+                candidates.remove(player_pos)
 
-                ((5 + ((self.maze_cols  - 1) * 6)) * TILE_SIZE + 2,
-                    ((7))                             * TILE_SIZE + 2),
+            # prevent from adding regular monster in the end (stairs down to next level) position
+            # boss monster will be place there
+            end = self.maze_stats["end"]
+            if end in candidates:
+                candidates.remove(end)
 
-                ((5 + ((self.maze_cols // 2) * 6)) * TILE_SIZE + 2,
-                    ((7 + (self.maze_rows // 2) * 6)) * TILE_SIZE + 2),
-            ]
             id: int = 0
-            for pos in spawn_positions:
-                model_name = random.choice(["Snake_01", "Spider_01", "Spirit_01", "Slime_01",])
+            maze_configs = self.game.conf.maze_configs
+            level = self.maze_stats["current_map_level"]
+            level_properties = maze_configs.get(level, maze_configs[len(maze_configs)])
+
+            # add regular monsters
+            # get a `monsters_count` number of randomly selected positions from candidates list
+            for x_r, y_r in random.sample(candidates, level_properties.monsters_count):
                 id += 1
-                name = f"{model_name}_{id:03}"
-                npc = NPC(
-                    self.game,
-                    self,
-                    self.shadow_sprites,
-                    self.label_sprites,
-                    pos,
-                    name,
-                    self.icons,
-                    (),
-                    model_name=model_name,
-                )
-                self.loaded_NPCs[name] = npc
+                npc_model_name: str = random.choice(level_properties.monsters_list)
+                self.add_NPC_at_grid_pos(id, x_r, y_r, npc_model_name)
 
-            for _ in range(4):
-                repeat: bool = True
-                while repeat:
-                    x_r: int = random.randint(1, 5)
-                    y_r: int = random.randint(1, 5)
-                    pos_r: tuple[int, int] = ((5 + (x_r * 6)) * TILE_SIZE + 2, (7 + y_r * 6) * TILE_SIZE + 2)
-                    if pos_r not in spawn_points:
-                        spawn_points.append(pos_r)
-                        repeat = False
+            # add boss monster at the end of the longest path (stairs down to next level)
+            id += 1
+            self.add_NPC_at_grid_pos(id, end[0], end[1], level_properties.boss_monster)
 
-                model_name = random.choice(["Snake_01", "Spider_01", "Spirit_01", "Slime_01",])
-                id += 1
-                name = f"{model_name}_{id:03}"
+    #############################################################################################################
 
-                npc = NPC(
-                    self.game,
-                    self,
-                    self.shadow_sprites,
-                    self.label_sprites,
-                    pos_r,
-                    name,
-                    self.icons,
-                    (),
-                    model_name=model_name,
-                )
-                self.loaded_NPCs[name] = npc
+    def add_NPC_at_grid_pos(self, id: int, x: int, y: int, model_name: str) -> None:
+        # moved here to avoid circular imports
+        from characters import NPC
+
+        # make sure the name is unique
+        name = f"{model_name}_{id:03}"
+        # recalculate grid position to word coordinates
+        pos = ((MARGIN + X_CENTER + x * SUBTILE_COLS) * TILE_SIZE,
+               (MARGIN + Y_CENTER + y * SUBTILE_ROWS) * TILE_SIZE)
+
+        npc = NPC(
+            self.game,
+            self,
+            self.shadow_sprites,
+            self.label_sprites,
+            pos,
+            name,
+            self.icons,
+            (),
+            model_name=model_name,
+        )
+
+        self.loaded_NPCs[name] = npc
 
     #############################################################################################################
 
