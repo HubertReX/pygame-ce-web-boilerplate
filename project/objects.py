@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import StrEnum, auto
+import random
 from typing import Callable
 import pygame
 
@@ -411,8 +412,26 @@ class ChestSprite(Object):
         # self.rect.center = pos
         self.model = model
         self.name = model.name
+
+        self.generate_random_items()
         # self.is_closed = True
         # self.items: list[Item] = []
+
+#################################################################################################################
+    def generate_random_items(self) -> None:
+        if len(self.model.random_items) == 0:
+            return
+
+        # self.model.items = []
+        curr_count = len(self.model.items)
+
+        if self.model.total_items_count - curr_count < 0:
+            return
+
+        # random.shuffle(self.model.random_items)
+        # random.seed()
+        for _ in range(self.model.total_items_count - curr_count):
+            self.model.items.append(random.choice(self.model.random_items))
 
 #################################################################################################################
     def open(self) -> None:

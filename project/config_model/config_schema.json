@@ -137,11 +137,25 @@
                     "type": "boolean"
                 },
                 "items": {
-                    "description": "list of items in the chest",
+                    "description": "list of persistent items in the chest",
                     "items": {
                         "type": "string"
                     },
                     "title": "Items",
+                    "type": "array"
+                },
+                "total_items_count": {
+                    "default": 0,
+                    "description": "total numer of items to generate (persistent + random)",
+                    "title": "Total Items Count",
+                    "type": "integer"
+                },
+                "random_items": {
+                    "description": "list of items to generate randomly",
+                    "items": {
+                        "type": "string"
+                    },
+                    "title": "Random Items",
                     "type": "array"
                 }
             },
@@ -258,11 +272,11 @@
                     "title": "Monsters Count",
                     "type": "integer"
                 },
-                "chest_count": {
+                "small_chest_count": {
                     "default": 1,
-                    "description": "Number of chest on the map",
+                    "description": "Number of small chests on the map",
                     "minimum": 0,
-                    "title": "Chest Count",
+                    "title": "Small Chest Count",
                     "type": "integer"
                 },
                 "maze_cols": {
@@ -323,7 +337,7 @@
             "additionalProperties": {
                 "$ref": "#/$defs/MazeLevelProperties"
             },
-            "title": "Maze Config",
+            "title": "Maze Configs",
             "type": "object"
         },
         "$schema": "./config_schema.json"

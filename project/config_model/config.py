@@ -58,40 +58,40 @@ class ItemTypeEnum(StrEnum):
 
 @dataclass(slots=True)
 class MazeLevelProperties():
-    monsters_list:  Annotated[list[str],    field(repr=False)]
-    boss_monster:   str =                   field(repr=False)
-    monsters_count: Annotated[int,          field(repr=False)]
-    chest_count:    Annotated[int,          field(repr=False)]
-    maze_cols:      Annotated[int,          field(repr=False)]
-    maze_rows:      Annotated[int,          field(repr=False)]
+    monsters_list:     Annotated[list[str], field(repr=False)]
+    boss_monster:      str =                field(repr=False)
+    monsters_count:    Annotated[int,       field(repr=False)]
+    small_chest_count: Annotated[int,       field(repr=False)]
+    maze_cols:         Annotated[int,       field(repr=False)]
+    maze_rows:         Annotated[int,       field(repr=False)]
 
     @classmethod
     def from_dict(cls: type["MazeLevelProperties"], data: dict[str, Any]) -> "MazeLevelProperties":
         return cls(
-            monsters_list  = data.get("monsters_list",  []),
-            boss_monster   = data.get("boss_monster",   ""),
-            monsters_count = data.get("monsters_count", 4),
-            chest_count    = data.get("chest_count",    21),
-            maze_cols      = data.get("maze_cols",      10),
-            maze_rows      = data.get("maze_rows",      7)
+            monsters_list     = data.get("monsters_list",  []),
+            boss_monster      = data.get("boss_monster",   ""),
+            monsters_count    = data.get("monsters_count", 4),
+            small_chest_count = data.get("chest_count",    1),
+            maze_cols         = data.get("maze_cols",      10),
+            maze_rows         = data.get("maze_rows",      7)
         )
 
 
 @dataclass(slots=True)
 class Character():
     name: str
-    sprite: str = field(repr=False)
-    race:          RaceEnum
-    attitude:      AttitudeEnum
-    allowed_zones: Annotated[list[str],    field(repr=False)]
-    health:        Annotated[int,          field(repr=False)]
-    max_health:    Annotated[int,          field(repr=False)]
-    items:         Annotated[list[str],    field(repr=False)]
+    sprite:          str = field(repr=False)
+    race:             RaceEnum
+    attitude:         AttitudeEnum
+    allowed_zones:    Annotated[list[str], field(repr=False)]
+    health:           Annotated[int,       field(repr=False)]
+    max_health:       Annotated[int,       field(repr=False)]
+    items:            Annotated[list[str], field(repr=False)]
     max_carry_weight: Annotated[float,     field(repr=False)]
-    money:         Annotated[int,          field(repr=False)]
-    damage:        Annotated[int,          field(repr=False)]
-    speed_walk:    Annotated[int,          field(repr=False)]
-    speed_run:     Annotated[int,          field(repr=False)]
+    money:            Annotated[int,       field(repr=False)]
+    damage:           Annotated[int,       field(repr=False)]
+    speed_walk:       Annotated[int,       field(repr=False)]
+    speed_run:        Annotated[int,       field(repr=False)]
 
     @classmethod
     def from_dict(cls: type["Character"], data: dict[str, Any]) -> "Character":
@@ -117,13 +117,13 @@ class Item():
     # id:            Annotated[str,          field(repr=False)]
     name:          str
     type:          ItemTypeEnum
-    value:         Annotated[int,          field(repr=False)]
-    health_impact: Annotated[int,          field(repr=False)]
-    in_use:        Annotated[bool,         field(repr=False)]
-    damage:        Annotated[int,          field(repr=False)]
-    count:         Annotated[int,          field(repr=False)]
-    weight:        Annotated[float,        field(repr=False)]
-    cooldown_time: Annotated[float,        field(repr=False)]
+    value:         Annotated[int,   field(repr=False)]
+    health_impact: Annotated[int,   field(repr=False)]
+    in_use:        Annotated[bool,  field(repr=False)]
+    damage:        Annotated[int,   field(repr=False)]
+    count:         Annotated[int,   field(repr=False)]
+    weight:        Annotated[float, field(repr=False)]
+    cooldown_time: Annotated[float, field(repr=False)]
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Item":
@@ -143,18 +143,22 @@ class Item():
 
 @dataclass(slots=True)
 class Chest():
-    name:         str
-    is_small:     Annotated[bool,         field(repr=False)]
-    is_closed:    Annotated[bool,         field(repr=False)]
-    items:        Annotated[list[str],    field(repr=False)]
+    name:               str
+    is_small:           Annotated[bool,      field(repr=False)]
+    is_closed:          Annotated[bool,      field(repr=False)]
+    items:              Annotated[list[str], field(repr=False)]
+    total_items_count:  Annotated[int,       field(repr=False)]
+    random_items:       Annotated[list[str], field(repr=False)]
 
     @classmethod
     def from_dict(cls: type["Chest"], data: dict[str, Any]) -> "Chest":
         return cls(
-            name      = data.get("name", ""),
-            is_small  = data.get("is_small", True),
-            is_closed = data.get("is_closed", True),
-            items     = data.get("items", []),
+            name      =          data.get("name", ""),
+            is_small  =          data.get("is_small", True),
+            is_closed =          data.get("is_closed", True),
+            items     =          data.get("items", []),
+            total_items_count =  data.get("random_items_count", 0),
+            random_items      =  data.get("random_items", []),
         )
 
 

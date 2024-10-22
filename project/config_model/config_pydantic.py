@@ -50,8 +50,8 @@ class MazeLevelProperties(BaseModel):
     boss_monster:   str                   = Field(min_length=3, description="Boss monster NPC model name")
     monsters_count: Annotated[int,          Field(4, description="Number of regular monster per level (without boss)",
                                                   ge=0, repr=False)]
-    chest_count: Annotated[int,             Field(1, description="Number of chest on the map",
-                                                  ge=0, repr=False)]
+    small_chest_count: Annotated[int,             Field(1, description="Number of small chests on the map",
+                                                        ge=0, repr=False)]
     maze_cols: Annotated[int,              Field(10, description="Number of columns in map grid",
                                                  ge=0, repr=False)]
     maze_rows: Annotated[int,              Field(7, description="Number of rows in map grid",
@@ -114,20 +114,25 @@ class Item(BaseModel):
 
 
 ###################################################################################################################
+
 class Chest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     # id: str   = Field(
     #     min_length=3, frozen=True, description="Unique string identifier")
-    name: str = Field(min_length=3, frozen=True, description="Chest display name")
-    is_small:   Annotated[bool,      Field(True, description="Is it small or big", repr=False)]
-    is_closed:  Annotated[bool,      Field(True, description="Is it closed or open", repr=False)]
-    items:      Annotated[list[str], Field(description="list of items in the chest", default_factory = list)]
+    name: str =                              Field(min_length=3, frozen=True, description="Chest display name")
+    is_small:           Annotated[bool,      Field(True, description="Is it small or big", repr=False)]
+    is_closed:          Annotated[bool,      Field(True, description="Is it closed or open", repr=False)]
+    items:              Annotated[list[str], Field(
+        description="list of persistent items in the chest", default_factory=list)]
+    total_items_count: Annotated[int,       Field(
+        0, description="total numer of items to generate (persistent + random)", repr=False)]
+    random_items:       Annotated[list[str], Field(
+        description="list of items to generate randomly", default_factory=list)]
+
 
 ###################################################################################################################
 # MARK: Config
-
-
 class Config(BaseModel):
     # this class is used only for crating instances of the config class
     characters: dict[str, Character]

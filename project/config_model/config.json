@@ -419,16 +419,24 @@
     "chests": {
         "SmallChest_Maze": {
             "name": "SmallChest_Maze",
-            "items": [
-                "golden_coin"
+            "total_items_count": 1,
+            "random_items": [
+                "golden_coin",
+                "life_pot",
+                "shrimp"
             ]
         },
         "BigChest_Maze": {
             "name": "BigChest_Maze",
+            "is_small": false,
             "items": [
+                "life_pot"
+            ],
+            "total_items_count": 3,
+            "random_items": [
                 "golden_coin",
-                "life_pot",
-                "sword_short"
+                "fish",
+                "shashlik"
             ]
         },
         "SmallChest_VillageHouse": {
@@ -454,7 +462,7 @@
             ],
             "boss_monster": "Spider_01",
             "monsters_count": 4,
-            "chest_count": 1,
+            "small_chest_count": 2,
             "maze_cols": 9,
             "maze_rows": 6
         },
@@ -465,7 +473,7 @@
             ],
             "boss_monster": "Spider_01",
             "monsters_count": 5,
-            "chest_count": 1,
+            "small_chest_count": 3,
             "maze_cols": 10,
             "maze_rows": 7
         },
@@ -477,7 +485,7 @@
             ],
             "boss_monster": "Spider_01",
             "monsters_count": 6,
-            "chest_count": 2,
+            "small_chest_count": 4,
             "maze_cols": 11,
             "maze_rows": 8
         },
@@ -490,7 +498,7 @@
             ],
             "boss_monster": "Spider_01",
             "monsters_count": 7,
-            "chest_count": 2,
+            "small_chest_count": 5,
             "maze_cols": 12,
             "maze_rows": 9
         }

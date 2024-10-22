@@ -14,6 +14,7 @@ from maze_generator import hunt_and_kill_maze
 from maze_generator.maze_utils import (
     _TIMEIT_CACHE,
     EMPTY_CELL,
+    IMAGE_DIRECTION_TO_CHEST,
     MARGIN,
     SUBTILE_COLS,
     SUBTILE_ROWS,
@@ -23,6 +24,7 @@ from maze_generator.maze_utils import (
     analyze_maze,
     build_tileset_map_from_maze,
     clear_maze_cache,
+    find_dead_ends,
     find_tiles_with_cross_way,
     get_gid_from_tmx_id,
     timeit
@@ -520,19 +522,59 @@ class Scene(State):
                     )
                     self.exits.append(exit)
                 elif getattr(obj, "obj_type", "") == "chest":
-                    rect = pygame.Rect(obj.x, obj.y, obj.width, obj.height)
-                    self.walls.append(rect)
+                    if self.is_maze and obj.name == "SmallChest_Maze":
+                        # maze_configs = self.game.conf.maze_configs
+                        # level = self.maze_stats["current_map_level"]
+                        # level_properties = maze_configs.get(level, maze_configs[len(maze_configs)])
 
-                    # blocked from walking (wall)
-                    self.path_finding_grid[int(obj.y // TILE_SIZE)][int(obj.x // TILE_SIZE)] = STEP_COST_WALL
+                        # generate list of maze locations to put small chests
+                        # use only cells with one way out
+                        candidates = find_dead_ends(self.maze)
 
-                    # chest = ChestSprite(self.obstacles_sprites, rect.center,
-                    chest = ChestSprite(self.obstacles_sprites,
-                                        (obj.x, obj.y),
-                                        copy.copy(self.game.conf.chests[obj.name]),
-                                        self.items_sheet,
-                                        )
-                    self.chests.append(chest)
+                        # skip start (too easy) and end (big chest will be there)
+                        start = self.maze_stats["start"]
+                        if start in candidates:
+                            candidates.remove(start)
+
+                        end = self.maze_stats["end"]
+                        if end in candidates:
+                            candidates.remove(end)
+
+                        # generate small chests
+                        level_properties = self.maze_stats["level_properties"]
+                        for x, y in random.sample(candidates, level_properties.small_chest_count):
+                            # blocked from walking (wall)
+                            self.path_finding_grid[y][x] = STEP_COST_WALL
+
+                            # recalculate grid position to map coordinates
+                            image_index = self.maze.cell_rows[y][x].image_index
+                            offset = IMAGE_DIRECTION_TO_CHEST[image_index]
+                            x = (MARGIN + x * SUBTILE_COLS + offset[0]) * TILE_SIZE
+                            y = (MARGIN + y * SUBTILE_ROWS + offset[1]) * TILE_SIZE
+
+                            rect = pygame.Rect(x, y, TILE_SIZE, TILE_SIZE)
+                            self.walls.append(rect)
+
+                            chest = ChestSprite(self.obstacles_sprites,
+                                                (x, y),
+                                                copy.copy(self.game.conf.chests[obj.name]),
+                                                self.items_sheet,
+                                                )
+                            self.chests.append(chest)
+                    else:
+                        rect = pygame.Rect(obj.x, obj.y, obj.width, obj.height)
+                        self.walls.append(rect)
+
+                        # blocked from walking (wall)
+                        self.path_finding_grid[int(obj.y // TILE_SIZE)][int(obj.x // TILE_SIZE)] = STEP_COST_WALL
+
+                        # chest = ChestSprite(self.obstacles_sprites, rect.center,
+                        chest = ChestSprite(self.obstacles_sprites,
+                                            (obj.x, obj.y),
+                                            copy.copy(self.game.conf.chests[obj.name]),
+                                            self.items_sheet,
+                                            )
+                        self.chests.append(chest)
 
     #############################################################################################################
 
@@ -621,6 +663,7 @@ class Scene(State):
                 self.maze = hunt_and_kill_maze.HuntAndKillMaze(self.maze_cols, self.maze_rows)
                 self.maze.generate()
                 self.maze_stats = analyze_maze(self.maze)
+                self.maze_stats["level_properties"] = level_properties
 
             # tileset_map: TiledMap = load_pygame(str(MAZE_DIR / "MazeTileset_clean.tmx"))
             tileset_map: TiledMap = load_pygame(str(MAZE_DIR / "MazeTileset_Ninja.tmx"))
@@ -725,9 +768,7 @@ class Scene(State):
                 candidates.remove(end)
 
             id: int = 0
-            maze_configs = self.game.conf.maze_configs
-            level = self.maze_stats["current_map_level"]
-            level_properties = maze_configs.get(level, maze_configs[len(maze_configs)])
+            level_properties = self.maze_stats["level_properties"]
 
             # add regular monsters
             # get a `monsters_count` number of randomly selected positions from candidates list
