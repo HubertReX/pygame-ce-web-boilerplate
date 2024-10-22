@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="38" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="20" nextobjectid="6">
+<map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="38" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="20" nextobjectid="11">
  <editorsettings>
   <export format="tmx"/>
  </editorsettings>
@@ -240,7 +240,7 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,386,398,394,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,401,429,418,450,434,451,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,440,445,438,441,439,444,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -511,6 +511,18 @@
     <property name="to_map" value="Maze_02"/>
    </properties>
   </object>
+  <object id="9" name="BigChest_Maze" x="592" y="112" width="16" height="16">
+   <properties>
+    <property name="obj_type" value="chest"/>
+   </properties>
+  </object>
+  <object id="6" name="BigChest_Maze_IMG" gid="415" x="592" y="128" width="16" height="16"/>
+  <object id="8" name="SmallChest_Maze" x="576" y="112" width="16" height="16">
+   <properties>
+    <property name="obj_type" value="chest"/>
+   </properties>
+  </object>
+  <object id="10" name="SmallChest_Maze_IMG" gid="425" x="576" y="128" width="16" height="16"/>
  </objectgroup>
  <objectgroup id="5" name="entry_points">
   <object id="1" name="start" x="176" y="176">

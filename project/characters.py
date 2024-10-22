@@ -31,6 +31,7 @@ from settings import (
     PUSHED_TIME,
     RECALCULATE_PATH_DISTANCE,
     SCALE,
+    STEP_COST_WALL,
     SPRITE_SHEET_DEFINITION_4x7,
     STUNNED_COLOR,
     STUNNED_TIME,
@@ -285,7 +286,7 @@ class NPC(pygame.sprite.Sprite):
         return f"{self.__class__.__name__}({self.name})"
 
     #############################################################################################################
-    def get_tileset_coord(self, pos: vec | None = None) -> Point:
+    def get_tileset_coord(self, pos: vec | None = None, offset_y: int = -4) -> Point:
         """
         map position in world coordinates to tileset grid
         """
@@ -293,7 +294,7 @@ class NPC(pygame.sprite.Sprite):
             pos = self.pos
 
         # shift up by 4 pixels since perceived location is different than actual Sprite position on screen
-        return Point(int(pos.x // TILE_SIZE), int((pos.y - 4) // TILE_SIZE))
+        return Point(int(pos.x // TILE_SIZE), int((pos.y + offset_y) // TILE_SIZE))
 
     #############################################################################################################
 
@@ -435,7 +436,7 @@ class NPC(pygame.sprite.Sprite):
                     self.speed = self.speed_walk
                     # current_way_point_vec.distance_squared_to(npc_pos) <= 2.0
 
-                    target_vec = self.get_random_safe_pos(self.pos, NPC_RANDOM_WALK_DISTANCE)
+                    target_vec = self.get_random_safe_pos(self.pos, range=NPC_RANDOM_WALK_DISTANCE)
 
                     self.target = target_vec
                     self.find_path()
@@ -443,10 +444,18 @@ class NPC(pygame.sprite.Sprite):
 
     #############################################################################################################
 
-    def get_random_safe_pos(self, start_pos: vec, range: int, check_exits: bool = True) -> vec:
+    def get_random_safe_pos(
+        self,
+        start_pos: vec,
+        range: float = 1.0,
+        check_exits: bool = True,
+        check_allowed_zones: bool = True,
+        allow_start_pos: bool = True,
+    ) -> vec:
+
         repeat = True
         repeat_cnt: int = 0
-        new_rect = self.rect.copy()
+        new_rect = pygame.FRect(0.0, 0.0, TILE_SIZE, TILE_SIZE)  # self.rect.copy()
 
         while repeat:
             repeat_cnt += 1
@@ -455,8 +464,17 @@ class NPC(pygame.sprite.Sprite):
 
             if repeat_cnt > MAX_NO_ATTEMPTS_TO_FIND_RANDOM_POS:
                 print(
-                    f"[red]ERROR![/] in [magenta]get_random_safe_pos[/] can't find safe pos for [blue]{self.name}[/]!")
+                    f"[red]ERROR![/] in [magenta]get_random_safe_pos[/] can't find safe pos for [blue]{self.name}[/]"
+                    f" from {start_pos}!")
                 return target_vec
+
+            # check if new position is within rect around start position
+            if not allow_start_pos:
+                start_rect = pygame.FRect(0, 0, TILE_SIZE, TILE_SIZE)
+                start_rect.center = start_pos  # type: ignore[assignment]
+                if start_rect.collidepoint(target_vec):
+                    print("[yellow]Warning[/] same position not allowed")
+                    continue
 
             # check if new pos is not on exit
             if check_exits:
@@ -464,24 +482,27 @@ class NPC(pygame.sprite.Sprite):
                     continue
 
             # check if new pos is inside one of allowed zones
-            if len(self.model.allowed_zones) > 0:
-                matched_any_zone: bool = False
-                for zone_name in self.model.allowed_zones:
-                    allowed_zones = self.scene.zones[zone_name]
-                    for zone in allowed_zones:
-                        if zone.contains(new_rect):
-                            matched_any_zone = True
-                            # print(f"[magenta]Zone: {zone_name}[/] matched for [blue]{self.name}[/]!")
+            if check_allowed_zones:
+                if len(self.model.allowed_zones) > 0:
+                    matched_any_zone: bool = False
+                    for zone_name in self.model.allowed_zones:
+                        allowed_zones = self.scene.zones[zone_name]
+                        for zone in allowed_zones:
+                            if zone.contains(new_rect):
+                                matched_any_zone = True
+                                # print(f"[magenta]Zone: {zone_name}[/] matched for [blue]{self.name}[/]!")
+                                break
+                        if matched_any_zone:
                             break
-                    if matched_any_zone:
-                        break
-                if not matched_any_zone:
-                    # zone_names = ", ".join(self.model.allowed_zones)
-                    # print(f"[red]ERROR![/] [blue]{self.name}[/] outside of zones ({zone_names})!")
-                    continue
+                    if not matched_any_zone:
+                        # zone_names = ", ".join(self.model.allowed_zones)
+                        # print(f"[red]ERROR![/] [blue]{self.name}[/] outside of zones ({zone_names})!")
+                        continue
 
             # check if new position is in map bounds
-            target_grid = self.get_tileset_coord(target_vec)
+            target_grid = self.get_tileset_coord(target_vec, offset_y=0)
+            # target_grid.x -= 1
+            # target_grid.y -= 1
             grid = self.scene.path_finding_grid
             if target_grid.y < 0 or target_grid.y >= len(grid) or \
                     target_grid.x < 0 or target_grid.x >= len(grid[0]):
@@ -714,9 +735,13 @@ class NPC(pygame.sprite.Sprite):
                 self.die(drop_items=False)
                 # TODO NPC goes to another map
 
-    def get_random_pos(self, x_tiles: int = 1, y_tiles: int = 1) -> vec:
-        return vec(random.randint(-x_tiles * TILE_SIZE * SCALE, x_tiles * TILE_SIZE * SCALE),
-                   random.randint(-y_tiles * TILE_SIZE * SCALE, y_tiles * TILE_SIZE * SCALE))
+    #############################################################################################################
+
+    def get_random_pos(self, x_tiles: float = 1.0, y_tiles: float = 1.0) -> vec:
+        x = -x_tiles + random.random() * 2.0 * x_tiles
+        y = -y_tiles + random.random() * 2.0 * y_tiles
+
+        return vec(x * TILE_SIZE * SCALE, y * TILE_SIZE * SCALE)
 
     #############################################################################################################
     def die(self, drop_items: bool = True) -> None:
@@ -732,13 +757,14 @@ class NPC(pygame.sprite.Sprite):
             for item in self.items:
                 self.selected_item_idx = len(self.items) - 1
                 if self.drop_item():
-                    item.rect.center = self.pos + self.get_random_pos()  # type: ignore[assignment]
+                    item.rect.center = self.get_random_safe_pos(
+                        self.pos, check_allowed_zones=False)  # type: ignore[assignment]
                     self.scene.items.append(item)
                     self.scene.item_sprites.add(item)
                     self.scene.group.add(item, layer=self.scene.sprites_layer - 1)
 
             if self.model.money >  0:
-                pos: vec = self.pos + self.get_random_pos()  # type: ignore[assignment]
+                pos: vec = self.get_random_safe_pos(self.pos, check_allowed_zones=False)  # type: ignore[assignment]
                 item = self.scene.create_item("golden_coin", int(pos[0]), int(pos[1]))
                 item.model.value = self.model.money
                 self.scene.items.append(item)
@@ -1161,8 +1187,12 @@ class Player(NPC):
                 self.scene.add_notification("Chest opened :red_exclamation_anim:", NotificationTypeEnum.success)
                 for item_name in chest.model.items:
                     # print(f"[light_green] '{item_name}' item from chest")
-                    pos: vec = self.pos + self.get_random_pos()  # type: ignore[assignment]
-                    item = self.scene.create_item(item_name, int(pos[0]), int(pos[1]))
+                    chest_pos = vec(self.chest_in_range.rect.centerx, self.chest_in_range.rect.centery)
+                    pos: vec = self.get_random_safe_pos(
+                        chest_pos, range=1.5, check_allowed_zones=False, allow_start_pos=False)
+                    rect = pygame.Rect(0, 0, TILE_SIZE, TILE_SIZE)
+                    rect.center = pos  # type: ignore[assignment]
+                    item = self.scene.create_item(item_name, rect.left, rect.top)
                     self.scene.items.append(item)
                     self.scene.group.add(item, layer=self.scene.sprites_layer - 1)
             INPUTS["open"] = False

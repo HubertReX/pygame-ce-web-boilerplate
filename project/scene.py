@@ -1,4 +1,5 @@
 import contextlib
+import copy
 import random
 from typing import Any, cast
 from rich import print
@@ -311,7 +312,7 @@ class Scene(State):
             (x, y),
             name,  # tile.item_name,
             image=self.items_sheet[name],
-            model=self.game.conf.items[name]
+            model=copy.copy(self.game.conf.items[name])
         )
 
     #############################################################################################################
@@ -528,7 +529,7 @@ class Scene(State):
                     # chest = ChestSprite(self.obstacles_sprites, rect.center,
                     chest = ChestSprite(self.obstacles_sprites,
                                         (obj.x, obj.y),
-                                        self.game.conf.chests[obj.name],
+                                        copy.copy(self.game.conf.chests[obj.name]),
                                         self.items_sheet,
                                         )
                     self.chests.append(chest)

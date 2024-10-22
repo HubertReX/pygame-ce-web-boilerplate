@@ -490,7 +490,7 @@
     <property name="obj_type" value="chest"/>
    </properties>
   </object>
-  <object id="39" gid="2749" x="880" y="736" width="16" height="16"/>
+  <object id="39" name="BigChest_Village_IMG" gid="2749" x="880" y="736" width="16" height="16"/>
  </objectgroup>
  <objectgroup id="5" name="entry_points">
   <object id="1" name="start" x="920" y="704">

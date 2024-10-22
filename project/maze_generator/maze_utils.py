@@ -118,6 +118,13 @@ IMAGE_DIRECTION_TO_OFFSET = {
     FROM_EAST:  (1, 3),
 }
 
+IMAGE_DIRECTION_TO_CHEST = {
+    FROM_NORTH: (4, 4),
+    FROM_SOUTH: (4, 2),
+    FROM_WEST:  (4, 4),
+    FROM_EAST:  (1, 4),
+}
+
 
 # IMAGE_DIRECTION_TO_IDX = {
 #     "stairs_up": {
@@ -763,6 +770,12 @@ def build_tileset_map_from_maze(
                         IMAGE_DIRECTION_TO_OFFSET[start_cell.image_index][1]) * TILE_SIZE
         return_obj.to_map = f"{current_map_name}_{(current_map_level - 1):02d}"
         return_obj.entry_point = "Re-Entry"  # "Stairs"
+
+    small_chest_obj = clean_tileset_map.get_object_by_name("SmallChest_Maze")
+    small_chest_obj.x = (MARGIN + end[0] * SUBTILE_COLS +  # noqa: W504
+                         IMAGE_DIRECTION_TO_CHEST[end_cell.image_index][0]) * TILE_SIZE
+    small_chest_obj.y = (MARGIN + end[1] * SUBTILE_ROWS +  # noqa: W504
+                         IMAGE_DIRECTION_TO_CHEST[end_cell.image_index][1]) * TILE_SIZE
 
     # go deeper (maze level + 1) collider (on stairs down sprite)
     stairs_obj = clean_tileset_map.get_object_by_name("Stairs")

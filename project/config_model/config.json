@@ -180,6 +180,7 @@
             "health": 80,
             "max_health": 80,
             "items": [
+                "lance",
                 "stick",
                 "shashlik",
                 "shashlik"
@@ -416,6 +417,20 @@
         }
     },
     "chests": {
+        "SmallChest_Maze": {
+            "name": "SmallChest_Maze",
+            "items": [
+                "golden_coin"
+            ]
+        },
+        "BigChest_Maze": {
+            "name": "BigChest_Maze",
+            "items": [
+                "golden_coin",
+                "life_pot",
+                "sword_short"
+            ]
+        },
         "SmallChest_VillageHouse": {
             "name": "SmallChest_VillageHouse",
             "items": [
