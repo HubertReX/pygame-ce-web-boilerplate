@@ -414,6 +414,46 @@
             "max_health": 60,
             "damage": 20,
             "money": 0
+        },
+        "CaveLion": {
+            "name": "CaveLion",
+            "sprite": "CaveLion",
+            "race": "monster",
+            "attitude": "enemy",
+            "health": 60,
+            "max_health": 60,
+            "damage": 20,
+            "money": 0
+        },
+        "CaveLion2": {
+            "name": "CaveLion",
+            "sprite": "CaveLion2",
+            "race": "monster",
+            "attitude": "enemy",
+            "health": 60,
+            "max_health": 60,
+            "damage": 20,
+            "money": 0
+        },
+        "LionYellow": {
+            "name": "LionYellow",
+            "sprite": "LionYellow",
+            "race": "monster",
+            "attitude": "enemy",
+            "health": 60,
+            "max_health": 60,
+            "damage": 20,
+            "money": 0
+        },
+        "Flam": {
+            "name": "Flam",
+            "sprite": "Flam",
+            "race": "monster",
+            "attitude": "enemy",
+            "health": 60,
+            "max_health": 60,
+            "damage": 20,
+            "money": 0
         }
     },
     "chests": {
@@ -460,7 +500,7 @@
             "monsters_list": [
                 "Spirit_01"
             ],
-            "boss_monster": "Spider_01",
+            "boss_monster": "CaveLion",
             "monsters_count": 4,
             "small_chest_count": 2,
             "maze_cols": 9,
@@ -471,7 +511,7 @@
                 "Spirit_01",
                 "Slime_01"
             ],
-            "boss_monster": "Spider_01",
+            "boss_monster": "CaveLion2",
             "monsters_count": 5,
             "small_chest_count": 3,
             "maze_cols": 10,
@@ -483,7 +523,7 @@
                 "Slime_01",
                 "Spider_01"
             ],
-            "boss_monster": "Spider_01",
+            "boss_monster": "LionYellow",
             "monsters_count": 6,
             "small_chest_count": 4,
             "maze_cols": 11,
@@ -496,7 +536,7 @@
                 "Spider_01",
                 "Snake_01"
             ],
-            "boss_monster": "Spider_01",
+            "boss_monster": "Flam",
             "monsters_count": 7,
             "small_chest_count": 5,
             "maze_cols": 12,
