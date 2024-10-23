@@ -10,7 +10,7 @@ import pyscroll
 import pyscroll.data
 from animation import animator
 from camera import Camera
-from maze_generator import hunt_and_kill_maze
+from maze_generator.hunt_and_kill_maze import HuntAndKillMaze
 from maze_generator.maze_utils import (
     _TIMEIT_CACHE,
     EMPTY_CELL,
@@ -56,6 +56,8 @@ from settings import (
     FRIENDLY_WAKE_DISTANCE,
     FULL_WHITE_COLOR,
     GAME_TIME_SPEED,
+    GEMS_SHEET_DEFINITION,
+    GEMS_SHEET_FILE,
     HEIGHT,
     HUD_SHEET_DEFINITION,
     HUD_SHEET_FILE,
@@ -187,6 +189,9 @@ class Scene(State):
         # self.import_emote_sheet(str(EMOTE_SHEET_FILE))
         self.items_sheet: dict[str, list[pygame.Surface]] = self.import_sheet(
             str(ITEMS_SHEET_FILE), ITEMS_SHEET_DEFINITION, width=16, height=16)
+
+        self.items_sheet.update(self.import_sheet(
+            str(GEMS_SHEET_FILE), GEMS_SHEET_DEFINITION, width=16, height=16))
 
         # moved here to avoid circular imports
         from characters import Player
@@ -555,9 +560,10 @@ class Scene(State):
                             rect = pygame.Rect(x, y, TILE_SIZE, TILE_SIZE)
                             self.walls.append(rect)
 
+                            model_name = level_properties.small_chest_template
                             chest = ChestSprite(self.obstacles_sprites,
                                                 (x, y),
-                                                copy.copy(self.game.conf.chests[obj.name]),
+                                                copy.copy(self.game.conf.chests[model_name]),
                                                 self.items_sheet,
                                                 )
                             self.chests.append(chest)
@@ -568,10 +574,15 @@ class Scene(State):
                         # blocked from walking (wall)
                         self.path_finding_grid[int(obj.y // TILE_SIZE)][int(obj.x // TILE_SIZE)] = STEP_COST_WALL
 
-                        # chest = ChestSprite(self.obstacles_sprites, rect.center,
+                        if self.is_maze:
+                            level_properties = self.maze_stats["level_properties"]
+                            model_name = level_properties.big_chest_template
+                        else:
+                            model_name = obj.name
+
                         chest = ChestSprite(self.obstacles_sprites,
                                             (obj.x, obj.y),
-                                            copy.copy(self.game.conf.chests[obj.name]),
+                                            copy.copy(self.game.conf.chests[model_name]),
                                             self.items_sheet,
                                             )
                         self.chests.append(chest)
@@ -656,14 +667,17 @@ class Scene(State):
                 # if level higher than maze_configs count, use highest
                 maze_configs = self.game.conf.maze_configs
                 level = int(self.current_map.split("_")[1])
-                level_properties = maze_configs.get(level, maze_configs[len(maze_configs)])
+                max_level = len(maze_configs)
+                level_properties = maze_configs.get(level, maze_configs[max_level])
                 self.maze_cols = level_properties.maze_cols
                 self.maze_rows = level_properties.maze_rows
                 # generate new maze
-                self.maze = hunt_and_kill_maze.HuntAndKillMaze(self.maze_cols, self.maze_rows)
+                self.maze = HuntAndKillMaze(self.maze_cols, self.maze_rows)
                 self.maze.generate()
                 self.maze_stats = analyze_maze(self.maze)
                 self.maze_stats["level_properties"] = level_properties
+                self.maze_stats["current_map_level"] = level
+                self.maze_stats["max_level"] = max_level
 
             # tileset_map: TiledMap = load_pygame(str(MAZE_DIR / "MazeTileset_clean.tmx"))
             tileset_map: TiledMap = load_pygame(str(MAZE_DIR / "MazeTileset_Ninja.tmx"))

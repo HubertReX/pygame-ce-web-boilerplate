@@ -31,6 +31,7 @@ class ItemTypeEnum(StrEnum):
     key = auto()
     consumable = auto()
     money = auto()
+    gem = auto()
 
 # https://docs.python.org/3/library/enum.html#enum.Enum
 # class ToolEnum(IntEnum):
@@ -50,12 +51,14 @@ class MazeLevelProperties(BaseModel):
     boss_monster:   str                   = Field(min_length=3, description="Boss monster NPC model name")
     monsters_count: Annotated[int,          Field(4, description="Number of regular monster per level (without boss)",
                                                   ge=0, repr=False)]
-    small_chest_count: Annotated[int,             Field(1, description="Number of small chests on the map",
-                                                        ge=0, repr=False)]
-    maze_cols: Annotated[int,              Field(10, description="Number of columns in map grid",
-                                                 ge=0, repr=False)]
-    maze_rows: Annotated[int,              Field(7, description="Number of rows in map grid",
-                                                 ge=0, repr=False)]
+    small_chest_count: Annotated[int,       Field(1, description="Number of small chests on the map",
+                                                  ge=0, repr=False)]
+    small_chest_template: Annotated[str,    Field(min_length=3, description="Small chest name from config", repr=False)]
+    big_chest_template: Annotated[str,      Field(min_length=3, description="Big chest name from config", repr=False)]
+    maze_cols: Annotated[int,               Field(10, description="Number of columns in map grid",
+                                                  ge=0, repr=False)]
+    maze_rows: Annotated[int,               Field(7, description="Number of rows in map grid",
+                                                  ge=0, repr=False)]
 
 
 class Character(BaseModel):

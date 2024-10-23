@@ -426,6 +426,7 @@ DIALOGS_DIR       = ASSETS_DIR / "dialogs" / LANG
 MAPS_DIR          = RESOURCES_DIR / "maps"
 ITEMS_DIR         = RESOURCES_DIR / "items"
 ITEMS_SHEET_FILE  = ITEMS_DIR / "items_trans_weapons.png"
+GEMS_SHEET_FILE   = MAPS_DIR / "tilesets" / "images" / "TilesetNature.png"
 MAZE_DIR          = ASSETS_DIR / "MazeTileset"
 CHARACTERS_DIR    = RESOURCES_DIR / "characters"
 PARTICLES_DIR     = RESOURCES_DIR / "particles"
@@ -733,6 +734,21 @@ ITEMS_SHEET_DEFINITION = {
     "sword_long":           [(8, 7)],
     "bow":                  [(3, 9)],
     "arrow":                [(4, 9)],
+}
+
+GEMS_SHEET_DEFINITION = {
+    "gem_crystal_orange":   [(0, 14)],
+    "gem_small_orange":     [(0, 15)],
+    "gem_big_orange":       [(0, 16)],
+    "gem_crystal_blue":     [(1, 14)],
+    "gem_small_blue":       [(1, 15)],
+    "gem_big_blue":         [(1, 16)],
+    "gem_crystal_purple":   [(2, 14)],
+    "gem_small_purple":     [(2, 15)],
+    "gem_big_purple":       [(2, 16)],
+    "gem_crystal_green":    [(3, 14)],
+    "gem_small_green":      [(3, 15)],
+    "gem_big_green":        [(3, 16)],
 }
 
 WEAPON_DIRECTION_OFFSET: dict[str, vec] = {

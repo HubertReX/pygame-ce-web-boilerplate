@@ -1056,41 +1056,48 @@ class NPC(pygame.sprite.Sprite):
             # self.items.append(item)
             result = True
         else:
-            if len(self.items) < MAX_HOTBAR_ITEMS:
-                item_total_weight = item.model.weight  # * item.model.count
-                if self.total_items_weight + item_total_weight <= self.model.max_carry_weight:
-                    self.total_items_weight += item_total_weight
-                    found = False
+            found = False
+            for idx, owned_item in enumerate(self.items):
+                if owned_item.name == item.name:
+                    found = True
+                    break
+
+            if self.total_items_weight + item.model.weight <= self.model.max_carry_weight:
+                if found:
+                    self.total_items_weight += item.model.weight
+
                     # increase amount if already owned
-                    for idx, owned_item in enumerate(self.items):
-                        if owned_item.name == item.name:
-                            self.items[idx].model.count += 1
-                            found = True
-                            break
+                    self.items[idx].model.count += 1
 
-                    # add new item if not owned
-                    if not found:
-                        self.items.append(item)
-
-                    # if it's the first owned item, set it as selected
-                    if self.selected_item_idx < 0:
-                        self.selected_item_idx = 0
                     result = True
                 else:
-                    print(
-                        f"\n[red]ERROR:[/] {self.name} Max carry weight "
-                        f"'[num]{self.model.max_carry_weight:4.2f}[/num]' exceeded!\n")
-                    self.scene.add_notification(
-                        f"Max carry weight '[num]{
-                            self.model.max_carry_weight:4.2f}[/num]' exceeded :red_exclamation_anim:",
-                        scene.NotificationTypeEnum.failure)
+                    # check if there are free slots
+                    if len(self.items) < MAX_HOTBAR_ITEMS:
+                        # add new item if not owned
+                        self.total_items_weight += item.model.weight
 
+                        self.items.append(item)
+
+                        # if it's the first owned item, set it as selected
+                        if self.selected_item_idx < 0:
+                            self.selected_item_idx = 0
+
+                        result = True
+                    else:
+                        print(
+                            f"\n[red]ERROR:[/] {self.name} All '[num]{MAX_HOTBAR_ITEMS}[/num]'"
+                            " items slots are taken!\n")
+                        self.scene.add_notification(
+                            f"All '[num]{MAX_HOTBAR_ITEMS}[/num]' items slots are taken :red_exclamation_anim:",
+                            scene.NotificationTypeEnum.failure)
             else:
-                print(f"\n[red]ERROR:[/] {self.name} All '[num]{MAX_HOTBAR_ITEMS}[/num]' items slots are taken!\n")
+                print(
+                    f"\n[red]ERROR:[/] {self.name} Max carry weight "
+                    f"'[num]{self.model.max_carry_weight:4.2f}[/num]' exceeded!\n")
                 self.scene.add_notification(
-                    f"All '[num]{MAX_HOTBAR_ITEMS}[/num]' items slots are taken :red_exclamation_anim:",
+                    f"Max carry weight '[num]{
+                        self.model.max_carry_weight:4.2f}[/num]' exceeded :red_exclamation_anim:",
                     scene.NotificationTypeEnum.failure)
-        # print(f"Picked up {item.name}({item.model.type.value})")
 
         return result
 

@@ -243,7 +243,8 @@
                 "weapon",
                 "key",
                 "consumable",
-                "money"
+                "money",
+                "gem"
             ],
             "title": "ItemTypeEnum",
             "type": "string"
@@ -279,6 +280,18 @@
                     "title": "Small Chest Count",
                     "type": "integer"
                 },
+                "small_chest_template": {
+                    "description": "Small chest name from config",
+                    "minLength": 3,
+                    "title": "Small Chest Template",
+                    "type": "string"
+                },
+                "big_chest_template": {
+                    "description": "Big chest name from config",
+                    "minLength": 3,
+                    "title": "Big Chest Template",
+                    "type": "string"
+                },
                 "maze_cols": {
                     "default": 10,
                     "description": "Number of columns in map grid",
@@ -295,7 +308,9 @@
                 }
             },
             "required": [
-                "boss_monster"
+                "boss_monster",
+                "small_chest_template",
+                "big_chest_template"
             ],
             "title": "MazeLevelProperties",
             "type": "object"

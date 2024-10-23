@@ -58,22 +58,26 @@ class ItemTypeEnum(StrEnum):
 
 @dataclass(slots=True)
 class MazeLevelProperties():
-    monsters_list:     Annotated[list[str], field(repr=False)]
-    boss_monster:      str =                field(repr=False)
-    monsters_count:    Annotated[int,       field(repr=False)]
-    small_chest_count: Annotated[int,       field(repr=False)]
-    maze_cols:         Annotated[int,       field(repr=False)]
-    maze_rows:         Annotated[int,       field(repr=False)]
+    monsters_list:        Annotated[list[str], field(repr=False)]
+    boss_monster:         str =                field(repr=False)
+    monsters_count:       Annotated[int,       field(repr=False)]
+    small_chest_count:    Annotated[int,       field(repr=False)]
+    small_chest_template: Annotated[str,       field(repr=False)]
+    big_chest_template:   Annotated[str,       field(repr=False)]
+    maze_cols:            Annotated[int,       field(repr=False)]
+    maze_rows:            Annotated[int,       field(repr=False)]
 
     @classmethod
     def from_dict(cls: type["MazeLevelProperties"], data: dict[str, Any]) -> "MazeLevelProperties":
         return cls(
-            monsters_list     = data.get("monsters_list",  []),
-            boss_monster      = data.get("boss_monster",   ""),
-            monsters_count    = data.get("monsters_count", 4),
-            small_chest_count = data.get("chest_count",    1),
-            maze_cols         = data.get("maze_cols",      10),
-            maze_rows         = data.get("maze_rows",      7)
+            monsters_list        = data.get("monsters_list",        []),
+            boss_monster         = data.get("boss_monster",         ""),
+            monsters_count       = data.get("monsters_count",       4),
+            small_chest_count    = data.get("chest_count",          1),
+            small_chest_template = data.get("small_chest_template", ""),
+            big_chest_template   = data.get("big_chest_template",   ""),
+            maze_cols            = data.get("maze_cols",            10),
+            maze_rows            = data.get("maze_rows",            7)
         )
 
 

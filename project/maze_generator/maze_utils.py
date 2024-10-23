@@ -719,16 +719,16 @@ def build_tileset_map_from_maze(
     # for x in range(32, 36):
     #     print(elements_layer.data[9][x])
 
-    current_map_name: str = current_map.split("_")[0]
-    current_map_level: int = int(current_map.split("_")[1])
     stats = maze_stats  # analyze_maze(maze)
+    current_map_name: str = current_map.split("_")[0]
+    current_map_level: int = stats["current_map_level"]
+    max_level: int = stats["max_level"]
     if current_map_level == 1:
         start = stats["longest_N_wall_path_start"]
         end   = stats["longest_N_wall_path_end"]
     else:
         start = stats["longest_dead_end_path_start"]
         end   = stats["longest_dead_end_path_end"]
-    stats["current_map_level"] = current_map_level
     stats["start"] = start
     stats["end"]   = end
     start_cell = maze.cell_rows[start[1]][start[0]]
@@ -763,7 +763,6 @@ def build_tileset_map_from_maze(
         return_obj.entry_point = entry_point  # "Stairs"
     else:
         # same location as the location of the stairs up sprite
-        # STAIRS_UP_X_OFFSET x STAIRS_UP_Y_OFFSET
         return_obj.x = (MARGIN + start[0] * SUBTILE_COLS +  # noqa: W504
                         IMAGE_DIRECTION_TO_OFFSET[start_cell.image_index][0]) * TILE_SIZE
         return_obj.y = (MARGIN + start[1] * SUBTILE_ROWS +  # noqa: W504
@@ -779,19 +778,26 @@ def build_tileset_map_from_maze(
 
     # go deeper (maze level + 1) collider (on stairs down sprite)
     stairs_obj = clean_tileset_map.get_object_by_name("Stairs")
-    # STAIRS_DOWN_X_OFFSET x  STAIRS_DOWN_Y_OFFSET
-    stairs_obj.x = (MARGIN + end[0] * SUBTILE_COLS + IMAGE_DIRECTION_TO_OFFSET[end_cell.image_index][0]) * TILE_SIZE
-    stairs_obj.y = (MARGIN + end[1] * SUBTILE_ROWS + IMAGE_DIRECTION_TO_OFFSET[end_cell.image_index][1]) * TILE_SIZE
-    stairs_obj.to_map = f"{current_map_name}_{(current_map_level + 1):02d}"
-    stairs_obj.entry_point = "Entry"
+    if current_map_level < max_level:
+        stairs_obj.x = (MARGIN + end[0] * SUBTILE_COLS + IMAGE_DIRECTION_TO_OFFSET[end_cell.image_index][0]) * TILE_SIZE
+        stairs_obj.y = (MARGIN + end[1] * SUBTILE_ROWS + IMAGE_DIRECTION_TO_OFFSET[end_cell.image_index][1]) * TILE_SIZE
+        stairs_obj.to_map = f"{current_map_name}_{(current_map_level + 1):02d}"
+        stairs_obj.entry_point = "Entry"
+    else:
+        # not accessible
+        stairs_obj.x = 0
+        stairs_obj.y = 0
 
     # position (point) where the player will show up after returning from deeper maze level (next to stairs down)
     re_entry_obj = clean_tileset_map.get_object_by_name("Re-Entry")
-    # RE_ENTRY_X_OFFSET x RE_ENTRY_Y_OFFSET
-    re_entry_obj.x = (MARGIN + end[0] * SUBTILE_COLS +  # noqa: W504
-                      IMAGE_DIRECTION_TO_POS_OFFSET[end_cell.image_index][0]) * TILE_SIZE + (TILE_SIZE // 2)
-    re_entry_obj.y = (MARGIN + end[1] * SUBTILE_ROWS +  # noqa: W504
-                      IMAGE_DIRECTION_TO_POS_OFFSET[end_cell.image_index][1]) * TILE_SIZE
+    if current_map_level < max_level:
+        re_entry_obj.x = (MARGIN + end[0] * SUBTILE_COLS +  # noqa: W504
+                          IMAGE_DIRECTION_TO_POS_OFFSET[end_cell.image_index][0]) * TILE_SIZE + (TILE_SIZE // 2)
+        re_entry_obj.y = (MARGIN + end[1] * SUBTILE_ROWS +  # noqa: W504
+                          IMAGE_DIRECTION_TO_POS_OFFSET[end_cell.image_index][1]) * TILE_SIZE
+    else:
+        re_entry_obj.x = 0
+        re_entry_obj.y = 0
 
     new_cols_cnt = (maze.num_cols * SUBTILE_COLS) + (2 * MARGIN)
     new_rows_cnt = (maze.num_rows * SUBTILE_ROWS) + (2 * MARGIN)
@@ -942,14 +948,14 @@ def build_tileset_map_from_maze(
     # stairs_id = get_gid_from_tmx_id(STAIRS_CELL, clean_tileset_map)
 
     # place stairs down sprite
-    # if current_map_level > 1:
-    cell = maze.cell_rows[end[1]][end[0]]
-    idx = IMAGE_DIRECTION_TO_IDX["stairs_down"][cell.image_index]
+    if current_map_level < max_level:
+        cell = maze.cell_rows[end[1]][end[0]]
+        idx = IMAGE_DIRECTION_TO_IDX["stairs_down"][cell.image_index]
 
-    x = MARGIN + end[0] * SUBTILE_COLS + IMAGE_DIRECTION_TO_OFFSET[cell.image_index][0]
-    y = MARGIN + end[1] * SUBTILE_COLS + IMAGE_DIRECTION_TO_OFFSET[cell.image_index][1]
+        x = MARGIN + end[0] * SUBTILE_COLS + IMAGE_DIRECTION_TO_OFFSET[cell.image_index][0]
+        y = MARGIN + end[1] * SUBTILE_COLS + IMAGE_DIRECTION_TO_OFFSET[cell.image_index][1]
 
-    floor_decors_layer.data[y][x] = idx  # STAIRS_TYPES_IDX["stairs_down"]["west"]
+        floor_decors_layer.data[y][x] = idx  # STAIRS_TYPES_IDX["stairs_down"]["west"]
 
     clean_tileset_map.width = new_cols_cnt
     clean_tileset_map.height = new_rows_cnt

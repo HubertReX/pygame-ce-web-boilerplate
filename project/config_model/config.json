@@ -95,6 +95,78 @@
             "weight": 0.02,
             "value": 1000
         },
+        "gem_small_green": {
+            "name": "Green small gem",
+            "type": "gem",
+            "weight": 1,
+            "value": 10
+        },
+        "gem_crystal_green": {
+            "name": "Green crystal gem",
+            "type": "gem",
+            "weight": 2,
+            "value": 20
+        },
+        "gem_big_green": {
+            "name": "Green big gem",
+            "type": "gem",
+            "weight": 3,
+            "value": 30
+        },
+        "gem_small_purple": {
+            "name": "Purple small gem",
+            "type": "gem",
+            "weight": 1,
+            "value": 20
+        },
+        "gem_crystal_purple": {
+            "name": "Purple crystal gem",
+            "type": "gem",
+            "weight": 2,
+            "value": 40
+        },
+        "gem_big_purple": {
+            "name": "Purple big gem",
+            "type": "gem",
+            "weight": 3,
+            "value": 60
+        },
+        "gem_small_blue": {
+            "name": "Blue small gem",
+            "type": "gem",
+            "weight": 1,
+            "value": 40
+        },
+        "gem_crystal_blue": {
+            "name": "Blue crystal gem",
+            "type": "gem",
+            "weight": 2,
+            "value": 60
+        },
+        "gem_big_blue": {
+            "name": "Blue big gem",
+            "type": "gem",
+            "weight": 3,
+            "value": 80
+        },
+        "gem_small_orange": {
+            "name": "Orange small gem",
+            "type": "gem",
+            "weight": 1,
+            "value": 60
+        },
+        "gem_crystal_orange": {
+            "name": "Orange crystal gem",
+            "type": "gem",
+            "weight": 2,
+            "value": 80
+        },
+        "gem_big_orange": {
+            "name": "Orange big gem",
+            "type": "gem",
+            "weight": 3,
+            "value": 90
+        },
         "silver_key": {
             "name": "Silver key",
             "type": "key",
@@ -457,26 +529,92 @@
         }
     },
     "chests": {
-        "SmallChest_Maze": {
-            "name": "SmallChest_Maze",
+        "SmallChest_Maze_01": {
+            "name": "SmallChest_Maze_01",
             "total_items_count": 1,
             "random_items": [
-                "golden_coin",
-                "life_pot",
+                "gem_small_green",
+                "gem_crystal_green",
                 "shrimp"
             ]
         },
-        "BigChest_Maze": {
-            "name": "BigChest_Maze",
+        "BigChest_Maze_01": {
+            "name": "BigChest_Maze_01",
             "is_small": false,
             "items": [
-                "life_pot"
+                "gem_big_green"
             ],
             "total_items_count": 3,
             "random_items": [
                 "golden_coin",
-                "fish",
-                "shashlik"
+                "life_pot",
+                "fish"
+            ]
+        },
+        "SmallChest_Maze_02": {
+            "name": "SmallChest_Maze_02",
+            "total_items_count": 1,
+            "random_items": [
+                "gem_small_purple",
+                "gem_crystal_purple",
+                "shrimp"
+            ]
+        },
+        "BigChest_Maze_02": {
+            "name": "BigChest_Maze_02",
+            "is_small": false,
+            "items": [
+                "gem_big_purple"
+            ],
+            "total_items_count": 3,
+            "random_items": [
+                "golden_coin",
+                "life_pot",
+                "fish"
+            ]
+        },
+        "SmallChest_Maze_03": {
+            "name": "SmallChest_Maze_03",
+            "total_items_count": 1,
+            "random_items": [
+                "gem_small_blue",
+                "gem_crystal_blue",
+                "shrimp"
+            ]
+        },
+        "BigChest_Maze_03": {
+            "name": "BigChest_Maze_03",
+            "is_small": false,
+            "items": [
+                "gem_big_blue"
+            ],
+            "total_items_count": 3,
+            "random_items": [
+                "golden_coin",
+                "life_pot",
+                "fish"
+            ]
+        },
+        "SmallChest_Maze_04": {
+            "name": "SmallChest_Maze_04",
+            "total_items_count": 1,
+            "random_items": [
+                "gem_small_orange",
+                "gem_crystal_orange",
+                "shrimp"
+            ]
+        },
+        "BigChest_Maze_04": {
+            "name": "BigChest_Maze_04",
+            "is_small": false,
+            "items": [
+                "gem_big_orange"
+            ],
+            "total_items_count": 3,
+            "random_items": [
+                "golden_coin",
+                "life_pot",
+                "fish"
             ]
         },
         "SmallChest_VillageHouse": {
@@ -503,6 +641,8 @@
             "boss_monster": "CaveLion",
             "monsters_count": 4,
             "small_chest_count": 2,
+            "small_chest_template": "SmallChest_Maze_01",
+            "big_chest_template": "BigChest_Maze_01",
             "maze_cols": 9,
             "maze_rows": 6
         },
@@ -514,6 +654,8 @@
             "boss_monster": "CaveLion2",
             "monsters_count": 5,
             "small_chest_count": 3,
+            "small_chest_template": "SmallChest_Maze_02",
+            "big_chest_template": "BigChest_Maze_02",
             "maze_cols": 10,
             "maze_rows": 7
         },
@@ -526,6 +668,8 @@
             "boss_monster": "LionYellow",
             "monsters_count": 6,
             "small_chest_count": 4,
+            "small_chest_template": "SmallChest_Maze_03",
+            "big_chest_template": "BigChest_Maze_03",
             "maze_cols": 11,
             "maze_rows": 8
         },
@@ -539,6 +683,8 @@
             "boss_monster": "Flam",
             "monsters_count": 7,
             "small_chest_count": 5,
+            "small_chest_template": "SmallChest_Maze_04",
+            "big_chest_template": "BigChest_Maze_04",
             "maze_cols": 12,
             "maze_rows": 9
         }
