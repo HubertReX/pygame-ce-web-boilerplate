@@ -1,36 +1,11 @@
 import json
 from dataclasses import dataclass, field
-from enum import Enum, IntEnum, StrEnum, auto
 from os import PathLike
 from pathlib import Path
 from typing import Annotated, Any, Dict, List, Literal, Tuple
 
-# from pydantic import BaseModel, PositiveInt, Field, ValidationError
+from enums import AttitudeEnum, ItemTypeEnum, RaceEnum
 
-###################################################################################################################
-
-
-class RaceEnum(StrEnum):
-    humanoid = auto()
-    animal = auto()
-    monster = auto()
-
-###################################################################################################################
-
-
-class AttitudeEnum(StrEnum):
-    friendly = auto()
-    afraid = auto()
-    enemy = auto()
-
-###################################################################################################################
-
-
-class ItemTypeEnum(StrEnum):
-    weapon = auto()
-    key = auto()
-    consumable = auto()
-    money = auto()
 
 # https://docs.python.org/3/library/enum.html#enum.Enum
 # class ToolEnum(IntEnum):

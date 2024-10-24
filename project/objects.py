@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from enum import StrEnum, auto
 import random
 from typing import Callable
 import pygame
@@ -16,14 +15,11 @@ from settings import (
     TRANSPARENT_COLOR,
     load_image,
 )
-
-import game
+from enums import AttitudeEnum, ItemTypeEnum, NotificationTypeEnum
 if IS_WEB:
-    from config_model.config import AttitudeEnum, Character, Item
-    from config_model.config import ItemTypeEnum, Chest
+    from config_model.config import Character, Item, Chest
 else:
-    from config_model.config_pydantic import AttitudeEnum, Character, Item  # type: ignore[assignment]
-    from config_model.config_pydantic import ItemTypeEnum, Chest  # type: ignore[assignment]
+    from config_model.config_pydantic import Character, Item, Chest  # type: ignore[assignment]
 
 #################################################################################################################
 
@@ -472,16 +468,6 @@ class DestructibleSprite(Object):
         # self.name = model.name
         # self.is_closed = True
 
-#################################################################################################################
-
-
-class NotificationTypeEnum(StrEnum):
-    debug = auto()
-    info = auto()
-    warning = auto()
-    error = auto()
-    success = auto()
-    failure = auto()
 
 ################################################################################################################
 

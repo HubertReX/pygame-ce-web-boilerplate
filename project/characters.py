@@ -9,7 +9,6 @@ from rich import print
 import pygame
 from maze_generator.maze_utils import a_star_cached
 from pygame.math import Vector2 as vec
-from config_model.config import RaceEnum
 from settings import (
     INVENTORY_ITEM_SCALE,
     MAX_NO_ATTEMPTS_TO_FIND_RANDOM_POS,
@@ -44,11 +43,11 @@ from settings import (
     tuple_to_vector,
     vector_to_tuple,
 )
-
+from enums import AttitudeEnum, ItemTypeEnum, RaceEnum
 if IS_WEB:
-    from config_model.config import AttitudeEnum, Character, ItemTypeEnum
+    from config_model.config import Character
 else:
-    from config_model.config_pydantic import AttitudeEnum, Character, ItemTypeEnum  # type: ignore[assignment]
+    from config_model.config_pydantic import Character  # type: ignore[assignment]
 
 import game
 import npc_state
