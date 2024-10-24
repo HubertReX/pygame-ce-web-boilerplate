@@ -273,8 +273,8 @@
                 "gem_crystal_purple",
                 "gem_big_purple"
             ],
-            "max_carry_weight": 30,
-            "money": 200
+            "max_carry_weight": 100,
+            "money": 3000
         },
         "Fred": {
             "name": "Fred",
@@ -298,8 +298,8 @@
                 "shrimp",
                 "shrimp"
             ],
-            "max_carry_weight": 100,
-            "money": 3000
+            "max_carry_weight": 30,
+            "money": 200
         },
         "Rob": {
             "name": "Rob",
