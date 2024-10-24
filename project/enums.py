@@ -1,4 +1,4 @@
-from enum import StrEnum, auto
+from enum import Enum, StrEnum, auto
 
 
 ###################################################################################################################
@@ -26,6 +26,18 @@ class ItemTypeEnum(StrEnum):
     consumable = auto()
     money = auto()
     gem = auto()
+
+#################################################################################################################
+
+
+class NPCEventActionEnum(Enum):
+    stunned: int  = auto()
+    pushed: int   = auto()
+    standard: int = auto()
+    resting: int   = auto()
+    attacking: int = auto()
+    switching_weapon: int = auto()
+
 
 #################################################################################################################
 

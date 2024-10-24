@@ -4,7 +4,13 @@ from pathlib import Path
 from typing import Annotated, Any
 from rich import print
 from pydantic import BaseModel, ConfigDict, Field, PositiveInt, ValidationError
-from enums import AttitudeEnum, ItemTypeEnum, RaceEnum
+try:
+    from enums import AttitudeEnum, ItemTypeEnum, RaceEnum
+except Exception:
+    # when script run as stand alone to update config schema
+    import sys
+    sys.path.append("..")
+    from enums import AttitudeEnum, ItemTypeEnum, RaceEnum
 
 
 # https://docs.python.org/3/library/enum.html#enum.Enum
@@ -46,6 +52,7 @@ class Character(BaseModel):
     )
     race:          Annotated[RaceEnum,     Field(description="Base character race (e.g. humanoid, animal)")]
     attitude:      Annotated[AttitudeEnum, Field(description="Attitude towards the player", repr=False)]
+    is_merchant:   Annotated[bool,         Field(False, description="Flag if NPC can trade items", repr=False)]
     allowed_zones: Annotated[list[str],    Field(
         description="Zones where the character is allowed to move", repr=False, default_factory = list)]
     health:        Annotated[int,          Field(30, ge=0, description="initial health value", repr=False)]

@@ -62,6 +62,7 @@ class Character():
     sprite:          str = field(repr=False)
     race:             RaceEnum
     attitude:         AttitudeEnum
+    is_merchant:      Annotated[bool,      field(repr=False)]
     allowed_zones:    Annotated[list[str], field(repr=False)]
     health:           Annotated[int,       field(repr=False)]
     max_health:       Annotated[int,       field(repr=False)]
@@ -79,6 +80,7 @@ class Character():
             sprite = data.get("sprite", ""),
             race = RaceEnum(data.get("race", "")),
             attitude = AttitudeEnum(data.get("attitude", "")),
+            is_merchant = data.get("is_merchant", False),
             allowed_zones = data.get("allowed_zones", []),
             health = data.get("health", 30),
             max_health = data.get("max_health", 30),

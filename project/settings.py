@@ -137,7 +137,7 @@ INITIAL_HOUR: int = 9
 # game time speed (N game hours / 1 real time second)
 GAME_TIME_SPEED: float = 0.25
 # how many seconds a notification will be displayed
-NOTIFICATION_DURATION: float = 10.0
+NOTIFICATION_DURATION: float = 5.0
 # probability that NPC will rest [%]
 SHOULD_NPC_REST_PROBABILITY: int = 15
 # how long (min) will NPC rest [s]
@@ -213,9 +213,9 @@ STYLE_TAGS_DICT: dict[str, str] = {
 
 
 ACTIONS: dict[str, dict[str, Any]] = {
-    "quit":   {"show": ["key_Esc", "key_Q"], "msg": "main menu",   "keys": [pygame.K_ESCAPE,    pygame.K_q]},
-    "debug":  {"show": ["key_`", "key_Z"],   "msg": "debug",       "keys": [pygame.K_BACKQUOTE, pygame.K_z]},
-    "alpha":  {"show": ["key_B"],            "msg": "filter",      "keys": [pygame.K_b]},
+    "quit":      {"show": ["key_Esc", "key_Q"], "msg": "main menu", "keys": [pygame.K_ESCAPE,    pygame.K_q]},
+    "debug":     {"show": ["key_`", "key_Z"],   "msg": "debug",     "keys": [pygame.K_BACKQUOTE, pygame.K_z]},
+    "alpha":     {"show": ["key_B"],            "msg": "filter",    "keys": [pygame.K_b]},
     # "shaders_toggle": {"show": ["g"],        "msg": "shader 0/1",  "keys": [pygame.K_g]},
     # "next_shader":    {"show": [".", ">"],   "msg": "next shader", "keys": [pygame.K_PERIOD]},
     "run":       {"show": ["key_Shift"], "msg": "toggle run",  "keys": [pygame.K_LSHIFT, pygame.K_RSHIFT]},
@@ -223,6 +223,11 @@ ACTIONS: dict[str, dict[str, Any]] = {
     "fly":       {"show": None,          "msg": "toggle fly",  "keys": [pygame.K_LALT, pygame.K_RALT]},
     "open":      {"show": ["key_Space"], "msg": "open",        "keys": [pygame.K_SPACE]},
     "attack":    {"show": ["key_Space"], "msg": "attack",      "keys": [pygame.K_SPACE]},
+    "trade":     {"show": ["key_Space"], "msg": "trade",       "keys": [pygame.K_SPACE]},
+    "end_trade": {"show": ["key_Esc", "key_Q"], "msg": "end trade", "keys": [pygame.K_ESCAPE,    pygame.K_q]},
+    "buy":       {"show": ["key_F"],     "msg": "buy",         "keys": [pygame.K_f]},
+    "sell":      {"show": ["key_F"],     "msg": "sell",        "keys": [pygame.K_f]},
+    "toggle":    {"show": ["key_E"],     "msg": "toggle",      "keys": [pygame.K_e]},
     "talk":      {"show": ["key_Space"], "msg": "talk",        "keys": [pygame.K_SPACE]},
     "pick_up":   {"show": ["key_E"],     "msg": "pick up",     "keys": [pygame.K_e]},
     "drop":      {"show": ["key_X"],     "msg": "drop",        "keys": [pygame.K_x]},
@@ -678,6 +683,8 @@ EMOTE_SHEET_DEFINITION = {
     "B":                    [(0, 7)],
     "X":                    [(1, 7)],
     "Y":                    [(2, 7)],
+    "$":                    [(3, 7)],
+    "$_anim":               [(3, 7), (4, 7), (5, 7), (4, 7)],
 }
 
 ITEMS_SHEET_DEFINITION = {

@@ -493,7 +493,7 @@
   <object id="39" name="BigChest_Village_IMG" gid="2749" x="880" y="736" width="16" height="16"/>
  </objectgroup>
  <objectgroup id="5" name="entry_points">
-  <object id="1" name="start" x="920" y="704">
+  <object id="1" name="start" x="800" y="745.6">
    <point/>
   </object>
   <object id="14" name="VillageHouseDoor" x="680" y="752">
@@ -510,13 +510,13 @@
   <object id="12" name="Rob" x="1032" y="904">
    <polyline points="0.106,0.181 0.106,-47.819 0.106,0.181"/>
   </object>
-  <object id="8" name="Bart" x="760" y="744">
+  <object id="8" name="Bart_BCKP" x="760" y="744">
    <polygon points="0,0 0,192 240,192 240,-32 160,-32 160,-32 160,-32 160,0"/>
   </object>
   <object id="17" name="Fred" x="649.5" y="841.875">
    <polygon points="-1.5,-17.875 -1.5,46.125 -57.5,46.125 -169.5,-81.875 -193.5,-81.875 -161.5,-81.875 -161.5,-41.875 -161.5,-17.875 -137.5,-17.875 -65.5,62.125 -1.5,62.125"/>
   </object>
-  <object id="9" name="Johny" x="697.053" y="742.066">
+  <object id="9" name="Johny_BCKP" x="697.053" y="742.066">
    <polygon points="-1.053,1.934 222.947,1.934 222.947,-30.066 334.947,-30.066 334.947,-62.066 366.947,-62.066 366.947,-30.066 366.947,-62.066 334.947,-62.066 334.947,-30.066 222.947,-30.066 222.947,1.934 -17.053,1.934 -17.053,-14.066"/>
   </object>
   <object id="16" name="Marry" x="799" y="814.75">

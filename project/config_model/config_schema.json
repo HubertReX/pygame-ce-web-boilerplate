@@ -40,6 +40,12 @@
                     ],
                     "description": "Attitude towards the player"
                 },
+                "is_merchant": {
+                    "default": false,
+                    "description": "Flag if NPC can trade items",
+                    "title": "Is Merchant",
+                    "type": "boolean"
+                },
                 "allowed_zones": {
                     "description": "Zones where the character is allowed to move",
                     "items": {

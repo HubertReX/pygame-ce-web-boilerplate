@@ -43,7 +43,7 @@ from settings import (
     tuple_to_vector,
     vector_to_tuple,
 )
-from enums import AttitudeEnum, ItemTypeEnum, RaceEnum
+from enums import AttitudeEnum, ItemTypeEnum, RaceEnum, NPCEventActionEnum
 if IS_WEB:
     from config_model.config import Character
 else:
@@ -55,17 +55,6 @@ import scene
 import splash_screen
 from objects import ChestSprite, EmoteSprite, HealthBar, HealthBarUI, ItemSprite, NotificationTypeEnum, Shadow
 from animation.transitions import AnimationTransition
-
-#################################################################################################################
-
-
-class NPCEventActionEnum(Enum):
-    stunned: int  = auto()
-    pushed: int   = auto()
-    standard: int = auto()
-    resting: int   = auto()
-    attacking: int = auto()
-    switching_weapon: int = auto()
 
 
 #################################################################################################################
@@ -216,6 +205,19 @@ class NPC(pygame.sprite.Sprite):
 
         self.load_items()
 
+    #############################################################################################################
+    def select_next_item(self) -> None:
+        if len(self.items) > 0:
+            self.selected_item_idx += 1
+            if self.selected_item_idx >= len(self.items):
+                self.selected_item_idx = 0
+
+    #############################################################################################################
+    def select_prev_item(self) -> None:
+        if len(self.items) > 0:
+            self.selected_item_idx -= 1
+            if self.selected_item_idx < 0:
+                self.selected_item_idx = len(self.items) - 1
     #############################################################################################################
 
     def register_custom_event(self) -> None:
@@ -973,6 +975,8 @@ class NPC(pygame.sprite.Sprite):
     def set_emote(self, emote: str) -> None:
         if self.has_dialog and str(self.state) in ["Idle", "Bored", "Walk", "Run"]:
             self.emote.set_emote("dots_anim")
+        elif self.model.is_merchant and str(self.state) in ["Idle", "Bored", "Walk", "Run"]:
+            self.emote.set_emote("$_anim")
         else:
             self.emote.set_emote(emote)
 
@@ -1101,7 +1105,84 @@ class NPC(pygame.sprite.Sprite):
         return result
 
     #############################################################################################################
-    def drop_item(self) -> ItemSprite | None:
+    def can_buy(self) -> bool:
+        if (
+            not self.npc_met or not self.npc_met.items or self.npc_met.selected_item_idx < 0
+        ):
+            return False
+
+        selected_item = self.npc_met.items[self.npc_met.selected_item_idx]
+
+        if self.model.money < selected_item.model.value:
+            self.scene.add_notification(
+                f"You can't buy '[item]{
+                    selected_item.model.name}[/item]' - not enough money :red_exclamation_anim:",
+                scene.NotificationTypeEnum.failure)
+            return False
+
+        if self.model.max_carry_weight < self.total_items_weight + selected_item.model.weight:
+            self.scene.add_notification(
+                f"You can't buy '[item]{
+                    selected_item.model.name}[/item]' - too heavy :red_exclamation_anim:",
+                scene.NotificationTypeEnum.failure)
+            return False
+
+        found = False
+        for owned_item in self.items:
+            if owned_item.name == selected_item.name:
+                found = True
+                break
+
+        if not found and len(self.items) == MAX_HOTBAR_ITEMS:
+            self.scene.add_notification(
+                f"You can't buy '[item]{
+                    selected_item.model.name}[/item]' - no free items slots :red_exclamation_anim:",
+                scene.NotificationTypeEnum.failure)
+            return False
+
+        return True
+
+    #############################################################################################################
+    def can_sell(self) -> bool:
+        if (
+            not self.items or self.selected_item_idx < 0 or self.selected_item_idx > len(
+                self.items) - 1 or not self.npc_met
+        ):
+            return False
+
+        selected_item = self.items[self.selected_item_idx]
+
+        if self.npc_met.model.money < selected_item.model.value:
+            self.scene.add_notification(
+                f"Merchant can't buy '[item]{
+                    selected_item.model.name}[/item]' - not enough money :red_exclamation_anim:",
+                scene.NotificationTypeEnum.failure)
+            return False
+
+        if self.npc_met.model.max_carry_weight < self.npc_met.total_items_weight + selected_item.model.weight:
+            self.scene.add_notification(
+                f"Merchant can't buy '[item]{
+                    selected_item.model.name}[/item]' - too heavy :red_exclamation_anim:",
+                scene.NotificationTypeEnum.failure)
+            return False
+
+        found = False
+        for owned_item in self.npc_met.items:
+            if owned_item.name == selected_item.name:
+                found = True
+                break
+
+        if not found and len(self.npc_met.items) == MAX_HOTBAR_ITEMS:
+            self.scene.add_notification(
+                f"Merchant can't buy '[item]{
+                    selected_item.model.name}[/item]' - no free items slots :red_exclamation_anim:",
+                scene.NotificationTypeEnum.failure)
+            return False
+
+        return True
+
+    #############################################################################################################
+    def drop_item(self, show: bool = True) -> ItemSprite | None:
         if (
             not self.items or self.selected_item_idx < 0 or self.selected_item_idx > len(self.items) - 1
         ):
@@ -1115,7 +1196,7 @@ class NPC(pygame.sprite.Sprite):
             org_item.model.count -= 1
 
             # selected_item = copy.copy(org_item)
-            selected_item = self.scene.create_item(org_item.name, int(self.pos[0]), int(self.pos[1]))
+            selected_item = self.scene.create_item(org_item.name, int(self.pos[0]), int(self.pos[1]), show=show)
             # selected_item.rect = org_item.rect.copy()
             # selected_item.model = copy.copy(org_item.model)
             # selected_item.model.count = 1
@@ -1126,8 +1207,11 @@ class NPC(pygame.sprite.Sprite):
                 self.selected_weapon = None
 
             self.items.remove(selected_item)
-            self.scene.item_sprites.add(selected_item)
-            selected_item.rect.center = self.pos  # type: ignore[assignment]
+
+            if show:
+                self.scene.item_sprites.add(selected_item)
+                selected_item.rect.center = self.pos  # type: ignore[assignment]
+
             if self.selected_item_idx >= len(self.items):
                 self.selected_item_idx -= 1
         # item = self.items.pop(-1)
@@ -1203,8 +1287,11 @@ class Player(NPC):
                     self.scene.group.add(item, layer=self.scene.sprites_layer - 1)
             INPUTS["open"] = False
         elif INPUTS["talk"]:
-            if self.npc_met and self.npc_met.has_dialog and not self.is_talking:
-                self.scene.ui.activate_dialog_panel(self.npc_met.dialogs or "")
+            if self.npc_met and (self.npc_met.has_dialog or self.npc_met.model.is_merchant) and not self.is_talking:
+                if self.npc_met.has_dialog:
+                    self.scene.ui.activate_dialog_panel(self.npc_met.dialogs or "")
+                else:
+                    self.scene.ui.activate_trade_panel()
                 self.is_talking = True
                 self.npc_met.is_talking = True
             INPUTS["talk"] = False

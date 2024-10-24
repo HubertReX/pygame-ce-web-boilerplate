@@ -264,7 +264,17 @@
             "sprite": "Villager1",
             "race": "humanoid",
             "attitude": "friendly",
-            "money": 20
+            "is_merchant": true,
+            "items": [
+                "gem_small_green",
+                "gem_crystal_green",
+                "gem_big_green",
+                "gem_small_purple",
+                "gem_crystal_purple",
+                "gem_big_purple"
+            ],
+            "max_carry_weight": 30,
+            "money": 200
         },
         "Fred": {
             "name": "Fred",
@@ -278,7 +288,18 @@
             "sprite": "Villager3",
             "race": "humanoid",
             "attitude": "friendly",
-            "money": 20
+            "is_merchant": true,
+            "items": [
+                "life_pot",
+                "life_pot",
+                "life_pot",
+                "shashlik",
+                "fish",
+                "shrimp",
+                "shrimp"
+            ],
+            "max_carry_weight": 100,
+            "money": 3000
         },
         "Rob": {
             "name": "Rob",

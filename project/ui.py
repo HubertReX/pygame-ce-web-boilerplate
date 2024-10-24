@@ -13,7 +13,7 @@ from sftext.sftext import SFText
 
 
 if TYPE_CHECKING:
-    from characters import Player
+    from characters import Player, NPC
     from game import Game
     from scene import Scene
 
@@ -77,7 +77,7 @@ class UI:
         self.inventory_slot: InventorySlot = InventorySlot(
             None,
             (WIDTH // 2 - (INVENTORY_ITEM_WIDTH * MAX_HOTBAR_ITEMS // 2),
-             HEIGHT - INVENTORY_ITEM_WIDTH - 12),
+             HEIGHT - INVENTORY_ITEM_WIDTH - TILE_SIZE),
             INVENTORY_ITEM_SCALE
         )
 
@@ -96,8 +96,39 @@ class UI:
         weapon_s = 24 + TILE_SIZE * 8
         self.weapon_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(weapon_s, weapon_s)
         self.stats_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(300, 190)
-        self.inventory_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(800, 200)
-        pygame.draw.line(self.inventory_bg, (70, 64, 46), (400, 70), (400, 200 - 40), 4)
+
+        self.inventory_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(800, 320)
+        self.inventory_bg_rect = self.inventory_bg.get_rect()
+        top_left = (WIDTH // 2 - (self.inventory_bg_rect.width // 2), HEIGHT - 320)
+        self.inventory_bg_rect.topleft = top_left
+        # topleft=top_left
+        pygame.draw.line(self.inventory_bg, (70, 64, 46),
+                         (self.inventory_bg_rect.width // 2, 70),
+                         (self.inventory_bg_rect.width // 2, 160),
+                         4)
+        pygame.draw.line(self.inventory_bg, (70, 64, 46),
+                         (40, 180),
+                         (self.inventory_bg_rect.width - 40, 180),
+                         4)
+
+        self.trader_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(800, 520)
+        self.trader_bg_rect = self.trader_bg.get_rect()
+        top_left = (WIDTH // 2 - (self.trader_bg_rect.width // 2), 50)
+        self.trader_bg_rect.topleft = top_left
+        # topleft=top_left
+        pygame.draw.line(self.trader_bg, (70, 64, 46),
+                         (self.trader_bg_rect.width // 2, self.trader_bg_rect.height - 40 - 100),
+                         (self.trader_bg_rect.width // 2, self.trader_bg_rect.height - 40),
+                         4)
+        pygame.draw.line(self.trader_bg, (70, 64, 46),
+                         (40, 330),
+                         (self.trader_bg_rect.width - 40, 330),
+                         4)
+
+        self.trader_small_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(800, 340)
+        self.trader_small_bg_rect = self.trader_small_bg.get_rect()
+        top_left = (WIDTH // 2 - (self.trader_small_bg_rect.width // 2), 50)
+        self.trader_small_bg_rect.topleft = top_left
 
         show_actions = [action for action in ACTIONS.values() if action["show"]]
         help_w = int((len(show_actions) + 2) * FONT_SIZE_MEDIUM * 2.1)
@@ -113,6 +144,8 @@ class UI:
         self.show_inventory_panel_flag: bool = False
         self.show_modal_panel_flag: bool = False
         self.show_dialog_panel_flag: bool = False
+        self.show_trade_panel_flag: bool = False
+        self.is_buying: bool = True
         self.show_nine_patch_test: bool = False
 
         if self.show_nine_patch_test:
@@ -220,6 +253,7 @@ class UI:
     def reset(self) -> None:
         self.show_modal_panel_flag = False
         self.show_dialog_panel_flag = False
+        self.show_trade_panel_flag = False
 
         self.modal_panel.formatted_text.scroll_top()
 
@@ -234,7 +268,8 @@ class UI:
         font: pygame.font.Font | None = None,
         align: str = "left",
         color: pygame._common.ColorValue | None = None,
-        border: bool = False
+        shadow: bool = True,
+        border: pygame._common.ColorValue = PANEL_BG_COLOR
     ) -> None:
         if not font:
             font = self.font
@@ -252,8 +287,21 @@ class UI:
             text_rect = text_surf.get_rect(topright = pos)
 
         if border:
-            border_surf = font.render(str(text), False, PANEL_BG_COLOR)
-            self.display_surface.blit(border_surf, text_rect.move(2, 2))
+            border_surf = font.render(str(text), False, border)
+            # self.display_surface.blit(border_surf, text_rect.move(2, 2))
+
+            offset = 2 if shadow else 3
+            self.display_surface.blit(border_surf, (text_rect.x + offset, text_rect.y + offset))
+
+            if not shadow:
+                self.display_surface.blit(border_surf, (text_rect.x - offset, text_rect.y))
+                self.display_surface.blit(border_surf, (text_rect.x + offset, text_rect.y))
+                self.display_surface.blit(border_surf, (text_rect.x,          text_rect.y - offset))
+                self.display_surface.blit(border_surf, (text_rect.x,          text_rect.y + offset))
+
+                self.display_surface.blit(border_surf, (text_rect.x - offset, text_rect.y - offset))
+                self.display_surface.blit(border_surf, (text_rect.x + offset, text_rect.y - offset))
+                self.display_surface.blit(border_surf, (text_rect.x - offset, text_rect.y + offset))
 
         self.display_surface.blit(text_surf, text_rect)
 
@@ -282,52 +330,58 @@ class UI:
     #     pygame.draw.rect(surface, UI_BORDER_COLOR, bg_rect, UI_BORDER_WIDTH)
 
     #############################################################################################################
-    def show_hotbar(self) -> None:
+    def show_hotbar(self, npc: NPC, top_left: tuple[int, int], show_shortcuts: bool) -> None:
 
-        player: Player = self.scene.player
+        # npc: Player = self.scene.player
+        # top_left = self.inventory_slot.rect.topleft
         for i in range(MAX_HOTBAR_ITEMS):
-            tl = self.inventory_slot.rect.topleft
 
-            item_model = player.items[i].model if i < len(player.items) else None
+            item_model = npc.items[i].model if i < len(npc.items) else None
 
-            if player.selected_weapon and player.selected_weapon.model == item_model:
+            if npc.selected_weapon and npc.selected_weapon.model == item_model:
                 image = self.inventory_slot.image_selected
             else:
                 image = self.inventory_slot.image
             # background of slot
-            self.display_surface.blit(image, (tl[0] + i * INVENTORY_ITEM_WIDTH, tl[1]))
-            if i < len(player.items):
-                item: ItemSprite = player.items[i]
+            self.display_surface.blit(image, (top_left[0] + i * INVENTORY_ITEM_WIDTH, top_left[1]))
+            if i < len(npc.items):
+                # selector
+                if i == npc.selected_item_idx and show_shortcuts:
+                    self.display_surface.blit(self.inventory_slot.image_selector,
+                                              (top_left[0] + i * INVENTORY_ITEM_WIDTH, top_left[1]))
+
+                item: ItemSprite = npc.items[i]
                 if item.model.type == ItemTypeEnum.weapon:
                     image = item.image_directions["up"]
                 else:
                     image = item.image or pygame.Surface((TILE_SIZE, TILE_SIZE))
                 image = pygame.transform.scale_by(image, INVENTORY_ITEM_SCALE)
-                x_offset = 5  # size[0] // 2
-                y_offset = 9
+
+                x_offset = 10  # size[0] // 2
+                y_offset = 12
                 # item image
-                self.display_surface.blit(image, (x_offset + (tl[0] + i * INVENTORY_ITEM_WIDTH), y_offset + tl[1]))
+                self.display_surface.blit(
+                    image, (x_offset + (top_left[0] + i * INVENTORY_ITEM_WIDTH), y_offset + top_left[1]))
 
                 self.display_text(str(item.model.count),
-                                  (6 + tl[0] + i * INVENTORY_ITEM_WIDTH, 14 + tl[1]),
+                                  (12 + top_left[0] + i * INVENTORY_ITEM_WIDTH, 16 + top_left[1]),
                                   font=self.tiny_font,
-                                  border=True)
-            # selector
-            if i == player.selected_item_idx:
-                self.display_surface.blit(self.inventory_slot.image_selector, (tl[0] + i * INVENTORY_ITEM_WIDTH, tl[1]))
+                                  )
 
             # key shortcut
-            if i <= len(player.items) - 1:
-                self.display_surface.blit(
-                    self.icons_dict[f"key_{i + 1}"][0],
-                    (tl[0] + 2 + i * INVENTORY_ITEM_WIDTH + INVENTORY_ITEM_WIDTH // 4,
-                     tl[1] - 22))
+            if show_shortcuts:
+                if i <= len(npc.items) - 1:
+                    self.display_surface.blit(
+                        self.icons_dict[f"key_{i + 1}"][0],
+                        (top_left[0] + 2 + i * INVENTORY_ITEM_WIDTH + INVENTORY_ITEM_WIDTH // 4,
+                         top_left[1] - 22))
 
         # left/right hotbar selection key shortcut
-        h = 24
-        self.display_surface.blit(self.icons_dict["key_<"][0], ((tl[0] - 24), tl[1] + h))
-        self.display_surface.blit(self.icons_dict["key_>"][0], (
-                                  (tl[0] + MAX_HOTBAR_ITEMS * INVENTORY_ITEM_WIDTH - 16), tl[1] + h))
+        if show_shortcuts:
+            h = 24
+            self.display_surface.blit(self.icons_dict["key_<"][0], ((top_left[0] - 24), top_left[1] + h))
+            self.display_surface.blit(self.icons_dict["key_>"][0], (
+                (top_left[0] + MAX_HOTBAR_ITEMS * INVENTORY_ITEM_WIDTH - 16), top_left[1] + h))
 
     #############################################################################################################
 
@@ -443,7 +497,7 @@ class UI:
                                   (WIDTH - (2 * TILE_SIZE) - 16,
                                    HEIGHT - (2 * TILE_SIZE) - 14 - row_spacing))
         self.display_text(label, (WIDTH - TILE_SIZE - label_w - 40,
-                                  HEIGHT - (2 * TILE_SIZE) - 7 - row_spacing), border=True)
+                                  HEIGHT - (2 * TILE_SIZE) - 7 - row_spacing))
 
     #############################################################################################################
     def show_notification(self, notification: Notification, row: int) -> None:
@@ -493,6 +547,7 @@ class UI:
 
         if not self.show_help_info:
             self.show_action("help", 0)
+
         player: Player = self.scene.player
         if not player.is_flying and not player.is_attacking and not player.is_stunned:
 
@@ -522,13 +577,26 @@ class UI:
         if player.chest_in_range:
             self.show_action("open", 4, label="open chest")
         elif player.npc_met:
-            self.show_action("talk", 4)
+            if player.npc_met.has_dialog:
+                self.show_action("talk", 4)
+            elif player.npc_met.model.is_merchant:
+                self.show_action("trade", 4)
     #############################################################################################################
 
     def activate_dialog_panel(self, dialog_text: str) -> None:
         self.show_dialog_panel_flag = True
         self.dialog_panel.set_text(dialog_text)
         self.dialog_panel.formatted_text.scroll_top()
+
+    #############################################################################################################
+
+    def activate_trade_panel(self) -> None:
+        self.show_trade_panel_flag = True
+
+    #############################################################################################################
+
+    def deactivate_trade_panel(self) -> None:
+        self.show_trade_panel_flag = False
 
     #############################################################################################################
     # @timeit
@@ -561,6 +629,46 @@ class UI:
                 INPUTS["talk"] = False
                 # INPUTS["pick_up"] = False
 
+        if INPUTS["end_trade"]:
+            if self.show_trade_panel_flag:
+                self.show_trade_panel_flag = False
+                self.scene.player.is_talking = False
+                if self.scene.player.npc_met:
+                    self.scene.player.npc_met.is_talking = False
+                INPUTS["quit"] = False
+            INPUTS["end_trade"] = False
+
+        if INPUTS["toggle"]:
+            if self.show_trade_panel_flag:
+                self.is_buying = not self.is_buying
+            INPUTS["toggle"] = False
+
+        if INPUTS["buy"]:
+            if self.show_trade_panel_flag and self.scene.player.npc_met and self.is_buying:
+                if self.scene.player.can_buy():
+                    item = self.scene.player.npc_met.drop_item(show=False)
+                    if item:
+                        self.scene.player.model.money -= item.model.value
+                        self.scene.player.npc_met.model.money += item.model.value
+                        self.scene.player.pick_up(item)
+                        self.scene.add_notification(
+                            f"Bought '[item]{item.model.name}[/item]'",
+                            NotificationTypeEnum.info)
+            INPUTS["buy"] = False
+
+        if INPUTS["sell"]:
+            if self.show_trade_panel_flag and self.scene.player.npc_met and not self.is_buying:
+                if self.scene.player.can_sell():
+                    item = self.scene.player.drop_item(show=False)
+                    if item:
+                        self.scene.player.model.money += item.model.value
+                        self.scene.player.npc_met.model.money -= item.model.value
+                        self.scene.player.npc_met.pick_up(item)
+                        self.scene.add_notification(
+                            f"Sold '[item]{item.model.name}[/item]'",
+                            NotificationTypeEnum.info)
+            INPUTS["sell"] = False
+
         for event in events:
             if self.show_modal_panel_flag:
                 if event.type == pygame.KEYDOWN:
@@ -586,30 +694,24 @@ class UI:
     # @timeit
     def display_ui(self, elapsed_time: float) -> None:
         player: Player = self.scene.player
-        # upper left corner
-        # UI semitransparent background panel
-        # self.box(TILE_SIZE, TILE_SIZE, 450, 125)
-        self.show_stats_panel(player)
-
-        # left middle
-        # show notifications
-        for row, notification in enumerate(self.scene.notifications):
-            self.show_notification(notification, row)
 
         # upper right corner
         # FPS counter
         # self.box(WIDTH - 200, TILE_SIZE, 180, 10 + (25 * 1))
         # self.display_text(f"FPS: {self.game.fps:5.1f}", (WIDTH - 200 + 10, TILE_SIZE + 10))
 
+        if self.show_inventory_panel_flag:
+            self.show_inventory_panel(player)
+
         # lower left corner
         # weapon panel
-        if not self.show_dialog_panel_flag:
+        if not self.show_dialog_panel_flag and not self.show_trade_panel_flag:
             self.show_weapon_panel(player.selected_weapon, not player.can_switch_weapon, elapsed_time)
             # self.show_magic_panel(player.magic_index, not player.can_switch_magic)
 
             # middle lower and right upper
             # hot bar
-            self.show_hotbar()
+            self.show_hotbar(player, self.inventory_slot.rect.topleft, show_shortcuts=True)
 
             # middle upper
             # help panel
@@ -620,14 +722,24 @@ class UI:
                 # available actions key shortcuts
                 self.show_available_actions()
 
-        if self.show_inventory_panel_flag:
-            self.show_inventory_panel(player)
-
         if self.show_modal_panel_flag:
             self.show_modal_panel()
 
         if self.show_dialog_panel_flag:
             self.show_dialog_panel()
+
+        if self.show_trade_panel_flag:
+            self.show_trade_panel()
+
+        # left middle
+        # show notifications
+        for row, notification in enumerate(self.scene.notifications):
+            self.show_notification(notification, row)
+
+        # upper left corner
+        # UI semitransparent background panel
+        # self.box(TILE_SIZE, TILE_SIZE, 450, 125)
+        self.show_stats_panel(player)
 
         if self.show_nine_patch_test:
             # self.display_surface.blit(self.np_01, (200, 100))
@@ -661,7 +773,6 @@ class UI:
             self.display_text(
                 property["value"],
                 color=(0, 197, 199),
-                border=True,
                 pos=(top_left[0] + 3 * TILE_SIZE + left_margin, top_left[1] + top_margin + row_height * row))
 
     #############################################################################################################
@@ -700,6 +811,24 @@ class UI:
         self.display_surface.blit(hb.image, hb.rect)
 
     #############################################################################################################
+    def show_merchant_stats_panel(self, npc: NPC, top_left: tuple[int, int]) -> None:
+        # top_left = (TILE_SIZE, TILE_SIZE)
+
+        properties = [
+            {
+                "icon_name": "pan_balance",
+                "value": f"{npc.total_items_weight:4.2f}/{npc.model.max_carry_weight:4.2f}",
+            },
+            {
+                "icon_name": "golden_coin",
+                "value": f"{npc.model.money}",
+            },
+        ]
+
+        for row, property in enumerate(properties):
+            self.show_icon_value(top_left, row, property)
+
+    #############################################################################################################
 
     def show_icon_label_value(self, top_left: tuple[int, int], row: int, property: dict[str, str]) -> None:
         left_margin = 30
@@ -720,24 +849,38 @@ class UI:
             self.display_text(
                 property["label"],
                 color=(255, 255, 255),
-                border=True,
                 pos=(top_left[0] + 3 * TILE_SIZE + left_margin, top_left[1] + top_margin + row_height * row))
 
         if property["value"]:
             self.display_text(
                 property["value"],
                 color=(0, 197, 199),
-                border=True,
                 pos=(top_left[0] + 20 * TILE_SIZE + left_margin, top_left[1] + top_margin + row_height * row),
                 align="right")
 
     #############################################################################################################
-    def show_inventory_panel(self, player: Player) -> None:
-        top_left = (-400 + WIDTH // 2, HEIGHT - 350)
-        self.display_surface.blit(self.inventory_bg, top_left)
+    def show_inventory_panel(self, npc: NPC) -> None:
+        # top_left = (-400 + WIDTH // 2, HEIGHT - 350)
+        if self.show_inventory_panel_flag:
+            background = self.inventory_bg
+            top_left = self.inventory_bg_rect.topleft
+            properties_top_left = top_left
+        else:
+            if self.is_buying:
+                background = self.trader_bg
+                top_left = self.trader_bg_rect.topleft
+                properties_top_left = (top_left[0], self.trader_bg_rect.height - 150)
+            else:
+                background = self.inventory_bg
+                top_left = self.inventory_bg_rect.topleft
+                properties_top_left = top_left
 
-        if player.selected_item_idx >= 0:
-            item_model = player.items[player.selected_item_idx].model
+                self.display_surface.blit(self.trader_small_bg, self.trader_small_bg_rect.topleft)
+
+        self.display_surface.blit(background, top_left)
+
+        if npc.selected_item_idx >= 0:
+            item_model = npc.items[npc.selected_item_idx].model
         else:
             return
 
@@ -765,7 +908,7 @@ class UI:
         ]
 
         for row, property in enumerate(left_properties):
-            self.show_icon_label_value(top_left, row, property)
+            self.show_icon_label_value(properties_top_left, row, property)
 
         right_properties: list[dict[str, str]] = [
             {
@@ -802,13 +945,67 @@ class UI:
                     "value": f"{item_model.health_impact:+4d}",
                 },
             )
-        top_middle = (WIDTH // 2, top_left[1])
+        top_middle = (WIDTH // 2, properties_top_left[1])
         for row, property in enumerate(right_properties):
             self.show_icon_label_value(top_middle, row, property)
 
-        self.display_surface.blit(self.icons_dict["key_I"][0], (top_left[0] + 800 - 8, top_left[1] + 40))
-        self.display_surface.blit(self.icons_dict["key_<"][0], (top_left[0] - 24, top_left[1] + 100))
-        self.display_surface.blit(self.icons_dict["key_>"][0], (top_left[0] + 800 - 8, top_left[1] + 100))
+        if self.show_inventory_panel_flag:
+            self.display_surface.blit(self.icons_dict["key_I"][0],
+                                      (properties_top_left[0] + 800 - 8, properties_top_left[1] + 40))
+        # self.display_surface.blit(self.icons_dict["key_<"][0],
+        #                           (properties_top_left[0] - 24, properties_top_left[1] + 100))
+        # self.display_surface.blit(self.icons_dict["key_>"][0],
+        #                           (properties_top_left[0] + 800 - 8, properties_top_left[1] + 100))
+
+    #############################################################################################################
+    def show_trade_panel(self) -> None:
+        player = self.scene.player
+        if not player.npc_met or not player.npc_met.model.is_merchant:
+            return
+
+        merchant = player.npc_met
+        npc = merchant if self.is_buying else player
+        self.show_inventory_panel(npc)
+
+        avatar = pygame.transform.scale_by(merchant.avatar, 0.5)
+        avatar_rect = avatar.get_rect()
+        self.display_surface.blit(
+            avatar,
+            (WIDTH // 2 - (avatar_rect.width // 2), self.trader_bg_rect.top + 10)
+        )
+
+        self.display_text(
+            merchant.model.name,
+            (WIDTH // 2, self.trader_bg_rect.top + 10 + avatar_rect.height - 16),
+            font=self.game.fonts[FONT_SIZE_LARGE],
+            color=CHAR_NAME_COLOR,
+            border=(84, 135, 137),
+            shadow=False,
+            align="centred"
+        )
+
+        self.show_merchant_stats_panel(merchant, (WIDTH // 2 + (avatar_rect.width // 2), self.trader_bg_rect.top + 10))
+
+        # bottom_left = self.inventory_slot.rect.bottomleft
+        top_left = self.trader_bg_rect.topleft
+        self.show_hotbar(merchant,
+                         (self.inventory_slot.rect.left,
+                          top_left[1] + 10 + avatar_rect.height + 24),
+                         show_shortcuts=self.is_buying)
+        top_left = self.inventory_slot.rect.topleft
+        self.show_hotbar(player,
+                         top_left,
+                         show_shortcuts=not self.is_buying)
+
+        start_idx = 3
+        # self.show_action("toggle", start_idx)
+        self.show_action("end_trade", start_idx + 0)
+        if self.is_buying:
+            self.show_action("toggle", start_idx + 1, label="show mine")
+            self.show_action("buy", start_idx + 2)
+        else:
+            self.show_action("toggle", start_idx + 1, label="show shop")
+            self.show_action("sell", start_idx + 2)
 
     #############################################################################################################
     def show_dialog_panel(self) -> None:
@@ -825,7 +1022,7 @@ class UI:
                 player.avatar,
                 (self.dialog_panel_offset[0] + dialog_panel_size[0] - TILE_SIZE * AVATAR_SCALE,
                  self.dialog_panel_offset[1] + 4 - TILE_SIZE * AVATAR_SCALE))
-            # draw dialog panel
+        # draw dialog panel
         self.display_surface.blit(self.dialog_panel.get_panel(), self.dialog_panel_offset)
         self.display_surface.blit(self.name_panel_bg,
                                   (self.dialog_panel_offset[0] + 3 * TILE_SIZE,
@@ -838,7 +1035,8 @@ class UI:
                           (self.dialog_panel_offset[0] + 4 * TILE_SIZE,
                            self.dialog_panel_offset[1] - int(1.5 * TILE_SIZE)),
                           font=self.game.fonts[FONT_SIZE_LARGE],
-                          color=CHAR_NAME_COLOR)
+                          color=CHAR_NAME_COLOR
+                          )
         # draw key shortcuts
         pos = (self.dialog_panel_offset[0] + dialog_panel_size[0] - 15,
                self.dialog_panel_offset[1] + 40)

@@ -360,7 +360,7 @@ class Game:
             pygame.draw.rect(bg_surf, bg_color, bg_surf.get_rect())
             surface.blit(bg_surf, bg_rect)
 
-        # add black outline (render black text moved by offset to all 4 directions)
+        # add black outline (render black text moved by offset to all 8 directions)
         if shadow:
             surf_shadow: pygame.surface.Surface = selected_font.render(text, False, shadow)
             offset = 1

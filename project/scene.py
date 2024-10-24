@@ -1263,7 +1263,7 @@ class Scene(State):
                 if distance_from_player < FRIENDLY_WAKE_DISTANCE**2:
                     npc.health_bar.show()
 
-                    if npc.has_dialog and npc.dialogs:
+                    if (npc.has_dialog and npc.dialogs) or (npc.model.is_merchant):
                         self.player.npc_met = npc
                         npc.npc_met = self.player
                         break
@@ -1272,14 +1272,16 @@ class Scene(State):
 
         # exit from current state and go back to previous
         if INPUTS["quit"]:
-            # SplashScreen(self.game).enter_state()
-            # Scene(self.game, "grasslands", "start").enter_state()
-            # MainMenuScreen(self.game, next_scene).enter_state()
-            for fun, val in _TIMEIT_CACHE.items():
-                cnt, time = val
-                print(f"{fun};{cnt};{time:.10f};{time / cnt:.10f}")
-            self.exit_state()
-            self.game.reset_inputs()
+            if not self.ui.show_trade_panel_flag:
+                # SplashScreen(self.game).enter_state()
+                # Scene(self.game, "grasslands", "start").enter_state()
+                # MainMenuScreen(self.game, next_scene).enter_state()
+                for fun, val in _TIMEIT_CACHE.items():
+                    cnt, time = val
+                    print(f"{fun};{cnt};{time:.10f};{time / cnt:.10f}")
+                self.exit_state()
+                self.game.reset_inputs()
+            INPUTS["quit"] = False
 
         global SHOW_DEBUG_INFO
         if INPUTS["debug"]:
@@ -1304,7 +1306,8 @@ class Scene(State):
             INPUTS["show_ui"] = False
 
         if INPUTS["use_item"]:
-            self.player.use_item()
+            if not self.player.is_talking:
+                self.player.use_item()
             INPUTS["use_item"] = False
 
         for idx in range(1, 7):
@@ -1314,22 +1317,31 @@ class Scene(State):
                 INPUTS[f"item_{idx}"] = False
 
         if INPUTS["next_item"]:
-            if len(self.player.items) > 0:
-                self.player.selected_item_idx += 1
-                if self.player.selected_item_idx >= len(self.player.items):
-                    self.player.selected_item_idx = 0
+            if not self.player.is_talking:
+                self.player.select_next_item()
+            else:
+                if self.player.npc_met and self.player.npc_met.model.is_merchant:
+                    if self.ui.is_buying:
+                        self.player.npc_met.select_next_item()
+                    else:
+                        self.player.select_next_item()
             INPUTS["next_item"] = False
 
         if INPUTS["prev_item"]:
-            if len(self.player.items) > 0:
-                self.player.selected_item_idx -= 1
-                if self.player.selected_item_idx < 0:
-                    self.player.selected_item_idx = len(self.player.items) - 1
+            if not self.player.is_talking:
+                self.player.select_prev_item()
+            else:
+                if self.player.npc_met and self.player.npc_met.model.is_merchant:
+                    if self.ui.is_buying:
+                        self.player.npc_met.select_prev_item()
+                    else:
+                        self.player.select_prev_item()
             INPUTS["prev_item"] = False
 
         if INPUTS["drop"]:
             # drop item from inventory to ground
-            if len(self.player.items) > 0 and not self.player.is_attacking and not self.player.is_stunned:
+            if len(self.player.items) > 0 and not self.player.is_attacking and not \
+                    self.player.is_stunned and not self.player.is_talking:
                 if item := self.player.drop_item():
                     self.items.append(item)
                     self.item_sprites.add(item)
@@ -1343,7 +1355,8 @@ class Scene(State):
             INPUTS["drop"] = False
 
         if INPUTS["pick_up"]:
-            if not self.player.is_flying and not self.player.is_attacking and not self.player.is_stunned:
+            if not self.player.is_flying and not self.player.is_attacking and not self.player.is_stunned and \
+                    not self.player.is_talking:
                 items: list[ItemSprite] = self.item_sprites.sprites()
                 collided_index = self.player.feet.collidelist(items)   # type: ignore[type-var]
                 if collided_index > -1:
@@ -1383,7 +1396,8 @@ class Scene(State):
 
         if INPUTS["fly"]:
             # toggle flying mode
-            if not self.player.is_jumping and not self.player.is_attacking and not self.player.is_stunned:
+            if not self.player.is_jumping and not self.player.is_attacking and not self.player.is_stunned and \
+                    not self.player.is_talking:
                 self.player.is_flying = not self.player.is_flying
                 if self.player.is_flying:
                     # when airborn move one layer above so it's not colliding with obstacles on the ground
