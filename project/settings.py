@@ -85,7 +85,7 @@ IS_WEB = __import__("sys").platform == "emscripten" or USE_WEB_SIMULATOR
 IS_LINUX = __import__("sys").platform == "linux"
 IS_FULLSCREEN = False
 IS_PAUSED = False
-USE_ALPHA_FILTER = False
+USE_ALPHA_FILTER = True
 USE_PARTICLES = False
 USE_CUSTOM_MOUSE_CURSOR = True
 USE_SOD = False
@@ -175,7 +175,7 @@ WAYPOINTS_LINE_COLOR = (0, 0, 128, 32)
 # NPC stunned color
 STUNNED_COLOR = (200, 0, 0, 64)
 # cold, dark and bluish light at night
-NIGHT_FILTER: tuple[int, int, int, int] = (0, 0, 30, 190)
+NIGHT_FILTER: tuple[int, int, int, int] = (0, 0, 30, 230)
 # sunny, warm yellow light during daytime
 DAY_FILTER: tuple[int, int, int, int] = (152, 152, 0, 0)
 # amount of light sources passed to shader
@@ -226,6 +226,7 @@ ACTIONS: dict[str, dict[str, Any]] = {
     "talk":      {"show": ["key_Space"], "msg": "talk",        "keys": [pygame.K_SPACE]},
     "pick_up":   {"show": ["key_E"],     "msg": "pick up",     "keys": [pygame.K_e]},
     "drop":      {"show": ["key_X"],     "msg": "drop",        "keys": [pygame.K_x]},
+    "inventory": {"show": ["key_I"],     "msg": "inventory",   "keys": [pygame.K_i]},
     "next_item": {"show": None,          "msg": "next item",   "keys": [pygame.K_PERIOD]},
     "prev_item": {"show": None,          "msg": "prev item",   "keys": [pygame.K_COMMA]},
     "item_1":    {"show": None,          "msg": "item 1",      "keys": [pygame.K_1]},
@@ -680,6 +681,9 @@ EMOTE_SHEET_DEFINITION = {
 }
 
 ITEMS_SHEET_DEFINITION = {
+    "abacus":               [(1, 0)],
+    "abacus2":              [(2, 0)],
+    "name":                 [(3, 0)],
     "beef":                 [(1, 1)],
     "calamari":             [(2, 1)],
     "fish":                 [(3, 1)],

@@ -96,6 +96,8 @@ class UI:
         weapon_s = 24 + TILE_SIZE * 8
         self.weapon_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(weapon_s, weapon_s)
         self.stats_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(300, 190)
+        self.inventory_bg = NinePatch(file="nine_patch_04.png", scale=4).get_scaled_to(800, 200)
+        pygame.draw.line(self.inventory_bg, (70, 64, 46), (400, 70), (400, 200 - 40), 4)
 
         show_actions = [action for action in ACTIONS.values() if action["show"]]
         help_w = int((len(show_actions) + 2) * FONT_SIZE_MEDIUM * 2.1)
@@ -108,6 +110,7 @@ class UI:
         #      self.panel_border_size[1] - self.factor * 2)).convert_alpha()
         # self.panel_background.fill((0, 0, 0, 0))
 
+        self.show_inventory_panel_flag: bool = False
         self.show_modal_panel_flag: bool = False
         self.show_dialog_panel_flag: bool = False
         self.show_nine_patch_test: bool = False
@@ -229,6 +232,7 @@ class UI:
         text: str,
         pos: tuple[int, int],
         font: pygame.font.Font | None = None,
+        align: str = "left",
         color: pygame._common.ColorValue | None = None,
         border: bool = False
     ) -> None:
@@ -237,14 +241,19 @@ class UI:
 
         if not color:
             color = FONT_COLOR
-        if border:
-            text_surf = font.render(str(text), False, PANEL_BG_COLOR)
-            text_rect = text_surf.get_rect(topleft = pos).move(2, 2)
-
-            self.display_surface.blit(text_surf, text_rect)
 
         text_surf = font.render(str(text), False, color)
-        text_rect = text_surf.get_rect(topleft = pos)
+
+        if align == "left":
+            text_rect = text_surf.get_rect(topleft = pos)
+        elif align == "centred":
+            text_rect = text_surf.get_rect(center = pos)
+        else:
+            text_rect = text_surf.get_rect(topright = pos)
+
+        if border:
+            border_surf = font.render(str(text), False, PANEL_BG_COLOR)
+            self.display_surface.blit(border_surf, text_rect.move(2, 2))
 
         self.display_surface.blit(text_surf, text_rect)
 
@@ -526,6 +535,10 @@ class UI:
     def update(self, time_elapsed: float, events: list[pygame.event.EventType]) -> None:
         global INPUTS
         # if INPUTS["select"] or INPUTS["pick_up"]:
+        if INPUTS["inventory"]:
+            self.show_inventory_panel_flag = not self.show_inventory_panel_flag
+            INPUTS["inventory"] = False
+
         if INPUTS["talk"]:
             if self.show_modal_panel_flag:
                 if self.modal_panel.formatted_text.is_scroll_bottom():
@@ -607,6 +620,9 @@ class UI:
                 # available actions key shortcuts
                 self.show_available_actions()
 
+        if self.show_inventory_panel_flag:
+            self.show_inventory_panel(player)
+
         if self.show_modal_panel_flag:
             self.show_modal_panel()
 
@@ -629,62 +645,170 @@ class UI:
             self.display_surface.blit(self.np_12, (200, 300))
 
     #############################################################################################################
-    def show_stats_panel(self, player: Player) -> None:
-        self.display_surface.blit(self.stats_bg, (TILE_SIZE, TILE_SIZE))
-
+    def show_icon_value(self, top_left: tuple[int, int], row: int, property: dict[str, str]) -> None:
         left_margin = 30
         top_margin = 40
         row_height = 35
         icon_scale = 2
-        icon_offset = TILE_SIZE // 2
-        ###########################################################################
-        # HEALTH
-        # self.display_text("Health", (TILE_SIZE + left_margin, TILE_SIZE + top_margin))
-        icon = pygame.transform.scale_by(self.scene.items_sheet["big_heart"][0], icon_scale)
-        self.display_surface.blit(icon, (TILE_SIZE + left_margin, icon_offset + top_margin))
+        icon_offset = - TILE_SIZE // 2
+
+        if property["icon_name"]:
+            icon = pygame.transform.scale_by(self.scene.items_sheet[property["icon_name"]][0], icon_scale)
+            self.display_surface.blit(icon, (top_left[0] + left_margin,
+                                             top_left[1] + top_margin +  icon_offset + row_height * row))
+
+        if property["value"]:
+            self.display_text(
+                property["value"],
+                color=(0, 197, 199),
+                border=True,
+                pos=(top_left[0] + 3 * TILE_SIZE + left_margin, top_left[1] + top_margin + row_height * row))
+
+    #############################################################################################################
+    def show_stats_panel(self, player: Player) -> None:
+        top_left = (TILE_SIZE, TILE_SIZE)
+        self.display_surface.blit(self.stats_bg, top_left)
+
+        left_margin = 30
+        top_margin = 40
+
+        properties = [
+            {
+                "icon_name": "big_heart",
+                "value": "",
+            },
+            {
+                "icon_name": "pan_balance",
+                "value": f"{player.total_items_weight:4.2f}/{player.model.max_carry_weight:4.2f}",
+            },
+            {
+                "icon_name": "hourglass",
+                "value": f"{self.scene.hour:d}:{self.scene.minute:02d}",
+            },
+            {
+                "icon_name": "golden_coin",
+                "value": f"{player.model.money}",
+            },
+        ]
+
+        for row, property in enumerate(properties):
+            self.show_icon_value(top_left, row, property)
+
         hb = player.health_bar_ui
         hb.set_bar(player.model.health / player.model.max_health,
                    (4 * TILE_SIZE + left_margin, TILE_SIZE + top_margin - 8))
         self.display_surface.blit(hb.image, hb.rect)
 
-        ###########################################################################
-        # WEIGHT
-        icon = pygame.transform.scale_by(self.scene.items_sheet["pan_balance"][0], icon_scale)
-        self.display_surface.blit(icon, (TILE_SIZE + left_margin, icon_offset + top_margin + row_height))
-        self.display_text(
-            f"{player.total_items_weight:4.2f}/{player.model.max_carry_weight:4.2f}",
-            color=(0, 197, 199),
-            border=True,
-            pos=(4 * TILE_SIZE + left_margin, TILE_SIZE + top_margin + row_height))
+    #############################################################################################################
 
-        # if player.selected_item_idx >= 0:
-        #     item_model = player.items[player.selected_item_idx].model
-        #     item = f"{item_model.name} ({item_model.count})"
-        # else:
-        #     item = "N/A"
-        # self.display_text(
-        #     f"Item    {item}", (TILE_SIZE + left_margin, TILE_SIZE + + top_margin + row_height * 2))
+    def show_icon_label_value(self, top_left: tuple[int, int], row: int, property: dict[str, str]) -> None:
+        left_margin = 30
+        top_margin = 40
+        row_height = 35
+        icon_scale = 2
+        icon_offset = - TILE_SIZE // 2
 
-        ###########################################################################
-        # HOUR
-        icon = pygame.transform.scale_by(self.scene.items_sheet["hourglass"][0], icon_scale)
-        self.display_surface.blit(icon, (TILE_SIZE + left_margin, icon_offset + top_margin + row_height * 2))
-        # self.show_bar(player.energy, player.stats['energy'], self.energy_bar_rect, ENERGY_COLOR)
-        self.display_text(
-            f"{self.scene.hour:d}:{self.scene.minute:02d}",
-            color=(0, 197, 199),
-            border=True,
-            pos=(4 * TILE_SIZE + left_margin, TILE_SIZE + top_margin + row_height * 2))
+        if property["icon_name"]:
+            if property["icon_name"] in self.scene.items_sheet:
+                item_sprite = self.scene.items_sheet[property["icon_name"]][0]
+            else:
+                item_sprite = self.scene.icons[property["icon_name"]][0]
+            icon = pygame.transform.scale_by(item_sprite, icon_scale)
+            self.display_surface.blit(icon, (top_left[0] + left_margin,
+                                             top_left[1] + top_margin +  icon_offset + row_height * row))
+        if property["label"]:
+            self.display_text(
+                property["label"],
+                color=(255, 255, 255),
+                border=True,
+                pos=(top_left[0] + 3 * TILE_SIZE + left_margin, top_left[1] + top_margin + row_height * row))
 
-        ###########################################################################
-        # MONEY
-        icon = pygame.transform.scale_by(self.scene.items_sheet["golden_coin"][0], icon_scale)
-        self.display_surface.blit(icon, (TILE_SIZE + left_margin, icon_offset + top_margin + row_height * 3))
-        self.display_text(
-            f"{player.model.money}",
-            color=(0, 197, 199),
-            border=True,
-            pos=(4 * TILE_SIZE + left_margin, TILE_SIZE + top_margin + row_height * 3))
+        if property["value"]:
+            self.display_text(
+                property["value"],
+                color=(0, 197, 199),
+                border=True,
+                pos=(top_left[0] + 20 * TILE_SIZE + left_margin, top_left[1] + top_margin + row_height * row),
+                align="right")
+
+    #############################################################################################################
+    def show_inventory_panel(self, player: Player) -> None:
+        top_left = (-400 + WIDTH // 2, HEIGHT - 350)
+        self.display_surface.blit(self.inventory_bg, top_left)
+
+        if player.selected_item_idx >= 0:
+            item_model = player.items[player.selected_item_idx].model
+        else:
+            return
+
+        left_properties = [
+            {
+                "icon_name": "",
+                "label": "",
+                "value": f"{item_model.name}",
+            },
+            {
+                "icon_name": "pan_balance",
+                "label": "Weight",
+                "value": f"{item_model.weight:4.2f}",
+            },
+            {
+                "icon_name": "golden_coin",
+                "label": "Value",
+                "value": f"{item_model.value:4d}",
+            },
+            {
+                "icon_name": "abacus2",
+                "label": "Amount",
+                "value": f"{item_model.count:4d}",
+            },
+        ]
+
+        for row, property in enumerate(left_properties):
+            self.show_icon_label_value(top_left, row, property)
+
+        right_properties: list[dict[str, str]] = [
+            {
+                "icon_name": "",
+                "label": "",
+                "value": "",
+            },
+            {
+                "icon_name": "red_question",
+                "label": "Type",
+                "value": item_model.type.value.capitalize()
+            }
+        ]
+        if item_model.type == ItemTypeEnum.weapon:
+            right_properties.append(
+                {
+                    "icon_name": "big_heart",
+                    "label": "Damage",
+                    "value": f"{-item_model.damage:4d}",
+                })
+            right_properties.append(
+                {
+                    "icon_name": "hourglass",
+                    "label": "Cooldown",
+                    "value": f"{item_model.cooldown_time:4.2f}",
+                },
+            )
+
+        if item_model.type == ItemTypeEnum.consumable:
+            right_properties.append(
+                {
+                    "icon_name": "big_heart",
+                    "label": "Health",
+                    "value": f"{item_model.health_impact:+4d}",
+                },
+            )
+        top_middle = (WIDTH // 2, top_left[1])
+        for row, property in enumerate(right_properties):
+            self.show_icon_label_value(top_middle, row, property)
+
+        self.display_surface.blit(self.icons_dict["key_I"][0], (top_left[0] + 800 - 8, top_left[1] + 40))
+        self.display_surface.blit(self.icons_dict["key_<"][0], (top_left[0] - 24, top_left[1] + 100))
+        self.display_surface.blit(self.icons_dict["key_>"][0], (top_left[0] + 800 - 8, top_left[1] + 100))
 
     #############################################################################################################
     def show_dialog_panel(self) -> None:
